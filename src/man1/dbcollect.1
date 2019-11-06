@@ -1,0 +1,60 @@
+.TH DBCOLLECT "1" "October 2019" "Outrun" "dbcollect"
+.SH NAME
+dbcollect \- Collect AWR and system info
+.SH SYNOPSIS
+.B dbcollect
+[-h] [-?] [-t TMPDIR] [-o OUTPUT] [-d DAYS]
+.SH DESCRIPTION
+This tool collects AWR reports for all normal database instances listed in /etc/oratab.
+For this, sqlplus is called with @dbcollect to generate the AWRs and dbinfo.
+Also collects cpuinfo, meminfo, and partition info from /proc.
+The AWR files as well as the system info reports are placed in a ZIP file named by default
+/tmp/collectawr.zip.
+
+This script must run as user with sysdba access to the databases (usually 'oracle').
+.P
+It is intended to run on Linux and may work fine on UNIX.
+.P
+Windows is not supported (edit and run @dbcollect.sql manually)
+
+If AWR is not licensed, you can change dbcollect.sql to run STATSPACK instead.
+
+.SH OPTIONS
+.TP
+\fB -t, --tmpdir
+Change the temp dir (default /var/tmp)
+.TP
+\fB -o, --output
+Change the name of the output zipfile (default collectawr.zip)
+.TP
+\fB -d, --days
+Change the number of days to collect (default 8 as defined in collect-awr.sql)
+.SH COLLECTED DATA
+.TP
+\fB AWR (or STATSPACK)
+Database performance reports
+.TP
+\fB dbinfo
+Various database metrics such as version, sizes, usage of certain features, ASM diskgroup info
+.TP
+\fB system info
+Various system files and output of commands
+.TP
+\fB SAR data
+Contents of /var/log/sa (if it exists) - contains CPU and IO performance information. usually of the last 31 days
+.SH FILES
+\fI\,/tmp/collectawr.zip
+.br
+\fI\,/proc
+.br
+.SH AUTHOR
+Written by Bart Sjerps <bart@outrun.nl>, License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+.br
+If you have suggestions for improvements in this tool, please send them along via the above address.
+.SH COPYRIGHT
+Copyright \(co 2018 Bart Sjerps
+.br
+.br
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+.SH "SEE ALSO"
+lsscsi(1), df(1), sar(1), ps(1), rpm(8)

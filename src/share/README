@@ -1,0 +1,32 @@
+Info on running multicollect
+
+Multicollect is based on pdsh (parallel distributed shell) which can be used to run a command at multiple hosts simultaneously.
+
+This requires ssh to work with password-less logins (based on private/public keys).
+See for example https://linuxize.com/post/how-to-setup-passwordless-ssh-login/ on how to do this.
+
+Short: as user to run multicollect, run
+ssh-keygen -t rsa
+
+When prompted for the password, press enter (twice).
+
+now install the public key on each remote host:
+ssh-copy-id oracle@remotehost
+
+The end result should be that the user running multicollect should be able to login using 'ssh oracle@remotehost' without password prompts.
+
+Make sure pdsh is installed:
+yum install pdsh
+
+Finally, set up a machines file with one entry for each remote host (rename to machines after editing:
+cat <<EOF > ~/machines-example
+oracle@remotehost.domain
+EOF
+
+Now you should be able to run pdsh against all machines:
+(from home dir):
+pdsh -w ^machines hostname
+pdsh -w ^machines id
+
+Now you can run multicollect to get all AWRs and system info. The zip files are copied (using scp) to the local home directory.
+

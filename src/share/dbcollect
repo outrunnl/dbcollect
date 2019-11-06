@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+#============================================================================
+# Title       : dbcollect
+# Description : Collect AWR/Statspack/dbinfo/sysinfo for all oratab instances
+# Author      : Bart Sjerps <bart@outrun.nl>
+# License     : GPLv3+
+# ---------------------------------------------------------------------------
+
+import os, sys, subprocess, argparse
+from getpass import getuser
+from zipfile import ZipFile, ZIP_DEFLATED
+
+dbcollect = """\
+export ORACLE_HOME=%s
+export ORACLE_SID=%s
+$ORACLE_HOME/bin/sqlplus -S / as sysdba @dbcollect %s
+"""
+
+sysinfo = os.environ['HOME'] + '/sysinfo.zip'
+sarinfo = os.environ['HOME'] + '/sardata.zip'
+
+# Workaround for python 2.6 not having subprocess.check_output option
+def check_output(cmd):
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    proc.wait()
+    return proc.stdout.read()
+
+def writecmd(zip, tag, cmd):
+    data = None
+    try:
+        data = check_output(cmd)
+    except:
+        print 'could not run %s' % cmd
+    if data:
+        zip.writestr(tag,data)
+
+# run some checks, TBD: free space?
+def checks():
+    if getuser() == 'root':
+        print 'Run as non-root user (oracle)'
+        exit(10)
+
+def osinfo():
+    zip = ZipFile(sysinfo,'w', 8)
+    for f in ['/proc/cpuinfo','/proc/meminfo','/proc/partitions', 
+              '/proc/cmdline','/sys/class/dmi/id/sys_vendor']:
+        if os.path.isfile(f):
+            zip.write(f, os.path.basename(f))
+    writecmd(zip, 'lsscsi', 'lsscsi')
+    writecmd(zip, 'df',   ['df','-Ph'])
+    writecmd(zip, 'psef', ['ps','-ef'])
+    writecmd(zip, 'rpms', ['rpm','-qa'])
+    zip.close()
+
+def sarlogs():
+    zip = ZipFile(sarinfo,'w',8)
+    for f in os.listdir('/var/log/sa'):
+        try:
+            zip.write('/var/log/sa/' + f, os.path.basename(f))
+        except:
+            print 'writing to ZIP file failed,', f
+    zip.close()
+
+# Run the collect-awr.sql script for each instance
+def genawrs(days):
+    if days == None:
+        days = ''
+    with open('/etc/oratab') as oratab:
+        for line in oratab.readlines():
+            if line[0] in ('#', '-', '+'):
+                continue
+            if len(line) < 2:
+                continue
+            arr = line.rstrip('\n').split(':')
+            if len(arr) != 3:
+                continue
+            instance = arr[0]
+            ohome = arr[1]
+            rc = subprocess.call(dbcollect % (ohome, instance, days), shell=True)
+            if rc>1:
+                print 'collect performance data failed for instance %s' % instance
+
+# Move multiple zip files to one master zipfile
+# AWR files must be named $HOME/*_awr_*.zip and are removed
+def makezip(outfile):
+    zip = ZipFile(outfile,'w', 8)
+    if os.path.isfile(sysinfo):
+        zip.write(sysinfo, os.path.basename(sysinfo))
+    if os.path.isfile(sarinfo):
+        zip.write(sarinfo, os.path.basename(sarinfo))
+    for f in os.listdir('/tmp'):
+        if '_awr_' in f and f.endswith('.zip'):
+            path = os.path.join('/tmp', f)
+            print 'adding', f
+            try:
+                zip.write(path, f)
+                os.unlink(path)
+            except:
+                print 'writing to ZIP file failed,', f
+    zip.close()
+    print 'Written: ', outfile
+    
+#============================================================================
+# Main section - parsing options etc
+# ---------------------------------------------------------------------------
+
+os.chdir(os.path.dirname(sys.argv[0]))
+
+days = None
+parser = argparse.ArgumentParser(description='AWR and system info collector', epilog="more info: use --man")
+parser.add_argument("-?", "--man",       help="show the manpage",  action="store_true")
+parser.add_argument("-t", "--tmpdir",    help="tempdir, default = /tmp",          default='/tmp/', type=str)
+parser.add_argument("-o", "--output",    help="output file, default=collectawr.zip",   default = 'dbcollect.zip', type=str)
+parser.add_argument("-d", "--days",      help="Number of days to collect (default 8)", type=int)
+args = parser.parse_args()
+
+outfile = os.path.join(args.tmpdir,args.output)
+
+if args.man:
+    subprocess.call(['man','dbcollect'])
+else:
+    checks()
+    genawrs(args.days)
+    osinfo()
+    sarlogs()
+    makezip(outfile)
