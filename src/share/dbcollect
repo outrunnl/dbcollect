@@ -16,9 +16,6 @@ export ORACLE_SID=%s
 $ORACLE_HOME/bin/sqlplus -S / as sysdba @dbcollect %s
 """
 
-sysinfo = os.environ['HOME'] + '/sysinfo.zip'
-sarinfo = os.environ['HOME'] + '/sardata.zip'
-
 # Workaround for python 2.6 not having subprocess.check_output option
 def check_output(cmd):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -81,7 +78,7 @@ def genawrs(days):
                 print 'collect performance data failed for instance %s' % instance
 
 # Move multiple zip files to one master zipfile
-# AWR files must be named $HOME/*_awr_*.zip and are removed
+# AWR files must be named *_awr_*.zip and are removed
 def makezip(outfile):
     zip = ZipFile(outfile,'w', 8)
     if os.path.isfile(sysinfo):
@@ -115,6 +112,8 @@ parser.add_argument("-d", "--days",      help="Number of days to collect (defaul
 args = parser.parse_args()
 
 outfile = os.path.join(args.tmpdir,args.output)
+sysinfo = os.path.join(args.tmpdir, 'sysinfo.zip')
+sarinfo = os.path.join(args.tmpdir, 'sarinfo.zip')
 
 if args.man:
     subprocess.call(['man','dbcollect'])
