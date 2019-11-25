@@ -32,6 +32,18 @@ set echo off head off feed off pages 50000 lines 32767 trims on term off verify 
 set term on
 WHENEVER SQLERROR EXIT SQL.SQLCODE
 
+-- Settings for Linux/UNIX (uncomment if you run this script directly)
+-- define TMPDIR = /tmp
+-- define ZIP    = $ORACLE_HOME/bin/zip
+-- define REMOVE = /bin/rm
+-- define SEP    = /
+
+-- Settings for Windows (uncomment if you run this script directly)
+-- define TMPDIR = C:\Temp
+-- define ZIP    = zip
+-- define REMOVE = del
+-- define SEP    = \
+
 -- command line parameters / default values
 column 1 new_value 1 noprint
 column 2 new_value 2 noprint

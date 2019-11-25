@@ -1,6 +1,6 @@
 Name:		dbcollect
 Summary:	Collect AWR/Statspack and system info
-Version:	1.0.1
+Version:	1.0.4
 Release:	1%{?dtap}
 License:	GPLv3+
 Group:		Applications/Databases
@@ -21,15 +21,11 @@ The AWR files as well as the system info reports are placed in a ZIP file named
 rm -rf %{buildroot}
 install -m 0755 -d %{buildroot}/usr/bin
 install -m 0755 -d %{buildroot}/usr/share/dbcollect/
-install -m 0755 -d %{buildroot}/usr/share/man/man1
 
 cp -p  bin/*   %{buildroot}/usr/bin/
 cp -pr share/* %{buildroot}/usr/share/dbcollect/
-cp -pr man1/*  %{buildroot}/usr/share/man/man1
 
 %files
 %defattr(0755,root,root,755)
 /usr/bin/*
 /usr/share/dbcollect/*
-%defattr(0644,root,root,755)
-/usr/share/man/man*/*

@@ -4,7 +4,7 @@
 -- Author      : Bart Sjerps <bart@outrun.nl>
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
-define dbinfo_version = '1.0.1' -- Set version
+define dbinfo_version = '1.1.0' -- Set version
 -----------------------------------------------------------------------------
 -- Usage: @dbinfo
 -- Requires: Oracle database >= 11.2
@@ -26,6 +26,13 @@ define dbinfo_version = '1.0.1' -- Set version
 -- 1.0   - first version
 -- 1.0.1 - Added TAB OFF to avoid messed up formatting (Bart Sjerps)
 -----------------------------------------------------------------------------
+-- Get spool filename, ignore if not set
+column 1 new_value 1 noprint
+select '' "1" from dual where rownum = 0;
+define spoolpath = &1 "OFF"
+undef 1
+
+SPOOL &spoolpath
 
 -- Enable to get | as separator (for script parsing)
 set colsep '|'
@@ -43,6 +50,7 @@ COL METRIC      FORMAT A20        HEAD 'Metric'
 COL VALUE       FORMAT A60        HEAD 'Value'
 COL NUMVAL      FORMAT 99,999,990 HEAD 'Value'
 COL FILENAME    FORMAT A90        HEAD 'Filename'
+COL PATH        FORMAT A60        HEAD 'Path'
 COL FILETYPE    FORMAT A20        HEAD 'Filetype'
 COL SEGTYPE     FORMAT A20        HEAD 'Segtype'
 
@@ -53,6 +61,7 @@ COL OBJECTS     FORMAT 999,990    HEAD 'Objects'
 COL TS_NAME     FORMAT A25        HEAD 'Tablespace'
 COL TS_TYPE     FORMAT A7         HEAD 'Type'
 COL DG_NAME     FORMAT A30        HEAD 'Diskgroup'
+COL DISKNAME    FORMAT A16        HEAD 'Disk name'
 COL AU_SIZE     FORMAT 99         HEAD 'AU'
 COL FEATURE     FORMAT A55        HEAD 'Feature'
 COL USAGES      FORMAT 9,999      HEAD 'Usage'
@@ -270,6 +279,32 @@ CLEAR COMPUTES
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT ASM DISKS
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF USED_MB FREE_MB ALLOCATED ON REPORT
+
+SELECT  disk.name as DISKNAME
+-- decode(dg.name,NULL,'-',dg.name) AS dg_name
+--  lpad(decode(disk.name,NULL,'-',disk.name),12) AS DISKNAME
+, (disk.total_mb - disk.free_mb)/1024 as used_mb
+, disk.free_mb/1024 as free_mb
+, disk.os_mb/1024 AS allocated
+, 100*(disk.total_mb - disk.free_mb)/nullif(disk.total_mb,0) as pct_used
+-- , substr(header_status,1,9) as header
+-- , disk.state
+, path
+FROM gv$asm_disk disk
+LEFT OUTER JOIN v$asm_diskgroup dg ON disk.group_number = dg.group_number AND dg.group_number <> 0
+JOIN v$instance ON inst_id=instance_number
+ORDER BY disk.name,path
+/
+
+CLEAR COMPUTES
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT INIT PARAMETERS
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Non-null/non-default init parameters
@@ -299,3 +334,4 @@ PROMPT
 CLEAR COLUMNS COMPUTES BREAKS
 set colsep ' '
 
+SPOOL OFF
