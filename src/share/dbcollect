@@ -1,24 +1,8 @@
 #!/usr/bin/env python2
-#============================================================================
-# Title       : dbcollect
-# Description : Collect Oracle database and OS info for all oratab instances
-# Author      : Bart Sjerps <bart@outrun.nl>
-# License     : GPLv3+
-# ---------------------------------------------------------------------------
 
-import os, sys, socket, subprocess, argparse, pwd, grp
-from getpass import getuser
-from datetime import date
-from zipfile import ZipFile, ZIP_DEFLATED
+"""dbcollect: Collect Oracle database and OS info for all oratab instances"""
 
-awr = """\
-define TMPDIR = /tmp
-define ZIP    = $ORACLE_HOME/bin/zip
-define REMOVE = /bin/rm
-define SEP    = /
-"""
-helptext = """\
-This tool collects OS and database information and AWR/Statspack
+helptext = """This tool collects OS and database information and AWR/Statspack
 reports for all normal database instances listed in 
 /etc/oratab (not starting with + or -).
 For this, Oracle SQL*Plus is called to generate the AWRs 
@@ -35,6 +19,23 @@ privileges. If called as 'root', switches to user 'oracle' or
 other user specified by the '-u' option.
 """
 
+__author__    = "Bart Sjerps <bart@outrun.nl>"
+__copyright__ = "Copyright 2019, Bart Sjerps"
+__license__   = "GPLv3+"
+__version__   = "1.0.1"
+
+import os, sys, socket, subprocess, argparse, pwd, grp
+from getpass import getuser
+from datetime import date
+from zipfile import ZipFile, ZIP_DEFLATED
+
+awr = """\
+define TMPDIR = /tmp
+define ZIP    = $ORACLE_HOME/bin/zip
+define REMOVE = /bin/rm
+define SEP    = /
+"""
+
 def checkroot(user):
     """Checks if the user is non-root"""
     if getuser() == 'root':
@@ -46,6 +47,7 @@ def checkroot(user):
         gid = pwd.getpwnam(user).pw_gid
         os.setgid(gid)
         groups = [g.gr_gid for g in grp.getgrall() if 'oracle' in g.gr_mem]
+        groups.append(gid)
         os.setgroups(groups)
         os.setuid(uid)
 
@@ -176,8 +178,10 @@ def genawrs(days):
                     spool = os.path.join('/tmp','dbinfo-%s.txt' % sid)
                     dbinfo = os.path.join(os.path.dirname(__file__),'dbinfo.sql')
                     getawr = os.path.join(os.path.dirname(__file__), scriptname)
+                    print 'getting database info for %s' % sid
                     sql = "set term off\n@%s %s"  % (dbinfo, spool)
                     sqlplus(sid, orahome, sql)
+                    print 'getting performance reports for %s' % sid
                     sql = awr + '@%s %s' % (getawr, days)
                     sqlplus(sid, orahome, sql)
                 else:
@@ -196,25 +200,30 @@ def genawrs(days):
 
 days = None
 parser = argparse.ArgumentParser(description='AWR and system info collector', epilog=helptext)
-parser.add_argument("-t", "--tmpdir",    type=str, default='/tmp', help="tempdir, default = /tmp")
+parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
 parser.add_argument(      "--statspack", action="store_true", help="Run statspack instead of AWR")
 parser.add_argument("-o", "--output",    type=str, help="output file, default <host>-dbcollect.zip")
+parser.add_argument("-t", "--tmpdir",    type=str, default='/tmp', help="tempdir, default = /tmp")
 parser.add_argument("-u", "--user",      type=str, help="Run as user (default oracle)", default='oracle')
 parser.add_argument("-d", "--days",      type=int, help="Number of days to collect (default 8)")
 args = parser.parse_args()
 
 checkroot(args.user)
 
-if args.output:
-    outfile = os.path.join(args.tmpdir, args.output)
+if args.version:
+    print "Author:    %s" % __author__
+    print "Copyright: %s" % __copyright__
+    print "License:   %s" % __license__
+    print "Version:   %s" % __version__
 else:
-    outfile = os.path.join(args.tmpdir, "%s-%s" % (socket.gethostbyaddr(socket.gethostname())[0], 'dbcollect.zip'))
-
-try:
-    zip = Zipfile(outfile)
-    genawrs(args.days)
-    osinfo()
-    sarlogs()
-except KeyboardInterrupt:
-    os.unlink(outfile)
-
+    if args.output:
+        outfile = os.path.join(args.tmpdir, args.output)
+    else:
+        outfile = os.path.join(args.tmpdir, "%s-%s" % (socket.gethostbyaddr(socket.gethostname())[0], 'dbcollect.zip'))
+    try:
+        zip = Zipfile(outfile)
+        genawrs(args.days)
+        osinfo()
+        sarlogs()
+    except KeyboardInterrupt:
+        os.unlink(outfile)
