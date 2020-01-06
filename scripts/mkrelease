@@ -21,7 +21,7 @@ cd ${top}/..
 
 # Remove old zipfile and create new one
 find $top -maxdepth 1 -name "dbcollect*.zip" -print -delete
-zip "$top"/dbcollect-latest.zip $(basename $top)/src/share/* $(basename $top)/{version.txt,README.pdf}
+zip "$top"/dbcollect-latest.zip -j $(basename $top)/src/share/* $(basename $top)/{version.txt,README.pdf}
 unzip -l "$top"/dbcollect-latest.zip
 
 
