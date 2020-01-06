@@ -1,0 +1,28 @@
+#!/bin/bash
+#============================================================================
+# Title       : mkrelease
+# Description : Creates a ZIP file in $GITTOP with the latest files
+# Author      : Bart Sjerps <bart@outrun.nl>
+# License     : GPLv3+
+# ---------------------------------------------------------------------------
+
+# Get the top level GIT dir
+top=$(git rev-parse --show-toplevel)
+
+# Get the latest tag (should be equal to the version i.e. v1.2.3
+echo -n "dbcollect version " > "$top"/version.txt
+git describe >> "$top"/version.txt
+
+# Get a PDF version of the README.md
+curl https://gitprint.com/outrunnl/dbcollect?download -o "$top"/README.pdf
+
+# change to one level above gittop
+cd ${top}/..
+
+# Remove old zipfile and create new one
+find $top -maxdepth 1 -name "dbcollect*.zip" -print -delete
+zip "$top"/dbcollect-latest.zip $(basename $top)/src/share/* $(basename $top)/{version.txt,README.pdf}
+unzip -l "$top"/dbcollect-latest.zip
+
+
+
