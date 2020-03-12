@@ -1,6 +1,6 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
-"""osinfo - Collect Linux OS information"""
+"""syscollect - Collect Linux OS information in JSON format"""
 
 """\
 Note this is written for python 2 as python 3 is not by default installed on EL6 or EL7 systems.
@@ -18,7 +18,7 @@ Items to be collected are:
 * OS distro, release
 * Storage devices
 * Filesystems and mounts
-* Network
+* Network interfaces
 
 This tool is designed to run as non-privileged user for safety. It cannot harm
 the system as it makes no changes other than writing the JSON and error log file.
@@ -27,7 +27,7 @@ the system as it makes no changes other than writing the JSON and error log file
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2019, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = 200311
+__version__   = 200312
 
 import sys, os, argparse, json, platform
 import socket, subprocess

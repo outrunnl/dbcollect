@@ -1,3 +1,0 @@
-#!/bin/bash
-# wrapper script so we can find this from $PATH
-exec /usr/share/dbcollect/dbcollect "$@"

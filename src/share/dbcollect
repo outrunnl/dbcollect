@@ -29,6 +29,8 @@ from getpass import getuser
 from datetime import date
 from zipfile import ZipFile, ZIP_DEFLATED
 
+topdir = os.path.dirname(os.path.realpath(__file__))
+
 awr = """\
 define TMPDIR = /tmp
 define ZIP    = $ORACLE_HOME/bin/zip
@@ -96,50 +98,6 @@ def sqlplus(sid, orahome, sql):
     proc = subprocess.Popen(sqlpluscmd, env=oraenv, stdin=subprocess.PIPE)
     stdout, stderr = proc.communicate(sql)
 
-def runcommand(tag, cmd):
-    """Run a command, store results in zip"""
-    fqdn = socket.gethostbyaddr(socket.gethostname())[0]
-    myenv = {}
-    sysname, nodename, _,_,_ = os.uname()
-    header = "dbcollect:\t%s %s\t%s\t%s\n" % (nodename, sysname, date.today(), cmd)
-    try:
-        print 'running %s' % cmd
-        proc = subprocess.Popen(cmd.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE, stdin=subprocess.PIPE, env=myenv)
-        stdout, stderr = proc.communicate()
-        zip.add(tag, header + stdout)
-    except OSError as oe:
-        # executable not found, just return
-        pass
-    except:
-        print 'unknown error'
-        e = sys.exc_info()
-        print e
-
-def osinfo():
-    """Run a few commands and get some files with OS info"""
-    sysname, nodename, _,_,_ = os.uname()
-    if sys.platform.startswith('linux'):
-        for f in ['/proc/cpuinfo','/proc/meminfo','/proc/partitions', 
-              '/proc/cmdline','/sys/class/dmi/id/sys_vendor']:
-            try:
-                print 'collecting %s' %f
-                with open(f) as fh:
-                    header = "dbcollect:\t%s %s\t%s\t%s\n" % (nodename, sysname, date.today(), f)
-                    zip.add(os.path.basename(f), header + fh.read())
-            except:
-                # do nothing if the file does not exist or is not accessible
-                pass
-        runcommand('uname',  'uname -a')
-        runcommand('uptime', 'uptime -s')
-        runcommand('lsscsi', 'lsscsi')
-        runcommand('df',     'df -P')
-        runcommand('psef',   'ps -ef')
-        runcommand('rpms',   'rpm -qa')
-        runcommand('lsblk',  'lsblk -b -l -o NAME,KNAME,TYPE,SIZE,FSTYPE,VENDOR,MODEL,SERIAL,HCTL')
-    else:
-        # AIX, Solaris, Windows(?) TBD
-        print 'unsupported platform: %s - No OS data' % sys.platform
-
 def sarlogs():
     """Collect sar logs from /var/log/sa"""
     if not os.path.isdir('/var/log/sa'):
@@ -176,8 +134,8 @@ def genawrs(days):
                 proc.communicate()
                 if proc.returncode == 0:
                     spool = os.path.join('/tmp','dbinfo-%s.txt' % sid)
-                    dbinfo = os.path.join(os.path.dirname(__file__),'dbinfo.sql')
-                    getawr = os.path.join(os.path.dirname(__file__), scriptname)
+                    dbinfo = os.path.join(topdir,'dbinfo.sql')
+                    getawr = os.path.join(topdir, scriptname)
                     print 'getting database info for %s' % sid
                     sql = "set term off\n@%s %s"  % (dbinfo, spool)
                     sqlplus(sid, orahome, sql)
@@ -203,7 +161,7 @@ parser = argparse.ArgumentParser(description='AWR and system info collector', ep
 parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
 parser.add_argument(      "--statspack", action="store_true", help="Run statspack instead of AWR")
 parser.add_argument("-o", "--output",    type=str, help="output file, default <host>-dbcollect.zip")
-parser.add_argument("-t", "--tmpdir",    type=str, default='/tmp', help="tempdir, default = /tmp")
+parser.add_argument("-t", "--tmpdir",    type=str, help="tempdir, default = /tmp", default='/tmp')
 parser.add_argument("-u", "--user",      type=str, help="Run as user (default oracle)", default='oracle')
 parser.add_argument("-d", "--days",      type=int, help="Number of days to collect (default 8)")
 args = parser.parse_args()
@@ -223,7 +181,9 @@ else:
     try:
         zip = Zipfile(outfile)
         genawrs(args.days)
-        osinfo()
+        subprocess.call([os.path.join(topdir, 'syscollect')])
+        zip.move('/tmp/syscollect.json')
+        zip.move('/tmp/syscollect.log')
         sarlogs()
     except KeyboardInterrupt:
         os.unlink(outfile)
