@@ -20,7 +20,7 @@
 -- * AWR retention > 1 week (10080 minutes), interval max 60 minutes (1 hour)
 --
 -- This script generates Statspack reports in txt format. 
--- Default is 7 days of snapshots starting 8 days ago,
+-- Default is 10 days of snapshots starting 11 days ago,
 -- including yesterday. The output is a zip file containing the generated reports.
 -- Both temp files and the final zip file are created in the current directory,
 -- temp files are cleaned up after successful execution.

@@ -22,7 +22,7 @@ other user specified by the '-u' option.
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2019, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = "1.0.1"
+__version__   = "1.0.10"
 
 import os, sys, socket, subprocess, argparse, pwd, grp
 from getpass import getuser
@@ -163,7 +163,7 @@ parser.add_argument(      "--statspack", action="store_true", help="Run statspac
 parser.add_argument("-o", "--output",    type=str, help="output file, default <host>-dbcollect.zip")
 parser.add_argument("-t", "--tmpdir",    type=str, help="tempdir, default = /tmp", default='/tmp')
 parser.add_argument("-u", "--user",      type=str, help="Run as user (default oracle)", default='oracle')
-parser.add_argument("-d", "--days",      type=int, help="Number of days to collect (default 8)")
+parser.add_argument("-d", "--days",      type=int, help="Number of days to collect (default 10)")
 args = parser.parse_args()
 
 checkroot(args.user)
