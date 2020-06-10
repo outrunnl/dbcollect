@@ -4,9 +4,9 @@
 -- Author      : Bart Sjerps <bart@outrun.nl>
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
-define dbinfo_version = '1.1.0' -- Set version
+define dbinfo_version = '1.1.1' -- Set version
 -----------------------------------------------------------------------------
--- Usage: @dbinfo
+-- Usage: @dbinfo [spool_file]
 -- Requires: Oracle database >= 11.2
 --
 -- This script collects database info about the current connected database
@@ -25,6 +25,9 @@ define dbinfo_version = '1.1.0' -- Set version
 -- Revision history:
 -- 1.0   - first version
 -- 1.0.1 - Added TAB OFF to avoid messed up formatting (Bart Sjerps)
+-- 1.1.1 - Increased column width/sizes b/c customers had huge databases
+--         Max size of any MIB value now 99 petabyte. Should be enough.
+--         Feature usage now shows 1 column per feature + inuse + version
 -----------------------------------------------------------------------------
 -- Get spool filename, ignore if not set
 column 1 new_value 1 noprint
@@ -36,21 +39,21 @@ SPOOL &spoolpath
 
 -- Enable to get | as separator (for script parsing)
 set colsep '|'
-set tab off
 CLEAR COLUMNS COMPUTES BREAKS
 
-set feedback off verify off heading on lines 140 pages 999 trims on
+set tab off feedback off verify off heading on lines 1000 pages 50000 trims on
 -- set emb on
 alter session set nls_date_format='YYYY-MM-DD HH24:MI:SS';
 
-COL MIB         FORMAT 999,999,990.99
+COL MIB         FORMAT 99,999,999,990.99
 COL KIB         FORMAT 90.9
 COL PCT         FORMAT 990.99
 COL METRIC      FORMAT A20        HEAD 'Metric'
-COL VALUE       FORMAT A60        HEAD 'Value'
+COL SHORTVAL    FORMAT A80        HEAD 'Value'
+COL VALUE       FORMAT A200       HEAD 'Value'
 COL NUMVAL      FORMAT 99,999,990 HEAD 'Value'
-COL FILENAME    FORMAT A90        HEAD 'Filename'
-COL PATH        FORMAT A60        HEAD 'Path'
+COL FILENAME    FORMAT A200       HEAD 'Filename'
+COL PATH        FORMAT A80        HEAD 'Path'
 COL FILETYPE    FORMAT A20        HEAD 'Filetype'
 COL SEGTYPE     FORMAT A20        HEAD 'Segtype'
 
@@ -61,7 +64,7 @@ COL OBJECTS     FORMAT 999,990    HEAD 'Objects'
 COL TS_NAME     FORMAT A25        HEAD 'Tablespace'
 COL TS_TYPE     FORMAT A7         HEAD 'Type'
 COL DG_NAME     FORMAT A30        HEAD 'Diskgroup'
-COL DISKNAME    FORMAT A16        HEAD 'Disk name'
+COL DISKNAME    FORMAT A30        HEAD 'Disk name'
 COL AU_SIZE     FORMAT 99         HEAD 'AU'
 COL FEATURE     FORMAT A55        HEAD 'Feature'
 COL USAGES      FORMAT 9,999      HEAD 'Usage'
@@ -76,6 +79,8 @@ COL USED_MB     LIKE MIB          HEAD 'Used'
 COL FREE_MB     LIKE MIB          HEAD 'Free'
 COL PCT_USED    LIKE PCT          HEAD 'Used %'
 COL BLOCKSIZE   LIKE KIB          HEAD 'BS(K)'
+COL INUSE       FORMAT A10        HEAD 'In Use'
+COL VERSION     FORMAT A14        HEAD 'Version'
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT DBINFO version &dbinfo_version
@@ -88,15 +93,14 @@ WITH stats as (select stat_name name
   FROM  dba_hist_osstat
   WHERE snap_id = (select max(snap_id) from dba_hist_osstat)
 )
-select           'dbname' metric,  name value               from v$database
+select           'dbname' metric,  name shortval            from v$database
 union all select 'hostname',       host_name                from v$instance
 union all select 'report date',    to_char(sysdate)         from dual
 union all select 'dbid',           to_char(dbid)            from v$database
 union all select 'instance',       instance_name            from v$instance
 union all select 'version',        version                  from v$instance
 union all select 'inst_number',    to_char(instance_number) from v$instance
-union all select 'product',        product                  from product_component_version 
-                                                            where product like 'Oracle%'
+union all select 'product',        product                  from product_component_version where product like 'Oracle%'
 union all select 'unique_name',    db_unique_name           from v$database
 union all select 'startup',        to_char(startup_time)    from v$instance
 union all select 'uptime (days)',  to_char(round(sysdate - startup_time,2)) from v$instance
@@ -143,10 +147,10 @@ BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB ON REPORT
 
 WITH FILES AS (
-  SELECT 'CONTROLFILE' type, block_size*file_size_blks bytes, block_size bs, name from v$controlfile UNION ALL
-  SELECT 'DATAFILE', bytes, block_size, name  from v$datafile UNION ALL
-  SELECT 'TEMPFILE', bytes, block_size, name  from v$tempfile UNION ALL
-  SELECT 'REDOLOG',  bytes, blocksize, member from v$log a JOIN v$logfile b ON a.Group#=b.Group#
+  SELECT 'CONTROLFILE' type, block_size*file_size_blks bytes, block_size bs, name FROM v$controlfile UNION ALL
+  SELECT 'DATAFILE', bytes, block_size, name   FROM v$datafile UNION ALL
+  SELECT 'TEMPFILE', bytes, block_size, name   FROM v$tempfile UNION ALL
+  SELECT 'REDOLOG',  bytes, blocksize,  member fROM v$log a JOIN v$logfile b ON a.Group#=b.Group#
 )
 SELECT TYPE FILETYPE
 , BS/1024 BLOCKSIZE
@@ -164,8 +168,6 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB ON REPORT
--- TBD: Backup sets?
--- select file_type, status, compressed, count(fname) files, sum(bytes)/1024/1024 MIB from v$backup_files group by file_type, status, compressed;
 
 WITH STATS AS (select 
     decode(file_type,'PIECE','BACKUP PIECE',file_type) filetype
@@ -318,15 +320,20 @@ PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT DATABASE FEATURE USAGE
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Thanks to Oracle-base, see https://oracle-base.com/articles/misc/tracking-database-feature-usage
 
-SELECT name feature, detected_usages usages
-FROM   dba_feature_usage_statistics 
-WHERE  detected_usages > 0
-AND    dbid = (SELECT dbid FROM v$database)
+SELECT u1.name feature, u1.detected_usages usages, u1.currently_used inuse, u1.version version
+-- , u1.first_usage_date, u1.last_usage_date, u1.description
+FROM   dba_feature_usage_statistics u1
+WHERE  u1.version = (SELECT MAX(u2.version)
+                     FROM   dba_feature_usage_statistics u2
+                     WHERE  u2.name = u1.name)
+AND    u1.detected_usages > 0
+AND    u1.dbid = (SELECT dbid FROM v$database)
 ORDER BY name
 /
-PROMPT
 
+PROMPT
 -----------------------------------------------------------------------------
 -- Cleanup & reset
 -----------------------------------------------------------------------------
