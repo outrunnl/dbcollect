@@ -129,7 +129,7 @@ def timestamp():
         'uptime': int(uptime_seconds)
     }
     return info
-    
+
 def filesystems():
     """Get filesystems and sizes from 'df', excluding tempfs"""
     arr = []
@@ -192,6 +192,7 @@ def cpuinfo():
     """Report CPU model, type, cores, sockets etc"""
     info = dict()
     cpuinfo = run('lscpu')
+    sockets, cores, threads, cpus, tpc, cps = 0, 0, 0, 0, 0, 0
     for line in cpuinfo.splitlines():
         key, val = line.split(':')
         val = val.strip()
@@ -201,15 +202,29 @@ def cpuinfo():
         elif key.startswith('NUMA'):
             continue
         elif key.endswith('cache'):
-            info[key] = int(val.rstrip('K'))
-        elif key in ['CPU(s)','Socket(s)','Thread(s) per core','Core(s) per socket','Core(s) per socket']:
-            info[key] = int(val)
+            info[key.lower()] = int(val.rstrip('K'))
+        elif key == 'CPU(s)':
+            cpus = int(val)
+            info['cpus'] = cpus
+        elif key == 'Thread(s) per core':
+            tpc = int(val)
+        elif key == 'Core(s) per socket':
+            cps = int(val)
+            info['corespersocket'] = cps
+        elif key == 'Socket(s)':
+            sockets = int(val)
+            info['sockets'] = sockets
         elif key in ['CPU MHz', 'CPU max MHz','BogoMIPS','CPU min MHz']:
-            info[key] = float(val)
+            info[key.lower()] = float(val)
+        elif key == 'Model name':
+            info['model'] = val
+        elif key == 'Vendor ID':
+            info['vendor'] = val
         else:
-            info[key] = str(val)
+            info[key.lower()] = str(val)
+    info['cores'] = cps * sockets
     return info
-            
+
 def meminfo():
     """Report memory, swap, hugepages"""
     info = dict()
@@ -220,10 +235,10 @@ def meminfo():
         if key in ['memtotal','memfree','swaptotal','swapfree','hugepages_total', 'hugepages_free','hugepagesize']:
             info[key] = int(val)
     return info
-    
+
 def uname():
     info = dict()
-    sysname, nodename, release, version, machine = os.uname()  
+    sysname, nodename, release, version, machine = os.uname()
     info = {
         'sysname': sysname,
         'nodename': nodename,
@@ -296,7 +311,7 @@ def hostinfo(output=None):
         'cpuinfo':     cpuinfo(),
         'devices':     devices(),
         'dist':        dist(),
-        'filesystems': filesystems(),                
+        'filesystems': filesystems(),
         'hostname':    socket.gethostbyaddr(socket.gethostname())[0],
         'ipaddr':      ipaddr(),
         'meminfo':     meminfo(),
@@ -320,7 +335,7 @@ def hostinfo(output=None):
 
 outfile = '/tmp/%s.json' % name
 
-parser = argparse.ArgumentParser(description='system info collector', epilog=helptext, 
+parser = argparse.ArgumentParser(description='system info collector', epilog=helptext,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
 parser.add_argument("-D", "--debug",     action="store_true", help="Debug (Show errors)")
