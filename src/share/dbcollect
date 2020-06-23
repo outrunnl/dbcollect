@@ -3,15 +3,15 @@
 """dbcollect: Collect Oracle database and OS info for all oratab instances"""
 
 helptext = """This tool collects OS and database information and AWR/Statspack
-reports for all normal database instances listed in 
+reports for all normal database instances listed in
 /etc/oratab (not starting with + or -).
-For this, Oracle SQL*Plus is called to generate the AWRs 
+For this, Oracle SQL*Plus is called to generate the AWRs
 and dbinfo and some OS files (including SAR data) as well as
 command output from some commands is collected.
 The AWR files as well as the system info reports are placed
 in a ZIP file, by default /tmp/[hostname]-dbcollect.zip.
 
-SAR requires sysstat to be installed and 
+SAR requires sysstat to be installed and
 enabled (in /etc/cron.d/sysstat).
 
 Runs as Oracle user (typically, 'oracle') and requires sysdba
@@ -22,7 +22,7 @@ other user specified by the '-u' option.
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2019, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = "1.0.10"
+__version__   = "1.0.11"
 
 import os, sys, socket, subprocess, argparse, pwd, grp
 from getpass import getuser
@@ -181,9 +181,12 @@ else:
     try:
         zip = Zipfile(outfile)
         genawrs(args.days)
-        subprocess.call([os.path.join(topdir, 'syscollect')])
-        zip.move('/tmp/syscollect.json')
-        zip.move('/tmp/syscollect.log')
+        try:
+            subprocess.call([os.path.join(topdir, 'syscollect')])
+            zip.move('/tmp/syscollect.json')
+            zip.move('/tmp/syscollect.log')
+        except:
+            print "syscollect failed, skipping..."
         sarlogs()
     except KeyboardInterrupt:
         os.unlink(outfile)
