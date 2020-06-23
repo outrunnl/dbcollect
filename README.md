@@ -10,7 +10,7 @@ the output of some commands, as well as AWR or Statspack reports for each
 database instance, and other database information.
 
 The results are collected in a ZIP file named
-/tmp/<hostname>-dbcollect.zip
+/tmp/`<`hostname>-dbcollect.zip
 
 ## Install
 
@@ -25,16 +25,17 @@ Then install dbcollect:
 
 `yum install dbcollect`
 
+If you don't want to install the RPM, follow the UNIX / Manual install procedure below.
+
 ### Unix / Manual install
 
 Download and unpack the ZIP archive from:
 
 [latest version](https://github.com/outrunnl/dbcollect/releases/latest)
 
+## Info collected by dbcollect:
 
-
-Info collected by dbinfo:
-
+- AWR or Statspack reports for a default period of about 10 days
 - Database configuration (such as version, dbname, database and system settings)
 - Database size
 - Core database file info (datafiles, tempfiles, redo logs, control files)
@@ -44,6 +45,7 @@ Info collected by dbinfo:
 - ASM disk group info
 - Init parameters
 - Feature usage
+- Linux: CPU, memory, disks, network interfaces etc, SAR data
 
 More collectors may be added in the future.
 
@@ -78,9 +80,12 @@ By default, dbcollect collects the last 8 days of AWR/Statspack data. To change,
 
 `dbcollect --days 14`
 
-### Non-Linux systems
+### Non-Linux (UNIX) systems
 
-UNIX systems may not have Python installed, in that case you can run the SQL scripts separately per DB instance.
+If Python (2) is installed, just run 'dbcollect' - it will fail on the 'syscollect' part that retrieves Linux information but will still
+get all the Oracle related information.
+
+If Python is not installed, you can run the SQL scripts separately per DB instance:
 
 
 `@collect-awr [days] [offset]`
@@ -91,6 +96,7 @@ Where [days] is the number of full days to collect, and [offset] is the number o
 
 ## Requirements
 
+- Python 2 installed (to run dbcollect vs separate scripts)
 - Oracle RDBMS 11g or higher, SQL*Plus configured
 - 'zip' and 'unzip' available on $ORACLE_HOME/bin/ (usually this is the case)
 - SYS credentials
