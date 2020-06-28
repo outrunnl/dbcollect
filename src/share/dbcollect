@@ -22,7 +22,7 @@ other user specified by the '-u' option.
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2019, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = "1.0.11"
+__version__   = "1.0.12"
 
 import os, sys, socket, subprocess, argparse, pwd, grp
 from getpass import getuser
@@ -60,6 +60,19 @@ def issarfile(f):
         if bytes == '\x96\xd5':
             return True
     return False
+
+def procexists(name):
+    """Return True if process with name exists. Not case sensitive"""
+    proc = subprocess.Popen('ps -eo comm'.split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    if proc.returncode == 0:
+        for line in stdout.splitlines():
+            words = line.split()
+            if name.lower() in words[0].lower():
+                return True
+        return False
+    else:
+        print('error', stderr, proc.returncode)
 
 class Zipfile:
     """Zipfile class"""
@@ -130,9 +143,7 @@ def genawrs(days):
         for line in oratab.readlines():
             if line[0].isalpha():
                 sid, orahome, enabled = line.rstrip('\n').split(':')
-                proc = subprocess.Popen(('pgrep -xf ora_pmon_%s' % sid).split(), stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-                proc.communicate()
-                if proc.returncode == 0:
+                if procexists('ora_pmon_%s' % sid):
                     spool = os.path.join('/tmp','dbinfo-%s.txt' % sid)
                     dbinfo = os.path.join(topdir,'dbinfo.sql')
                     getawr = os.path.join(topdir, scriptname)
