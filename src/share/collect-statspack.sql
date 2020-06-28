@@ -3,7 +3,7 @@
 -- Description : collect statspack and other database information
 -- Original    : Graham Thornton (oraclejedi@gmail.com)
 -- Updates     : Bart Sjerps <bart@outrun.nl>
--- Version     : 1.7
+-- Version     : 1.8.0
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
 -- Usage: sp_collect [days] [offset]
@@ -19,7 +19,7 @@
 -- * privileges to access the performance views, such as the SYSTEM account
 -- * AWR retention > 1 week (10080 minutes), interval max 60 minutes (1 hour)
 --
--- This script generates Statspack reports in txt format. 
+-- This script generates Statspack reports in txt format.
 -- Default is 10 days of snapshots starting 11 days ago,
 -- including yesterday. The output is a zip file containing the generated reports.
 -- Both temp files and the final zip file are created in the current directory,
@@ -64,7 +64,7 @@ select name || '_statspack_&curdate' || '.zip' zipfile from v$database;
 ----------------------------------------------------------------
 -- Test if statspack tables exist
 ----------------------------------------------------------------
-prompt here
+
 set term on serveroutput on
 
 DECLARE
@@ -106,7 +106,7 @@ WITH reports AS (SELECT snap_id
   , lag(startup_time,1) over (order by instance_number,snap_id) last_startup_time
   FROM STATS$SNAPSHOT),
   INFO AS (SELECT dbid
-  , name 
+  , name
   , interval '&days'   DAY ndays
   , interval '&offset' DAY offset
   , interval '1'       DAY oneday

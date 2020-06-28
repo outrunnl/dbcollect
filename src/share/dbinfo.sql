@@ -21,7 +21,7 @@ define dbinfo_version = '1.1.1' -- Set version
 -- This script uses only SELECT and SQL*Plus formatting/reporting statements,
 -- will not modify (update) any tables and therefore is safe to use on
 -- production systems.
--- 
+--
 -- Revision history:
 -- 1.0   - first version
 -- 1.0.1 - Added TAB OFF to avoid messed up formatting (Bart Sjerps)
@@ -169,14 +169,14 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB ON REPORT
 
-WITH STATS AS (select 
+WITH STATS AS (select
     decode(file_type,'PIECE','BACKUP PIECE',file_type) filetype
   , compressed
-  , bytes 
-  FROM v$backup_files 
+  , bytes
+  FROM v$backup_files
   WHERE STATUS='AVAILABLE' AND file_type IN ('COPY','PIECE','ARCHIVED LOG')
   UNION ALL
-  SELECT 'FLASHBACKLOG' type, '', bytes FROM v$flashback_database_logfile 
+  SELECT 'FLASHBACKLOG' type, '', bytes FROM v$flashback_database_logfile
 )
 SELECT filetype, compressed compr, sum(bytes)/1024/1024 size_mb, count(*) files FROM stats
 GROUP BY filetype, compressed
@@ -206,7 +206,7 @@ WITH DF AS (SELECT tablespace_name
 ), TS AS ( SELECT tablespace_name
   , DECODE(contents,'PERMANENT',DECODE(extent_management,'LOCAL',DECODE(allocation_type,'UNIFORM','LM-UNI','LM-SYS'),'DM'),'TEMPORARY','TEMP',contents) ts_type
   , SUBSTR(replace(replace(compress_for,'QUERY', 'Q'),'ARCHIVE','A'),1,6) COMPR
-  , ENCRYPTED 
+  , ENCRYPTED
   FROM dba_tablespaces
 )
 SELECT DF.tablespace_name ts_name
@@ -250,7 +250,7 @@ BREAK ON REPORT
 COMPUTE SUM LABEL 'Total' OF OBJECTS SIZE_MB ON REPORT
 
 SELECT segment_type segtype, count(*) objects, sum(bytes)/1024/1024 size_mb
-FROM dba_segments 
+FROM dba_segments
 GROUP BY segment_type
 ORDER BY size_mb
 /

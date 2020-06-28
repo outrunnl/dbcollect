@@ -3,13 +3,14 @@
 -- Description : collect AWR and other database information
 -- Original    : Graham Thornton (oraclejedi@gmail.com)
 -- Updates     : Bart Sjerps <bart@outrun.nl>
--- Version     : 1.7.1
+-- Version     : 1.8.0
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
--- Usage: @awr-collect [days] [offset]
+-- Usage: @awr-collect [days] [offset] [force]
 -- Parameters:
 --   days:   amount of days to collect (default 8)
 --   offset: shift collect period N days back (default 0 = include today's reports)
+--   force:  if 0 (default) - check for AWR usage, if 1 or higher - force AWR reports
 --
 -- Requires:
 -- * Oracle 11g release 1 or higher
@@ -29,10 +30,10 @@
 --
 -- Please note that the use of AWR requires an optional license:
 -- The script will check if AWR has been used before, otherwise it fails with
--- an error.
--- 
+-- an error. Override the check with the force parameter.
+--
 -- ONLY USE THIS SCRIPT IF YOU HAVE THE RESPECTIVE LICENSE -
--- Otherwise use the STATSPACK script.  
+-- Otherwise use the STATSPACK script.
 
 -- Update feature usage: EXEC DBMS_FEATURE_USAGE_INTERNAL.exec_db_usage_sampling(SYSDATE);
 --
@@ -49,7 +50,7 @@
 --
 -- Troubleshooting:
 -- * If you have licenses for AWR but the script complains, then run 1 awr
---   report manually, then update licensed feature usage using: 
+--   report manually, then update licensed feature usage using:
 --   EXEC DBMS_FEATURE_USAGE_INTERNAL.exec_db_usage_sampling(SYSDATE);
 -- * If the AWR interval or retention is incorrect:
 --   EXEC DBMS_WORKLOAD_REPOSITORY.modify_snapshot_settings(interval => 60, retention => 10080);
@@ -72,11 +73,14 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 -- command line parameters / default values
 column 1 new_value 1 noprint
 column 2 new_value 2 noprint
-select '' "1", '' "2" from dual where rownum = 0;
+column 3 new_value 3 noprint
+select '' "1", '' "2", '' "3" from dual where rownum = 0;
 define days   = &1 "10"
 define offset = &2 "0"
+define force  = &3 "0"
 undef 1
 undef 2
+undef 3
 
 col dbname  new_val dbname
 col zipfile new_val zipfile
@@ -92,22 +96,20 @@ select name || '_awr_&curdate' || '.zip' zipfile from v$database;
 ----------------------------------------------------------------
 
 set term on serveroutput on
-
 -- Test if AWR is used before - if so, we assume it is licensed
 -- then get the rest of the info
 DECLARE
+  force    number := '&force';
   awrusage number := 0; -- is AWR report used before
   snap_ret number := 0; -- retention in minutes
   snap_int number := 0; -- interval in minutes
 BEGIN
   SELECT extract(day from 24*60*snap_interval) INTO snap_int FROM dba_hist_wr_control where dbid = (select dbid from v$database);
   SELECT extract(day from 24*60*retention)     INTO snap_ret FROM dba_hist_wr_control where dbid = (select dbid from v$database);
-  SELECT detected_usages INTO awrusage
-  FROM dba_feature_usage_statistics u1
+  SELECT detected_usages INTO awrusage FROM dba_feature_usage_statistics u1
   WHERE u1.version = (SELECT MAX(u2.version) FROM dba_feature_usage_statistics u2 WHERE u2.name = u1.name)
   AND DBID = (SELECT dbid FROM v$database) AND name = 'AWR Report';
-  -- Force running even without detected AWR usage: change next line to: IF 1 = 0 THEN
-  IF awrusage = 0 THEN
+  IF awrusage + force = 0 THEN
     raise_application_error(-20101, 'Oracle AWR not used before (not licensed?)');
   END IF;
   IF snap_int > 60 THEN
@@ -130,15 +132,16 @@ END;
 --------------------------------------------------------
 -- create a temporary spool file for report extraction -
 --------------------------------------------------------
+
 spool &TMPDIR/collect_awr_tmp.sql
 set feedback off term off trims on lines 999 pages 0
 
 alter session set nls_date_format='YYYY-MM-DD HH24:MI:SS';
 alter session set nls_timestamp_format='YYYY-MM-DD HH24:MI:SS';
 
-select 'host echo Generating AWR reports. Please wait ...' || chr(10)
+SELECT 'host echo Generating AWR reports. Please wait ...' || chr(10)
   || 'set echo off head off feed off trims on lines 999 pages 50000' || chr(10)
-  || 'alter session set nls_date_language=american;' header from dual;
+  || 'alter session set nls_date_language=american;' header FROM dual;
 
 WITH reports AS (SELECT snap_id
   , instance_number i
@@ -151,12 +154,12 @@ WITH reports AS (SELECT snap_id
   , lag(startup_time,1) over (order by instance_number,snap_id) last_startup_time
   FROM dba_hist_snapshot),
   INFO AS (SELECT dbid
-  , name 
+  , name
   , interval '&days'   DAY ndays
   , interval '&offset' DAY offset
   , interval '1'       DAY oneday
   FROM v$database)
-SELECT 'set term on escape off' || chr(10) 
+SELECT 'set term on escape off' || chr(10)
   || 'prompt creating awr report for snap id ' || snap_id || ' (' || endtime || ')' || chr(10)
   || 'set term off' || chr(10)
   || 'spool &TMPDIR/' || name || '_awrrpt_' || i || '_' || prev_id  || '_' || snap_id || '.html' || chr(10)
@@ -164,7 +167,7 @@ SELECT 'set term on escape off' || chr(10)
   || reports.dbid || ','
   || i            || ','
   || prev_id      || ','
-  || snap_id      || '));' || chr(10) 
+  || snap_id      || '));' || chr(10)
   || 'spool off'
 FROM reports
 JOIN info on reports.dbid = info.dbid                      -- ignore data from other DB
