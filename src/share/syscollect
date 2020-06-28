@@ -333,19 +333,14 @@ def hostinfo(output=None):
 # Main section - parsing options etc
 # ---------------------------------------------------------------------------
 
-outfile = '/tmp/%s.json' % name
-
 parser = argparse.ArgumentParser(description='system info collector', epilog=helptext,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
 parser.add_argument("-D", "--debug",     action="store_true", help="Debug (Show errors)")
 parser.add_argument("-s", "--show" ,     action="store_true", help="Show results")
-parser.add_argument("-o", "--output",    type=str, help="output file (%s)" % outfile, default=outfile)
+parser.add_argument("-d", "--tmpdir",    type=str, help="output dir (/tmp)", default='/tmp')
 
 args = parser.parse_args()
-
-if not args.debug:
-    redir_stderr('/tmp/%s.log' % name)
 
 if args.version:
     print "Name:      %s" % name
@@ -357,4 +352,8 @@ else:
     if args.show:
         hostinfo()
     else:
-        hostinfo(args.output)
+        collectfile = os.path.join(args.tmpdir,'syscollect.json')
+        collectlog = os.path.join(args.tmpdir,'syscollect.log')
+        if not args.debug:
+            redir_stderr(collectlog)
+        hostinfo(collectfile)
