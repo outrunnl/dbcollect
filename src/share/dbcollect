@@ -120,14 +120,11 @@ def sarlogs():
             except:
                 print 'writing to ZIP file failed,', f
 
-def collectora(days, force):
+def collectora(days, force=0):
     """Run the collect-awr.sql and dbinfo scripts for each instance"""
-    if days == None:
-        days = ''
     if not os.path.isfile('/etc/oratab'):
         print 'oratab not found'
         return
-    force_flag = 1 if force else 0
     if args.statspack:
         scriptname = 'collect-statspack.sql'
     else:
@@ -148,7 +145,7 @@ def collectora(days, force):
                         "define ZIP    = $ORACLE_HOME/bin/zip\n" \
                         "define REMOVE = /bin/rm\n" \
                         "define SEP    = /\n" % tmpdir
-                    sql += '@%s %s %s %s' % (getawr, days, 0, force_flag)
+                    sql += '@%s %d %d %d' % (getawr, days, 0, force)
                     sqlplus(sid, orahome, sql)
                 else:
                     print 'skipping instance %s (pmon process for instance not running)' % sid
@@ -161,14 +158,13 @@ def collectora(days, force):
 # Main section - parsing options etc
 # ---------------------------------------------------------------------------
 
-days = None
 parser = argparse.ArgumentParser(description='AWR and system info collector', epilog=helptext)
 parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
 parser.add_argument("-S", "--statspack", action="store_true", help="Run statspack instead of AWR")
 parser.add_argument(      "--force",     action="store_true", help="Run AWR reports even if AWR usage (license) is not detected")
 parser.add_argument("-o", "--output",    type=str, help="output file, default <host>-dbcollect.zip")
 parser.add_argument("-u", "--user",      type=str, help="Run as user (default oracle)", default='oracle')
-parser.add_argument("-d", "--days",      type=int, help="Number of days to collect (default 10)")
+parser.add_argument("-d", "--days",      type=int, help="Number of days to collect (default 10)", default=10)
 args = parser.parse_args()
 
 if args.version:
@@ -195,7 +191,7 @@ else:
                 print "Creating zipfile failed: %s" % e
             exit()
         try:
-            force = True if args.force else False
+            force = 1 if args.force else 0
             collectora(args.days, force)
         except Exception as e:
             print "collect Oracle failed(%s), skipping..." % e
