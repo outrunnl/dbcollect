@@ -23,7 +23,7 @@ other user specified by the '-u' option.
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2019, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = "1.0.12"
+__version__   = "1.1.0"
 
 import os, sys, socket, argparse, tempfile, pwd, grp
 from subprocess import Popen, PIPE, call
