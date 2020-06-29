@@ -14,7 +14,7 @@ echo -n "dbcollect version " > "$top"/version.txt
 git describe >> "$top"/version.txt
 
 # Get a PDF version of the README.md
-curl https://gitprint.com/outrunnl/dbcollect?download -o "$top"/README.pdf
+curl -f https://gitprint.com/outrunnl/dbcollect?download -o "$top"/README.pdf
 
 # change to one level above gittop
 cd ${top}/..
@@ -23,6 +23,3 @@ cd ${top}/..
 find $top -maxdepth 1 -name "dbcollect*.zip" -print -delete
 zip "$top"/dbcollect-latest.zip -j $(basename $top)/src/share/* $(basename $top)/{version.txt,README.pdf}
 unzip -l "$top"/dbcollect-latest.zip
-
-
-

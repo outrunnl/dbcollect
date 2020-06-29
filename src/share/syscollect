@@ -114,17 +114,13 @@ def ipaddr():
         s.close()
     return ip
 
-def timestamp():
-    """Get timestamp, timezone, startup and uptime. Timestamps in UTC"""
+def startuptime():
+    """Get startup and uptime"""
     info = dict()
-    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
-    tz = strftime("%Z", gmtime())
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
         startup = datetime.utcnow() - timedelta(seconds=uptime_seconds)
     info = {
-        'timestamp': timestamp,
-        'timezone': strftime("%Z", gmtime()),
         'startup': startup.strftime("%Y-%m-%d %H:%M"),
         'uptime': int(uptime_seconds)
     }
@@ -306,23 +302,29 @@ def dist():
     return info
 
 def hostinfo(output=None):
-    info = {
-        'build':       __version__,
-        'cpuinfo':     cpuinfo(),
-        'devices':     devices(),
-        'dist':        dist(),
-        'filesystems': filesystems(),
-        'hostname':    socket.gethostbyaddr(socket.gethostname())[0],
-        'ipaddr':      ipaddr(),
-        'meminfo':     meminfo(),
-        'mounts':      mounts(),
-        'interfaces':  network(),
-        'release':     getfile('/etc/system-release'),
-        #'timestamp':   timestamp(),
-        'uname':       uname(),
-        'sysvendor':   getfile('/sys/class/dmi/id/sys_vendor'),
-    }
-    info.update(timestamp())
+    info = dict()
+    info['build']         = __version__
+    info['system']        = platform.system()         # SunOS | Linux | AIX
+    info['processor']     = platform.processor()      # x86_64 | i386 | sparc | powerpc
+    info['hostname']      = platform.uname()[1]       # Hostname
+    info['pythonversion'] = platform.python_version()
+    info['ipaddr']        = ipaddr()
+    info['uname']         = uname()
+    info['timestamp']     = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+    info['timezone']      = strftime("%Z", gmtime())
+
+    if platform.system() == 'Linux':
+        info['cpuinfo']     = cpuinfo()
+        info['devices']     = devices()
+        info['dist']        = dist()
+        info['filesystems'] = filesystems()
+        info['meminfo']     = meminfo()
+        info['mounts']      = mounts()
+        info['interfaces']  = network()
+        info['release']     = getfile('/etc/system-release')
+        info['sysvendor']   = getfile('/sys/class/dmi/id/sys_vendor')
+        info.update(timestamp())
+
     if output:
         with open(output, 'w') as f:
             json.dump(info, f, indent=2,sort_keys=True)
@@ -338,7 +340,7 @@ parser = argparse.ArgumentParser(description='system info collector', epilog=hel
 parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
 parser.add_argument("-D", "--debug",     action="store_true", help="Debug (Show errors)")
 parser.add_argument("-s", "--show" ,     action="store_true", help="Show results")
-parser.add_argument("-d", "--tmpdir",    type=str, help="output dir (/tmp)", default='/tmp')
+parser.add_argument("-d", "--dir",       type=str, help="output dir (/tmp)", default='/tmp')
 
 args = parser.parse_args()
 
@@ -352,8 +354,8 @@ else:
     if args.show:
         hostinfo()
     else:
-        collectfile = os.path.join(args.tmpdir,'syscollect.json')
-        collectlog = os.path.join(args.tmpdir,'syscollect.log')
+        collectfile = os.path.join(args.dir,'syscollect.json')
+        collectlog = os.path.join(args.dir,'syscollect.log')
         if not args.debug:
             redir_stderr(collectlog)
         hostinfo(collectfile)
