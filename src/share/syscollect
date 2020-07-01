@@ -27,7 +27,7 @@ the system as it makes no changes other than writing the JSON and error log file
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2019, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = 200622
+__version__   = 200629
 
 import sys, os, argparse, json, platform
 import socket, subprocess
