@@ -75,7 +75,7 @@ class Zipfile:
     def __init__(self, path):
         """Open the zip file with path"""
         # Directory name within zip file are defined by fqdn
-        self.fqdn = socket.gethostbyaddr(socket.gethostname())[0]
+        self.fqdn = socket.getfqdn()
         self.path = path
         self.zip = None
         print 'Creating zip file %s' % self.path
