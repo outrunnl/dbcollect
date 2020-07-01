@@ -179,7 +179,7 @@ else:
         if not outfile.endswith('.zip'):
             outfile += '.zip'
     else:
-        outfile = os.path.join('/tmp', "%s-%s" % (socket.gethostbyaddr(socket.gethostname())[0], 'dbcollect.zip'))
+        outfile = os.path.join('/tmp', "%s-%s" % (socket.getfqdn(), 'dbcollect.zip'))
     try:
         tmpdir = tempfile.mkdtemp(prefix='dbcollect-')
         try:
