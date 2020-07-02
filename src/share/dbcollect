@@ -70,6 +70,17 @@ def procexists(name):
     else:
         print('error', stderr, proc.returncode)
 
+def getfile(paths):
+    """try each file from paths until readable, try next if not exists or no access"""
+    for path in paths:
+        try:
+            with open(path) as f:
+                return f.read()
+        except IOError as e:
+            if e.errno in [errno.ENOENT, errno.EACCES]:
+                continue
+            raise
+
 class Zipfile:
     """Zipfile class"""
     def __init__(self, path):
@@ -120,35 +131,45 @@ def sarlogs():
             except:
                 print 'writing to ZIP file failed,', f
 
+
+        words = line.split(':')
+        if len(words) != 3:
+            continue
+        if words[0].startswith('#'):
+            continue
+        sid, orahome, enabled = words
+
 def collectora(days, force=0):
     """Run the collect-awr.sql and dbinfo scripts for each instance"""
-    if not os.path.isfile('/etc/oratab'):
+    oratab = getfile(['/etc/oratab','/var/opt/oracle/oratab'])
+    if not oratab:
         print 'oratab not found'
         return
     if args.statspack:
         scriptname = 'collect-statspack.sql'
     else:
         scriptname = 'collect-awr.sql'
-    with open('/etc/oratab') as oratab:
-        for line in oratab.readlines():
-            if line[0].isalpha():
-                sid, orahome, enabled = line.rstrip('\n').split(':')
-                if procexists('ora_pmon_%s' % sid):
-                    spool  = os.path.join(tmpdir,'dbinfo-%s.txt' % sid)
-                    dbinfo = os.path.join(topdir,'dbinfo.sql')
-                    getawr = os.path.join(topdir, scriptname)
-                    print 'getting database info for %s' % sid
-                    sql = "set term off\n@%s %s"  % (dbinfo, spool)
-                    sqlplus(sid, orahome, sql)
-                    print 'getting performance reports for %s' % sid
-                    sql = "define TMPDIR = %s\n" \
-                        "define ZIP    = $ORACLE_HOME/bin/zip\n" \
-                        "define REMOVE = /bin/rm\n" \
-                        "define SEP    = /\n" % tmpdir
-                    sql += '@%s %d %d %d' % (getawr, days, 0, force)
-                    sqlplus(sid, orahome, sql)
-                else:
-                    print 'skipping instance %s (pmon process for instance not running)' % sid
+    for line in oratab.splitlines():
+        words = line.split(':')
+        if len(words) != 3: continue
+        if words[0].startswith('#'): continue
+        sid, orahome, enabled = words
+        if procexists('ora_pmon_%s' % sid):
+            spool  = os.path.join(tmpdir,'dbinfo-%s.txt' % sid)
+            dbinfo = os.path.join(topdir,'dbinfo.sql')
+            getawr = os.path.join(topdir, scriptname)
+            print 'getting database info for %s' % sid
+            sql = "set term off\n@%s %s"  % (dbinfo, spool)
+            sqlplus(sid, orahome, sql)
+            print 'getting performance reports for %s' % sid
+            sql = "define TMPDIR = %s\n" \
+                "define ZIP    = $ORACLE_HOME/bin/zip\n" \
+                "define REMOVE = /bin/rm\n" \
+                "define SEP    = /\n" % tmpdir
+            sql += '@%s %d %d %d' % (getawr, days, 0, force)
+            sqlplus(sid, orahome, sql)
+        else:
+            print 'skipping instance %s (pmon process for instance not running)' % sid
     for f in os.listdir(tmpdir):
         if '_awr_' in f and f.endswith('.zip') or f.startswith('dbinfo'):
             path = os.path.join(tmpdir, f)
