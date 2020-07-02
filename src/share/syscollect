@@ -323,7 +323,6 @@ def hostinfo(output=None):
         info['interfaces']  = network()
         info['release']     = getfile('/etc/system-release')
         info['sysvendor']   = getfile('/sys/class/dmi/id/sys_vendor')
-        info.update(timestamp())
 
     if output:
         with open(output, 'w') as f:
