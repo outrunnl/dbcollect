@@ -131,14 +131,6 @@ def sarlogs():
             except:
                 print 'writing to ZIP file failed,', f
 
-
-        words = line.split(':')
-        if len(words) != 3:
-            continue
-        if words[0].startswith('#'):
-            continue
-        sid, orahome, enabled = words
-
 def collectora(days, force=0):
     """Run the collect-awr.sql and dbinfo scripts for each instance"""
     oratab = getfile(['/etc/oratab','/var/opt/oracle/oratab'])
