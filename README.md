@@ -10,7 +10,7 @@ the output of some commands, as well as AWR or Statspack reports for each
 database instance, and other database information.
 
 The results are collected in a ZIP file named
-/tmp/`<`hostname>-dbcollect.zip
+/tmp/dbcollect-`<`hostname>.zip
 
 ## Install
 
@@ -29,9 +29,15 @@ If you don't want to install the RPM, follow the UNIX / Manual install procedure
 
 ### Unix / Manual install
 
+Make sure Python is available (dbcollect uses Python 2 but will switch to Python 3 in the future).
+Python (2) is installed by default on Linux systems. On Solaris it is usually also available.
+On AIX you need to install it separately.
+
 Download and unpack the ZIP archive from:
 
 [latest version](https://github.com/outrunnl/dbcollect/releases/latest)
+
+Make sure the directory is readable by all users.
 
 ## Info collected by dbcollect:
 
@@ -46,6 +52,8 @@ Download and unpack the ZIP archive from:
 - Init parameters
 - Feature usage
 - Linux: CPU, memory, disks, network interfaces etc, SAR data
+- AIX / Solaris: basic system info (more TBD). SAR TBD.
+- Windows: Not yet supported (TBD)
 
 More collectors may be added in the future.
 
@@ -60,7 +68,8 @@ Just run
 
 If installed from ZIP file:
 
-Go to the top directory and run
+- Make sure the directory in which you unzip is readable for all users.
+- Go to the top directory and run
 `./dbcollect`
 
 When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 7 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
@@ -118,8 +127,9 @@ Where [days] is the number of full days to collect, and [offset] is the number o
 
 ## Safety
 
+- If you run as 'root', dbcollect switches to a non-root user early. By default this is 'oracle', use '-u user' to use another user
 - The scripts only contain SELECT statements and SQL*Plus formatting/reporting commands. No data will be changed directly on the database
-- The collect scripts can generate a large number of files in /tmp. Make sure there is enough space.
+- The collect scripts can generate a large number of files in /tmp - usually a few hundred MB. Make sure there is enough space.
 
 ## License
 
@@ -128,7 +138,7 @@ _dbcollect_ is licensed under GPLv3. See "COPYING" for more info.
 ## Author
 
 Bart Sjerps (bart &lt;at&gt; outrun &lt;dot&gt; nl) - with great contributions from my colleagues at DellEMC.<br>
-Original version and other improvements by Graham Thornton (oraclejedi &lt;at&gt; gmail &lt;dot&gt; com).
+Original collect-awr version and other improvements by Graham Thornton (oraclejedi &lt;at&gt; gmail &lt;dot&gt; com).
 
 
 
