@@ -152,7 +152,7 @@ def collectora(days, force=0):
     for line in oratab.splitlines():
         words = line.split(':')
         if len(words) != 3: continue
-        if words[0].startswith('#'): continue
+        if not words[0][0].isalpha(): continue
         sid, orahome, enabled = words
         if procexists('ora_pmon_%s' % sid):
             spool  = os.path.join(tmpdir,'dbinfo-%s.txt' % sid)
