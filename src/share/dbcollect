@@ -59,7 +59,7 @@ def issarfile(f):
 
 def procexists(name):
     """Return True if process with name exists. Not case sensitive"""
-    proc = Popen('ps -eo comm'.split(), stdout = PIPE, stderr = PIPE)
+    proc = Popen('ps -eo args'.split(), stdout = PIPE, stderr = PIPE)
     stdout, stderr = proc.communicate()
     if proc.returncode == 0:
         for line in stdout.splitlines():
