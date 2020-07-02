@@ -4,7 +4,7 @@
 -- Author      : Bart Sjerps <bart@outrun.nl>
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
-define dbinfo_version = '1.1.1' -- Set version
+define dbinfo_version = '1.1.2' -- Set version
 -----------------------------------------------------------------------------
 -- Usage: @dbinfo [spool_file]
 -- Requires: Oracle database >= 11.2
@@ -95,6 +95,7 @@ WITH stats as (select stat_name name
 )
 select           'dbname' metric,  name shortval            from v$database
 union all select 'hostname',       host_name                from v$instance
+union all select 'platform',       platform_name            from v$database
 union all select 'report date',    to_char(sysdate)         from dual
 union all select 'dbid',           to_char(dbid)            from v$database
 union all select 'instance',       instance_name            from v$instance
