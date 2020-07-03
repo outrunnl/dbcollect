@@ -64,7 +64,7 @@ def procexists(name):
     if proc.returncode == 0:
         for line in stdout.splitlines():
             words = line.split()
-            if name.lower() in words[0].lower():
+            if name.lower() == words[0].lower():
                 return True
         return False
     else:
