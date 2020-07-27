@@ -59,12 +59,25 @@ More collectors may be added in the future.
 
 ## Usage
 
+### Important note
+
+DBCollect by default attempts to collect Oracle AWR reports in HTML format. For this, Oracle requires Diagnostics Pack (see Oracle doc id 1490798.1).
+DBCollect can not directly determine if you have this license or not. As an indirect method, it checks the dba_feature_usage_statistics table whether "AWR Reports" has been used previously or not. If this is NOT the case, dbcollect produces an error message ORA-20101 "Oracle AWR not used before (not licensed?)" and aborts.
+
+It is possible that you are licensed correctly but never used AWR reports on this specific database - in that case, DBCollect thinks you are not licensed and gives up.
+If you are NOT licensed for diagnostics pack then you can use Statspack instead (see section below)
+If you ARE licensed, you can run dbcollect with the --force option. DBcollect will ignore the AWR detection and just generate the reports.
+
+More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.com/articles/misc/tracking-database-feature-usage)
+
 ### Basic operation
 
 If installed from the RPM package:
 Just run 
 
 `dbcollect`
+
+as 'oracle' user or root (assuming the database runs under user 'oracle')
 
 If installed from ZIP file:
 
@@ -74,28 +87,42 @@ If installed from ZIP file:
 
 When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 7 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
+
+### Oracle running as other user than 'oracle'
+
+DBCollect by default switches to user 'oracle' if you run it as root. If you do NOT run as root, run it as the user that Oracle database runs as.
+If you run as root and the database user is NOT 'oracle', use the -u/--user option:
+
+`dbcollect --user dbuser`
+
 ### Statspack
 
 By default, dbcollect attempts to run AWR reports but has a built-in protection against license violations if no previous AWR usage can be detected. If you don't have Diagnostics/Tuning package, you can run Statspack reports instead, provided statspack is running and collecting metrics.
-
 
 The collection period can be changed with parameters as long as reports are available. Run dbcollect with the --statspack option:
 
 `dbcollect --statspack`
 
+Statspack is not configured by default on Oracle but requires initial setup.
+
+To setup Statspack, see [Oracle-base: Statspack](https://oracle-base.com/articles/8i/statspack-8i)
+
+After setup, you need to wait 7 days to let it collect performance information before running dbcollect.
+
 ### Changing collect period
 
-By default, dbcollect collects the last 8 days of AWR/Statspack data. To change, use the --days option:
+By default, dbcollect collects the last 10 days of AWR/Statspack data. To change, use the --days option:
 
 `dbcollect --days 14`
 
 ### Non-Linux (UNIX) systems
 
-If Python (2) is installed, just run 'dbcollect' - it will fail on the 'syscollect' part that retrieves Linux information but will still
+DBCollect now partly supports AIX and Solaris systems. You need to have Python 2 installed.
+
+Just run 'dbcollect' - it will fail on the 'syscollect' part that retrieves Linux information but will still
 get all the Oracle related information.
 
 If Python is not installed, you can run the SQL scripts separately per DB instance:
-
 
 `@collect-awr [days] [offset]`
 
@@ -103,10 +130,13 @@ Where [days] is the number of full days to collect, and [offset] is the number o
 
 `@dbinfo` takes no parameters.
 
+Windows is not (yet) supported and requires running the sql scripts separately (like described above)
+
 ## Requirements
 
-- Python 2 installed (to run dbcollect vs separate scripts)
 - Oracle RDBMS 11g or higher, SQL*Plus configured
+- Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris)
+- Python 2 installed (to run dbcollect vs separate scripts)
 - 'zip' and 'unzip' available on $ORACLE_HOME/bin/ (usually this is the case)
 - SYS credentials
 - AWR or Statspack installed and configured

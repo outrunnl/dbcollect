@@ -88,6 +88,8 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT DATABASE INFO
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-- select product,VERSION, status from PRODUCT_COMPONENT_VERSION ; -- better?
+
 WITH stats as (select stat_name name
   , decode(stat_name, 'PHYSICAL_MEMORY_BYTES', round(value/1024/1024), value) value
   FROM  dba_hist_osstat

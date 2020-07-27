@@ -174,7 +174,7 @@ def devices():
             disk['symlinks'] = links
         dev = disk['name']
         #del disk['name']
-        for var in ['model','rev','queue_depth','vendor']:
+        for var in ['model','rev','queue_depth','vendor','serial']:
             p = os.path.join('/sys/class/block/%s/device/%s' % (dev, var))
             if os.path.isfile(p):
                 val = getfile(p).strip()
