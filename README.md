@@ -9,50 +9,44 @@ The main part is a Python tool that collects various system files and
 the output of some commands, as well as AWR or Statspack reports for each
 database instance, and other database information.
 
-The results are collected in a ZIP file named
-/tmp/dbcollect-`<`hostname>.zip
+The results are collected in a ZIP file named (default):
+`/tmp/dbcollect-<hostname>.zip`
 
-## Install
+## Download
 
-### Linux
-
-The easiest on RHEL-compatible systems is to install the RPM package.
-First, install the Outrun Extras repository:
-
-`yum install http://yum.outrun.nl/outrun-extras.rpm`
-
-Then install dbcollect:
-
-`yum install dbcollect`
-
-If you don't want to install the RPM, follow the UNIX / Manual install procedure below.
-
-### Unix / Manual install
-
-Make sure Python is available (dbcollect uses Python 2 but will switch to Python 3 in the future).
-Python (2) is installed by default on Linux systems. On Solaris it is usually also available.
-On AIX you need to install it separately.
-
-Download and unpack the ZIP archive from:
+Download the latest version here:
 
 [latest version](https://github.com/outrunnl/dbcollect/releases/latest)
 
-Make sure the directory is readable by all users.
+## Install
+
+No installation required, just download the dbcollect program and place it somewhere in the
+executable path (not in /tmp, /var/tmp or any other temporary directory).
+
+Suggestion: `/usr/local/bin`
+
+Make the program executable:
+
+`chmod 755 /usr/local/bin/dbcollect`
+(alternatively you can run it via `python dbcollect`)
+
+DBCollect is a Python 2 program, the system must have Python 2 installed.
+This is default on Linux and Solaris. On AIX it can be installed via AIX Toolbox, see
+[AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
 
 ## Info collected by dbcollect:
 
 - AWR or Statspack reports for a default period of about 10 days
 - Database configuration (such as version, dbname, database and system settings)
-- Database size
-- Core database file info (datafiles, tempfiles, redo logs, control files)
+- Database file info (sizes and settings of datafiles, tempfiles, redo logs, control files etc)
 - Additional database file info (backup, archive logs, flashback logs)
-- Tablespace details
-- Segment sizes
-- ASM disk group info
+- Tablespace details, Segment sizes, AWR/Statspack details
+- ASM disk group and disk info
 - Init parameters
 - Feature usage
-- Linux: CPU, memory, disks, network interfaces etc, SAR data
-- AIX / Solaris: basic system info (more TBD). SAR TBD.
+- UNIX/Linux: CPU, memory, disks, network interfaces etc
+- SAR: Binary SAR files (Linux) or SAR reports (UNIX)
+- HP/UX: Not supported (let me know if you need it)
 - Windows: Not yet supported (TBD)
 
 More collectors may be added in the future.
@@ -62,30 +56,31 @@ More collectors may be added in the future.
 ### Important note
 
 DBCollect by default attempts to collect Oracle AWR reports in HTML format. For this, Oracle requires Diagnostics Pack (see Oracle doc id 1490798.1).
-DBCollect can not directly determine if you have this license or not. As an indirect method, it checks the dba_feature_usage_statistics table whether "AWR Reports" has been used previously or not. If this is NOT the case, dbcollect produces an error message ORA-20101 "Oracle AWR not used before (not licensed?)" and aborts.
+DBCollect can not directly determine if you have this license or not. As an indirect method, it checks the dba_feature_usage_statistics table whether "AWR Reports" has been used previously or not.
+If this is NOT the case, dbcollect produces an error message "No prior AWR usage detected" and proceeds with the next database if any.
 
-It is possible that you are licensed correctly but never used AWR reports on this specific database - in that case, DBCollect thinks you are not licensed and gives up.
+It is possible that you are licensed correctly but never used AWR reports on this specific database - in that case,
+DBCollect thinks you are not licensed and gives up. 
+
+If you ARE licensed, you can run dbcollect with the --force option. DBcollect will only warn about the AWR detection and just generate the reports anyway.
+
+**Use the `--force` flag ONLY if you are sure you are correctly licensed!
+**
+
 If you are NOT licensed for diagnostics pack then you can use Statspack instead (see section below)
-If you ARE licensed, you can run dbcollect with the --force option. DBcollect will ignore the AWR detection and just generate the reports.
+
 
 More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.com/articles/misc/tracking-database-feature-usage)
 
 ### Basic operation
 
-If installed from the RPM package:
-Just run 
+In most cases you can just run
 
 `dbcollect`
 
 as 'oracle' user or root (assuming the database runs under user 'oracle')
 
-If installed from ZIP file:
-
-- Make sure the directory in which you unzip is readable for all users.
-- Go to the top directory and run
-`./dbcollect`
-
-When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 7 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
+When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
 
 ### Oracle running as other user than 'oracle'
@@ -97,9 +92,9 @@ If you run as root and the database user is NOT 'oracle', use the -u/--user opti
 
 ### Statspack
 
-By default, dbcollect attempts to run AWR reports but has a built-in protection against license violations if no previous AWR usage can be detected. If you don't have Diagnostics/Tuning package, you can run Statspack reports instead, provided statspack is running and collecting metrics.
-
-The collection period can be changed with parameters as long as reports are available. Run dbcollect with the --statspack option:
+By default, dbcollect attempts to run AWR reports but has a built-in protection against license violations
+if no previous AWR usage can be detected. If you don't have Diagnostics/Tuning package,
+you can run Statspack reports instead, provided statspack is running and collecting metrics:
 
 `dbcollect --statspack`
 
@@ -107,44 +102,36 @@ Statspack is not configured by default on Oracle but requires initial setup.
 
 To setup Statspack, see [Oracle-base: Statspack](https://oracle-base.com/articles/8i/statspack-8i)
 
-After setup, you need to wait 7 days to let it collect performance information before running dbcollect.
+After setup, you need to wait 7 to 10 days to let it collect performance information before running dbcollect.
 
 ### Changing collect period
 
-By default, dbcollect collects the last 10 days of AWR/Statspack data. To change, use the --days option:
+By default, dbcollect collects the last 10 days of AWR/Statspack data.
+
+To collect a longer period, use the --days option:
 
 `dbcollect --days 14`
 
+If you want to collect reports from a longer time ago (say, 20 days ago up to 10 days ago), use the offset option:
+
+`dbcollect --days 10 --offset 10`
+
 ### Non-Linux (UNIX) systems
 
-DBCollect now partly supports AIX and Solaris systems. You need to have Python 2 installed.
+DBCollect now supports AIX and Solaris systems. You need to have Python 2 installed.
 
-Just run 'dbcollect' - it will fail on the 'syscollect' part that retrieves Linux information but will still
-get all the Oracle related information.
-
-If Python is not installed, you can run the SQL scripts separately per DB instance:
-
-`@collect-awr [days] [offset]`
-
-Where [days] is the number of full days to collect, and [offset] is the number of days to shift back in time. For example, `@awr-collect 10 5` will collect reports between 15 and 5 days ago.
-
-`@dbinfo` takes no parameters.
-
-Windows is not (yet) supported and requires running the sql scripts separately (like described above)
+Windows is not (yet) supported.
 
 ## Requirements
 
-- Oracle RDBMS 11g or higher, SQL*Plus configured
+- Oracle RDBMS 11g or higher, SQL*Plus configured (dbcollect may work fine with Oracle 10g, mileage may vary)
 - Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris)
 - Python 2 installed (to run dbcollect vs separate scripts)
-- 'zip' and 'unzip' available on $ORACLE_HOME/bin/ (usually this is the case)
-- SYS credentials
+- SYS credentials (hence the 'oracle' user)
 - AWR or Statspack installed and configured
 - Retention at least 7 days (10080 minutes)
 - Interval maximum 1 hour (60 minutes)
-- On Windows: C:\Temp directory available (TEMP path can be changed in the collect-env.sql script)
-- Some free temp space for the generated files (typically a few 100 MB)
-- Free space in the current directory for the ZIP file(s)
+- Some free temp space for the generated files (typically a few 100 MB but can be larger depending on snapshot intervals and other factors)
 
 ## Known limitations and caveats
 
@@ -152,14 +139,21 @@ Windows is not (yet) supported and requires running the sql scripts separately (
 - Not all support files may be reported
 - Backup files, logs etc may no longer exist but still be reported. Best effort.
 - Very long names for files, tablespaces, disk groups etc may be truncated/wrapped
-- Very large sized elements or very large amounts of objects may result in `####` notation and no longer be useful. Current limits are 999 Terabyte, 10,000 files and 1M objects which should be enough
-- Newer Oracle versions may cause unreliable numbers
+- Very large sized elements or very large amounts of objects may result in `####` notation and no longer be useful. Limits have been increased to insane values so this should not be a problem
+- Newer Oracle versions (20c) may cause unreliable numbers
 
 ## Safety
 
 - If you run as 'root', dbcollect switches to a non-root user early. By default this is 'oracle', use '-u user' to use another user
 - The scripts only contain SELECT statements and SQL*Plus formatting/reporting commands. No data will be changed directly on the database
 - The collect scripts can generate a large number of files in /tmp - usually a few hundred MB. Make sure there is enough space.
+
+## Source code
+
+dbcollect is packaged as a Python "zipapp" package which is a specially prepared ZIP file. You can unzip it with a normal unzip tool.
+For example, listing the files in the package:
+
+`unzip -l dbcollect`
 
 ## License
 

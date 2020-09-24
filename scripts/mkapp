@@ -1,0 +1,37 @@
+#!/bin/bash
+#============================================================================
+# Title       : mkapp
+# Description : Creates ZIPAPP package
+# Author      : Bart Sjerps <bart@outrun.nl>
+# License     : GPLv3+
+# ---------------------------------------------------------------------------
+
+set -e
+export gitdir=$(git rev-parse --show-toplevel) || exit 10
+export progname=$(basename $gitdir)
+
+makeapp() {
+  echo "Creating $1"
+  python3 -m zipapp \
+	--output "$1" \
+	 --main dbcollect:main \
+	--python "/usr/bin/env python2"\
+	 $gitdir/src
+}
+
+#============================================================================
+# Main section - parsing options etc
+# ---------------------------------------------------------------------------
+
+export outdir=/tmp
+
+while getopts ":d:" OPT; do
+case "$OPT" in
+  d) outdir=$OPTARG;;
+  ?) die "Unknown option -$OPTARG" ;;
+esac
+done ; shift $(expr $OPTIND - 1)
+
+makeapp  $outdir/$progname
+ls -ld   $outdir/$progname
+unzip -l $outdir/$progname
