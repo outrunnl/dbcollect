@@ -17,7 +17,7 @@ def zipexec(archive, tag, cmd, **kwargs):
     """
     out = execute(cmd, **kwargs)
     if not out:
-        archive.writestr(tag, '')
+        archive.writestr('cmd/' + tag, '')
     else:
         archive.writestr('cmd/' + tag, out.encode('utf-8'))
 
