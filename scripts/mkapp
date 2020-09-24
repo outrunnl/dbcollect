@@ -16,7 +16,7 @@ makeapp() {
 	--output "$1" \
 	 --main dbcollect:main \
 	--python "/usr/bin/env python2"\
-	 $gitdir/src
+	 $gitdir/src/$progname
 }
 
 #============================================================================

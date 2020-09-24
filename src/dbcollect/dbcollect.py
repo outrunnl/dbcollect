@@ -112,7 +112,6 @@ def main():
         if not args.no_sys:
             syscollect.hostinfo(archive, args)
         if not args.no_ora:
-            print(0/0)
             oracle.orainfo(archive, args)
     except ZipCreateError as e:
         logging.exception("{}: {}".format(e, zippath))
