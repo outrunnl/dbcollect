@@ -204,7 +204,7 @@ def orainfo(archive, args):
                     pdbreport = sqlplus(sid, orahome, sql)
                     logging.info('Getting pdbinfo for Oracle instance {}'.format(sid))
                     archive.writestr('{}/pdbinfo-{}.txt'.format(sid,sid),pdbreport)
-                    if not args.no_awr:
-                        gen_reports(archive, args, sid, orahome)
+                if not args.no_awr:
+                    gen_reports(archive, args, sid, orahome)
         except OracleError as e:
             logging.error(e)
