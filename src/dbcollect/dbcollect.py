@@ -20,7 +20,9 @@ __version__   = "1.4.3"
 def selfinfo():
     info = dict()
     try:
-        zipname = __loader__.archive
+        zipname = os.path.realpath(__loader__.archive)
+        if not os.access(zipname,os.R_OK):
+            raise DBCollectError('User {0} has no read access to {1}'.format(username(), zipname))
         info['zipname']   = zipname
         info['ziphash']   = md5hash(zipname)
         info['builddate'] = buildstamp(zipname)
@@ -113,20 +115,26 @@ def main():
             syscollect.hostinfo(archive, args)
         if not args.no_ora:
             oracle.orainfo(archive, args)
+        logging.info("Finished")
     except ZipCreateError as e:
         logging.exception("{0}: {1}".format(e, zippath))
         exit(20)
     except KeyboardInterrupt:
-        logging.fatal("Aborted")
+        logging.fatal("Aborted, exiting...")
         exit(10)
     except IOError as e:
         logging.exception("IO Error {0}".format(e))
+        logging.info("Aborting")
         exit(20)
+    except DBCollectError as e:
+        logging.exception(e)
+        logging.info("Aborting")
+        exit(30)
     except Exception as e:
         logging.exception("{0}, see logfile for debug info".format(e))
+        logging.info("Aborting")
         exit(40)
     finally:
-        logging.info("Finished")
         if args.debug and os.path.isfile(logpath):
             with open(logpath) as logfile:
                 print("\nLogfile {0}:".format(logpath))

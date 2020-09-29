@@ -15,6 +15,10 @@ logsetup must be called AFTER switching users, or strange things will happen.
 
 import logging
 
+class DBCollectError(Exception):
+    """Generic exception class"""
+    pass
+
 class TracebackInfoFilter(logging.Filter):
     """Clear or restore the exception on log records"""
     def __init__(self, clear=True):

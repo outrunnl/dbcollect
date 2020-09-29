@@ -21,7 +21,7 @@ Download the latest version here:
 ## Install
 
 No installation required, just download the dbcollect program and place it somewhere in the
-executable path (not in /tmp, /var/tmp or any other temporary directory).
+executable path (not in /tmp, /var/tmp or any other temporary directory as it may not allow to be executed due to 'noexec' file system settings).
 
 Suggestion: `/usr/local/bin`
 
@@ -154,6 +154,38 @@ dbcollect is packaged as a Python "zipapp" package which is a specially prepared
 For example, listing the files in the package:
 
 `unzip -l dbcollect`
+
+## Q&A
+
+Q: Why is dbcollect written in Python 2? This is no longer supported!
+
+A: Python 3 is not available by default on Linux (RHEL/OEL/CentOS). On EL6 I even had to backport support for Python 2.6. I plan to make it work with both python 2 and 3 in the future.
+
+Q: Does dbcollect gather confidential data?
+
+A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. If confidential information is hardcoded into the SQL statements, they could be visible. The values of bind parameters is not visible. Stripping AWR/Statspack from these SQL statements is on the todo list.
+
+Q: dbcollect appears to be a binary package. How do I know what it is doing?
+
+A: dbcollect is actually a Python ZipApp package. You can unzip it using unzip and list its contents, the Python code and SQL scripts can be extracted:
+
+```bash
+# List the files in the package
+unzip -l dbcollect
+# Unpack (to subdirectory)
+unzip dbcollect -d dbcollect-source
+```
+
+Q: How do I know my download has not been tampered with?
+
+A: If you downloaded dbcollect from github using https, you should be good. If you want to make sure, get the MD5 hash and I can check if it is the correct one:
+```
+md5sum dbcollect
+```
+
+Q: I want to check what information dbcollect has gathered
+
+A: Inspect the zip file `/tmp/dbcollect-<hostname>.zip` and check its contents.
 
 ## License
 
