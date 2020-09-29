@@ -1,37 +1,32 @@
 Name:		dbcollect
 Summary:	Collect AWR/Statspack and system info
-Version:	1.3.0
+Version:	%(python src/dbcollect/dbcollect.py -V | awk '/^Version/ {print $NF}')
 Release:	1%{?dtap}
 License:	GPLv3+
 Group:		Applications/Databases
-Source0:	%{name}-%{version}.tbz2
+#Source0:	%{name}-%{version}.tbz2
 Distribution:	Outrun Extras
 BuildArch:	noarch
 
 %description
 This tool collects AWR or Statspack reports for all normal database instances
-listed in /etc/oratab. For this, sqlplus is called with @collect-awr or @collect-statspack
-to generate the AWRs.
+listed in oratab or detected otherwise.
 It also collects:
 - SAR files
-- System info via 'syscollect'
+- System info
 The AWR/SP files, SAR files as well as the system info are placed in a ZIP file named
-/tmp/<hostname>-dbcollect.zip
+/tmp/dbcollect-<hostname>.zip
 
 %prep
-%setup -q -n %{name}
+#setup -q -n %{name}
 
 %install
 rm -rf %{buildroot}
 install -m 0755 -d %{buildroot}/usr/bin
 install -m 0755 -d %{buildroot}/usr/share/dbcollect/
 
-cp -pr share/* %{buildroot}/usr/share/dbcollect/
-
-ln -s /usr/share/dbcollect/syscollect %{buildroot}/usr/bin/syscollect
-ln -s /usr/share/dbcollect/dbcollect %{buildroot}/usr/bin/dbcollect
+curl -fLl https://github.com/outrunnl/dbcollect/releases/download/v%{version}/dbcollect -o %{buildroot}/usr/bin/dbcollect
 
 %files
 %defattr(0755,root,root,755)
 /usr/bin/*
-/usr/share/dbcollect/*
