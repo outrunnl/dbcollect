@@ -25,12 +25,12 @@ def zipexec(archive, tag, cmd, **kwargs):
 def hostinfo(archive, args):
     """Get OS and run the corresponding OS/SAR module"""
     system = platform.system()
-    logging.info('Collecting OS info ({})'.format(system))
+    logging.info('Collecting OS info ({0})'.format(system))
     if system == 'Linux':   linux_info(archive, args)
     elif system == 'AIX':   aix_info(archive, args)
     elif system == 'SunOS': sun_info(archive, args)
     else:
-        logging.error("Unknown platform - {}".format(system))
+        logging.error("Unknown platform - {0}".format(system))
 
 def linux_info(archive, args):
     """System/SAR info for Linux"""
@@ -81,10 +81,10 @@ def linux_info(archive, args):
 
     for dev in execute('lsblk -dno name').splitlines():
         for var in  ['model','rev','dev','queue_depth','vendor','serial']:
-            path = os.path.join('/sys/class/block/{}/device/{}'.format(dev, var))
+            path = os.path.join('/sys/class/block/{0}/device/{1}'.format(dev, var))
             if os.path.isfile(path):
                 archive.store(path)
-        archive.writestr('disks/{}-links'.format(dev), execute('udevadm info -q symlink -n {}'.format(dev)))
+        archive.writestr('disks/{0}-links'.format(dev), execute('udevadm info -q symlink -n {0}'.format(dev)))
 
     for dev in os.listdir('/sys/class/net'):
         if dev == 'lo':
@@ -114,23 +114,23 @@ def aix_info(archive, args):
     zipexec(archive, 'lsfsc.txt',    'lsfs -c')
     zipexec(archive, 'adapters.txt', 'lsdev -c adapter -F name,status,description')
     for disk in execute('lsdev -Cc disk -Fname').splitlines():
-        zipexec(archive, 'disks/{}-size'.format(disk),   'getconf DISK_SIZE /dev/{}'.format(disk))
-        zipexec(archive, 'disks/{}-lscfg'.format(disk),  'lscfg -vpl %s' % disk)
-        zipexec(archive, 'disks/{}-lspath'.format(disk), 'lspath -l %s -F parent,status' % disk)
-        zipexec(archive, 'disks/{}-lsattr'.format(disk), 'lsattr -El %s' % disk)
+        zipexec(archive, 'disks/{0}-size'.format(disk),   'getconf DISK_SIZE /dev/{0}'.format(disk))
+        zipexec(archive, 'disks/{0}-lscfg'.format(disk),  'lscfg -vpl %s' % disk)
+        zipexec(archive, 'disks/{0}-lspath'.format(disk), 'lspath -l %s -F parent,status' % disk)
+        zipexec(archive, 'disks/{0}-lsattr'.format(disk), 'lsattr -El %s' % disk)
     for nic in execute('ifconfig -l').split():
         if nic.startswith('lo'): continue
-        zipexec(archive, 'nics/{}-lsattr'.format(nic), 'lsattr -E -l %s -F description,value' % nic)
-        zipexec(archive, 'nics/{}-entstat'.format(nic), 'entstat -d %s' % nic)
+        zipexec(archive, 'nics/{0}-lsattr'.format(nic), 'lsattr -E -l %s -F description,value' % nic)
+        zipexec(archive, 'nics/{0}-entstat'.format(nic), 'entstat -d %s' % nic)
     for vg in execute('lsvg').splitlines():
-        zipexec(archive, 'vgs/{}-lsvg_l'.format(vg), 'lsvg -l %s' % vg)
-        zipexec(archive, 'vgs/{}-lsvg_p'.format(vg), 'lsvg -p %s' % vg)
+        zipexec(archive, 'vgs/{0}-lsvg_l'.format(vg), 'lsvg -l %s' % vg)
+        zipexec(archive, 'vgs/{0}-lsvg_p'.format(vg), 'lsvg -p %s' % vg)
     for sarfile in os.listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
-            zipexec(archive, 'sar/{}-cpu'.format(sarfile),  'sar -uf %s' % path)
-            zipexec(archive, 'sar/{}-disk'.format(sarfile), 'sar -df %s' % path)
-            zipexec(archive, 'sar/{}-swap'.format(sarfile), 'sar -rf %s' % path)
+            zipexec(archive, 'sar/{0}-cpu'.format(sarfile),  'sar -uf %s' % path)
+            zipexec(archive, 'sar/{0}-disk'.format(sarfile), 'sar -df %s' % path)
+            zipexec(archive, 'sar/{0}-swap'.format(sarfile), 'sar -rf %s' % path)
 
 def sun_info(archive, args):
     """System/SAR info for Sun Solaris (SPARC or Intel)"""
@@ -155,7 +155,7 @@ def sun_info(archive, args):
     for sarfile in os.listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
-            zipexec(archive, 'sar/{}-cpu'.format(sarfile),    'sar -uf %s' % path)
-            zipexec(archive, 'sar/{}-buffer'.format(sarfile), 'sar -bf %s' % path)
-            zipexec(archive, 'sar/{}-disk'.format(sarfile),   'sar -df %s' % path)
-            zipexec(archive, 'sar/{}-swap'.format(sarfile),   'sar -rf %s' % path)
+            zipexec(archive, 'sar/{0}-cpu'.format(sarfile),    'sar -uf %s' % path)
+            zipexec(archive, 'sar/{0}-buffer'.format(sarfile), 'sar -bf %s' % path)
+            zipexec(archive, 'sar/{0}-disk'.format(sarfile),   'sar -df %s' % path)
+            zipexec(archive, 'sar/{0}-swap'.format(sarfile),   'sar -rf %s' % path)

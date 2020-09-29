@@ -12,8 +12,8 @@
 -- Reports are placed in the CURRENT directory (cd to the right dir first)
 -- ----------------------------------------------------------------------------
 
-define days   = {}
-define offset = {}
+define days   = {0}
+define offset = {1}
 
 set pagesize 0 lines 999 tab off verify off feed off
 ALTER SESSION SET nls_timestamp_format='YYYY-MM-DD HH24:MI:SS';

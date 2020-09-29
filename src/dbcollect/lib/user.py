@@ -28,13 +28,13 @@ def switchuser(user):
             uid = pwd.getpwnam(user).pw_uid
             home = pwd.getpwnam(user).pw_dir
         except KeyError as e:
-            print("User {} not available, trying 'nobody'".format(user))
+            print("User {0} not available, trying 'nobody'".format(user))
             try:
                 user = 'nobody'
                 uid = pwd.getpwnam(user).pw_uid
                 home = '/tmp'
             except KeyError as e:
-                print("User 'nobody not available, giving up")
+                print("User nobody not available, giving up")
                 exit(20)
         gid = pwd.getpwnam(user).pw_gid
         os.setgid(gid)

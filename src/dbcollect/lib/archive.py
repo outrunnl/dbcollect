@@ -22,10 +22,10 @@ class Archive():
             self.path    = path
             self.logpath = logpath
             self.zip = ZipFile(self.path,'w', ZIP_DEFLATED)
-            comment = 'dbcollect version={} hostname={}'.format(version, self.prefix)
+            comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
             self.zip.comment = comment.encode('utf-8')
         except Exception as e:
-            raise ZipCreateError("Cannot create zipfile") # : {}".format(path))
+            raise ZipCreateError("Cannot create zipfile")
     def __del__(self):
         if not self.zip:
             return
@@ -45,7 +45,7 @@ class Archive():
         else:
             fulltag = os.path.join(self.prefix, path.lstrip('/'))
         try:
-            logging.debug('retrieving file {}'.format(path))
+            logging.debug('retrieving file {0}'.format(path))
             self.zip.write(path, fulltag)
         except OSError as e:
             pass
@@ -61,7 +61,8 @@ def buildstamp(zipname):
     """Gets the build timestamp for a zipapp archive.
     __main__.py must exist.
     """
-    with ZipFile(zipname) as archive:
-        info = archive.getinfo('__main__.py')
-        yy, mm, dd, hh, mm = info.date_time[0:5]
-        return '{:04}-{:02}-{:02} {:02}:{:02}'.format(yy, mm, dd, hh, mm)
+    archive = ZipFile(zipname)
+    info = archive.getinfo('__main__.py')
+    archive.close()
+    yy, mm, dd, hh, mm = info.date_time[0:5]
+    return '{0:04}-{1:02}-{2:02} {3:02}:{4:02}'.format(yy, mm, dd, hh, mm)

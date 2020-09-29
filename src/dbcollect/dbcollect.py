@@ -15,7 +15,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = "1.4.2"
+__version__   = "1.4.3"
 
 def selfinfo():
     info = dict()
@@ -34,11 +34,11 @@ def selfinfo():
 
 def printversion():
     info = selfinfo()
-    print ('Author:    {}'.format(__author__))
-    print ('Copyright: {}'.format(__copyright__))
-    print ('License:   {}'.format(__license__))
-    print ('Version:   {}'.format(__version__))
-    print ('Builddate: {}'.format(info['builddate']))
+    print ('Author:    {0}'.format(__author__))
+    print ('Copyright: {0}'.format(__copyright__))
+    print ('License:   {0}'.format(__license__))
+    print ('Version:   {0}'.format(__version__))
+    print ('Builddate: {0}'.format(info['builddate']))
 
 def meta():
     info = dict()
@@ -89,47 +89,47 @@ def main():
         else:
             zippath = os.path.join(os.getcwd(),os.path.splitext(args.output)[0] + '.zip')
     else:
-        zippath = (os.path.join(args.tmpdir, 'dbcollect-{}.zip'.format(platform.uname()[1])))
+        zippath = (os.path.join(args.tmpdir, 'dbcollect-{0}.zip'.format(platform.uname()[1])))
     logpath = (os.path.join(args.tmpdir, 'dbcollect.log'))
     if args.delete and os.path.isfile(zippath):
         try:
             os.unlink(zippath)
         except Exception as e:
-            print("Cannot remove {}, {}".format(zippath, e))
+            print("Cannot remove {0}, {1}".format(zippath, e))
     switchuser(args.user)
     try:
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
     except Exception as e:
-        logging.fatal("Cannot create logfile: {}".format(e))
+        logging.fatal("Cannot create logfile: {0}".format(e))
         exit(15)
     try:
-        version = 'dbcollect version {}\n'.format(__version__)
+        version = 'dbcollect version {0}\n'.format(__version__)
         archive = Archive(zippath, logpath, __version__)
-        logging.info('dbcollect {} - database and system info collector'.format(__version__))
-        logging.info('User is {}'.format(username()))
-        logging.info('Zip file is {}'.format(zippath))
+        logging.info('dbcollect {0} - database and system info collector'.format(__version__))
+        logging.info('User is {0}'.format(username()))
+        logging.info('Zip file is {0}'.format(zippath))
         archive.writestr('meta.json', meta())
         if not args.no_sys:
             syscollect.hostinfo(archive, args)
         if not args.no_ora:
             oracle.orainfo(archive, args)
     except ZipCreateError as e:
-        logging.exception("{}: {}".format(e, zippath))
+        logging.exception("{0}: {1}".format(e, zippath))
         exit(20)
     except KeyboardInterrupt:
         logging.fatal("Aborted")
         exit(10)
     except IOError as e:
-        logging.exception("IO Error {}".format(e))
+        logging.exception("IO Error {0}".format(e))
         exit(20)
     except Exception as e:
-        logging.exception("{}, see logfile for debug info".format(e))
+        logging.exception("{0}, see logfile for debug info".format(e))
         exit(40)
     finally:
         logging.info("Finished")
         if args.debug and os.path.isfile(logpath):
             with open(logpath) as logfile:
-                print("\nLogfile {}:".format(logpath))
+                print("\nLogfile {0}:".format(logpath))
                 print(logfile.read())
 
 if __name__ == "__main__":

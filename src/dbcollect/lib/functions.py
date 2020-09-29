@@ -37,12 +37,12 @@ def execute(cmd, hide_errors=False, opts=None):
     env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
     env['ODMDIR'] = '/etc/objrepos'
     try:
-        logging.debug('Executing command: {}'.format(cmd))
+        logging.debug('Executing command: {0}'.format(cmd))
         proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         if not hide_errors:
             if stderr:
-                logging.error('{}, {}'.format(cmd, stderr))
+                logging.error('{0}, {1}'.format(cmd, stderr))
         return stdout.decode('utf-8').rstrip('\n')
     except OSError as oe:
         # Command failed or does not exist

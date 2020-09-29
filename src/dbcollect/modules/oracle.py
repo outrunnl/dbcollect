@@ -43,7 +43,7 @@ def sqlplus(sid, orahome, sql, output=False):
         proc = Popen(sqlpluscmd, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate(sql)
     if proc.returncode:
-        raise OracleError('SQL*Plus error {}:\n=====\n{}\n====='.format(proc.returncode, stdout))
+        raise OracleError('SQL*Plus error {0}:\n=====\n{1}\n====='.format(proc.returncode, stdout))
     return stdout
 
 def sidstatus(sid, orahome):
@@ -106,7 +106,7 @@ def oradbssids():
                     if sid.startswith('-'): continue
                     yield(sid, orahome, isrunning(sid))
         except OSError as e:
-            logging.debug('skip {}'.format(dbsdir))
+            logging.debug('skip {0}'.format(dbsdir))
 
 def checkawrlicense(sid, orahome):
     """Check if AWR reports have been used before
@@ -141,23 +141,23 @@ def gen_reports(archive, args, sid, orahome):
         sql = getsql('genawr.sql')
         output = False if args.quiet else True
     try:
-        tempdir = tempfile.mkdtemp(prefix = os.path.join(args.tmpdir, '{}-{}'.format(reptype, sid)))
+        tempdir = tempfile.mkdtemp(prefix = os.path.join(args.tmpdir, '{0}-{1}'.format(reptype, sid)))
         tempsql = sqlplus(sid, orahome, sql.format(args.days, args.offset))
-        scriptpath = os.path.join(tempdir, '{}reports.sql'.format(reptype))
+        scriptpath = os.path.join(tempdir, '{0}reports.sql'.format(reptype))
         with open(scriptpath,'w') as f:
             f.write(tempsql)
         oldwd = os.getcwd()
         os.chdir(tempdir)
-        logging.info('Generating {} reports for instance {}, days={}, offset={}'.format(reptype, sid, args.days, args.offset))
+        logging.info('Generating {0} reports for instance {1}, days={2}, offset={3}'.format(reptype, sid, args.days, args.offset))
         sqlplus(sid, orahome, '@' + scriptpath, output)
         for f in listdir(tempdir):
             r = os.path.join(tempdir, f)
-            archive.move(r, '{}/{}'.format(sid, f) )
+            archive.move(r, '{0}/{1}'.format(sid, f) )
         os.chdir(oldwd)
     except OracleError as e:
-        logging.exception("Oracle Error {}".format(e))
+        logging.exception("Oracle Error {0}".format(e))
     except OSError as e:
-        logging.exception("{}".format(e))
+        logging.exception("{0}".format(e))
     finally:
         if os.path.isdir(tempdir):
             rmtree(tempdir)
@@ -174,36 +174,36 @@ def orainfo(archive, args):
     sids = list(set(sids))
     for sid, orahome, active in sids:
         if not active:
-            logging.info('Skipping Oracle instance {} (not running or available)'.format(sid))
+            logging.info('Skipping Oracle instance {0} (not running or available)'.format(sid))
             continue
-        logging.info('Processing Oracle instance {}'.format(sid))
+        logging.info('Processing Oracle instance {0}'.format(sid))
         status, version = sidstatus(sid, orahome)
         if status == None:
             logging.info("SQL*Plus login failed, continuing with next SID")
             continue
         elif status not in ['STARTED','MOUNTED', 'OPEN']:
-            logging.error('Skipping instance {} (cannot connect)'.format(sid))
+            logging.error('Skipping instance {0} (cannot connect)'.format(sid))
         elif status == 'STARTED':
-            logging.info('Oracle instance {} is not mounted'.format(sid))
+            logging.info('Oracle instance {0} is not mounted'.format(sid))
             sql = getsql('instance.sql')
         elif status == 'MOUNTED':
-            logging.info('Oracle instance {} is mounted (not open)'.format(sid))
+            logging.info('Oracle instance {0} is mounted (not open)'.format(sid))
             sql = getsql('database.sql')
         elif status == 'OPEN':
             sql = getsql('dbinfo.sql')
         else:
-            logerror("Oracle instance {} has unknown state: {}".format(sid, status))
+            logerror("Oracle instance {0} has unknown state: {1}".format(sid, status))
             continue
         try:
-            logging.info('Getting dbinfo for Oracle instance {}'.format(sid))
+            logging.info('Getting dbinfo for Oracle instance {0}'.format(sid))
             report = sqlplus(sid, orahome, sql)
-            archive.writestr('{}/dbinfo-{}.txt'.format(sid,sid),report)
+            archive.writestr('{0}/dbinfo-{1}.txt'.format(sid,sid),report)
             if status == 'OPEN':
                 if int(version.split('.')[0]) >= 12:
-                    sql = getsql('{}.sql'.format('pdbinfo'))
+                    sql = getsql('{0}.sql'.format('pdbinfo'))
                     pdbreport = sqlplus(sid, orahome, sql)
-                    logging.info('Getting pdbinfo for Oracle instance {}'.format(sid))
-                    archive.writestr('{}/pdbinfo-{}.txt'.format(sid,sid),pdbreport)
+                    logging.info('Getting pdbinfo for Oracle instance {0}'.format(sid))
+                    archive.writestr('{0}/pdbinfo-{1}.txt'.format(sid,sid),pdbreport)
                 if not args.no_awr:
                     gen_reports(archive, args, sid, orahome)
         except OracleError as e:
