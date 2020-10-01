@@ -45,9 +45,12 @@ def execute(cmd, hide_errors=False, opts=None):
                 logging.error('{0}, {1}'.format(cmd, stderr))
         return stdout.decode('utf-8').rstrip('\n')
     except OSError as oe:
-        # Command failed or does not exist
-        logging.error('error executing %s: %s\n' % (command[0], oe))
-        #return ''
+        if oe.errno == errno.ENOENT:
+            # Command failed or does not exist
+            logging.warning('executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
+        else:
+            logging.error('error executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
+
 
 def filedate(path):
     """Return mtime for a file"""

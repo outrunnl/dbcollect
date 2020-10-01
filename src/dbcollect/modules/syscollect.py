@@ -61,6 +61,7 @@ def linux_info(archive, args):
         '/proc/misc',
         '/proc/uptime',
         '/etc/os-release',
+        '/etc/system-release',
         '/etc/issue',
         '/etc/motd',
         '/etc/multipath.conf',
@@ -75,9 +76,10 @@ def linux_info(archive, args):
         path = os.path.join('/etc/udev/rules.d/', f)
         if os.path.isfile(path) and f.endswith('.rules'):
             archive.store(path)
-    # oraInst.loc
+
+    # TODO:
     # numa?
-    # powerpath / scaleio?
+    # multipath / powerpath / scaleio?
 
     for dev in execute('lsblk -dno name').splitlines():
         for var in  ['model','rev','dev','queue_depth','vendor','serial']:

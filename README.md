@@ -18,12 +18,20 @@ Download the latest version here:
 
 [latest version](https://github.com/outrunnl/dbcollect/releases/latest)
 
+## Prerequisites
+
+On Enterprise Linux 6 (RHEL 6, OEL 6, CentOS 6) you need to have `python-argparse` installed:
+
+`yum install python-argparse`
+
 ## Install
 
 No installation required, just download the dbcollect program and place it somewhere in the
 executable path (not in /tmp, /var/tmp or any other temporary directory as it may not allow to be executed due to 'noexec' file system settings).
 
-Suggestion: `/usr/local/bin`
+It must be a location where all users have access. Life is easier if you put it somewhere in the $PATH, such as:
+
+`/usr/local/bin`
 
 Make the program executable:
 

@@ -14,8 +14,8 @@ makeapp() {
   echo "Creating $1"
   python3 -m zipapp \
 	--output "$1" \
-	 --main dbcollect:main \
-	--python "/usr/bin/env python2"\
+	--main dbcollect:main \
+	--python "/usr/bin/env python2" \
 	 $gitdir/src/$progname
 }
 

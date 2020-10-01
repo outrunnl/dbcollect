@@ -5,9 +5,14 @@ Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
 License: GPLv3+
 """
 
-import os, sys, json, argparse, logging, pkgutil, platform
+import os, sys, json, logging, pkgutil, platform, datetime
 sys.dont_write_bytecode = True
-import datetime
+try:
+    import argparse
+except:
+    print("ERROR: Cannot import module 'argparse'. Please install python-argparse first:\nyum install python-argparse")
+    exit(10)
+
 from shutil import rmtree
 from lib import *
 from modules import *
@@ -115,6 +120,7 @@ def main():
             syscollect.hostinfo(archive, args)
         if not args.no_ora:
             oracle.orainfo(archive, args)
+        logging.info('Zip file {0} is created succesfully.'.format(zippath))
         logging.info("Finished")
     except ZipCreateError as e:
         logging.exception("{0}: {1}".format(e, zippath))
