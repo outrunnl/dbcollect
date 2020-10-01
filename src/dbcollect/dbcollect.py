@@ -20,7 +20,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+"
-__version__   = "1.4.3"
+__version__   = "1.4.4"
 
 def selfinfo():
     info = dict()
