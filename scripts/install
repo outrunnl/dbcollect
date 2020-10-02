@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-download - download the latest release of dbcollect and save it on /usr/local/bin
+install - download and install the latest release of dbcollect to /usr/local/bin
 
 Script that can be run directly from github to install dbcollect.
 Usage:
-curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | python
+curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/install | python
 
 To keep things simple, there is only very basic exception handling.
 Runs as any user but asks for sudo permissions to move the binary to /usr/local/bin.

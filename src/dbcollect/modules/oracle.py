@@ -165,9 +165,6 @@ def gen_reports(archive, args, sid, orahome):
 def orainfo(archive, args):
     """Collect Oracle config and workload data"""
     logging.info('Collecting Oracle info')
-    oratab = getfile('/etc/oratab','/var/opt/oracle/oratab')
-    if oratab:
-        archive.writestr('oratab',oratab)
     # Get oracle sids via oratab and scanning $ORACLE_HOME/dbs
     sids = [x for x in oratabsids()] + [x for x in oradbssids()]
     # Dedupe list of sids

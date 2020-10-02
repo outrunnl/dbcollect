@@ -3,7 +3,7 @@ DBCollect - Oracle Database Info Collector
 
 ## Description
 
-DBCollect is a metadata collection tool for Oracle databases.
+_dbcollect_ is a metadata collection tool for Oracle databases.
 
 The main part is a Python tool that collects various system files and
 the output of some commands, as well as AWR or Statspack reports for each
@@ -12,35 +12,51 @@ database instance, and other database information.
 The results are collected in a ZIP file named (default):
 `/tmp/dbcollect-<hostname>.zip`
 
-## Download
-
-Download the latest version here:
-
-[latest version](https://github.com/outrunnl/dbcollect/releases/latest)
-
 ## Prerequisites
 
 On Enterprise Linux 6 (RHEL 6, OEL 6, CentOS 6) you need to have `python-argparse` installed:
 
 `yum install python-argparse`
 
+On IBM AIX, you need to install Python 2. You can get python for AIX from
+[AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
+
+On Solaris, Python should be already available.
+
+On Enterprise Linux 7 (RHEL 7, OEL 7, CentOS 7), Python2 is installed by default including the argparse module.
+
+Enterprise Linux 8 has not been tested yet but should work fine.
+
 ## Install
 
-No installation required, just download the dbcollect program and place it somewhere in the
-executable path (not in /tmp, /var/tmp or any other temporary directory as it may not allow to be executed due to 'noexec' file system settings).
+### Easy way
 
-It must be a location where all users have access. Life is easier if you put it somewhere in the $PATH, such as:
+The easiest way to install _dbcollect_ is to run this command on your database host:
 
-`/usr/local/bin`
+`curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/install | python`
 
-Make the program executable:
+This will download _dbcollect_ and put it in /usr/local/bin (it asks for sudo access if you are not root).
+It requires internet access via https.
+
+### Manual install
+
+You can download or inspect the installer first if needed. If you prefer to manually download _dbcollect_, download it from this link:
+
+[latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest)
+
+Place _dbcollect_ in /usr/local/bin and make it executable:
 
 `chmod 755 /usr/local/bin/dbcollect`
-(alternatively you can run it via `python dbcollect`)
 
-DBCollect is a Python 2 program, the system must have Python 2 installed.
-This is default on Linux and Solaris. On AIX it can be installed via AIX Toolbox, see
-[AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
+(alternatively you can run it via `python /usr/local/bin/dbcollect`)
+
+`dbcollect` is a single `zipapp` package. If you prefer to unzip it first before running, for example:
+
+```
+cd /usr/local/bin
+unzip dbcollect -d /usr/local/src/dbcollect
+python /usr/local/src/dbcollect/dbcollect.py
+```
 
 ## Info collected by dbcollect:
 
@@ -63,12 +79,14 @@ More collectors may be added in the future.
 
 ### Important note
 
-DBCollect by default attempts to collect Oracle AWR reports in HTML format. For this, Oracle requires Diagnostics Pack (see Oracle doc id 1490798.1).
-DBCollect can not directly determine if you have this license or not. As an indirect method, it checks the dba_feature_usage_statistics table whether "AWR Reports" has been used previously or not.
+By default, _dbcollect_ attempts to collect Oracle AWR reports in HTML format. For this,
+Oracle requires Diagnostics Pack (see Oracle doc id 1490798.1).
+_dbcollect_ can not directly determine if you have this license or not. As an indirect method, 
+it checks the dba_feature_usage_statistics table whether "AWR Reports" has been used previously or not.
 If this is NOT the case, dbcollect produces an error message "No prior AWR usage detected" and proceeds with the next database if any.
 
 It is possible that you are licensed correctly but never used AWR reports on this specific database - in that case,
-DBCollect thinks you are not licensed and gives up. 
+DBCollect thinks you are not licensed and gives up.
 
 If you ARE licensed, you can run dbcollect with the --force option. DBcollect will only warn about the AWR detection and just generate the reports anyway.
 
@@ -76,7 +94,6 @@ If you ARE licensed, you can run dbcollect with the --force option. DBcollect wi
 **
 
 If you are NOT licensed for diagnostics pack then you can use Statspack instead (see section below)
-
 
 More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.com/articles/misc/tracking-database-feature-usage)
 
@@ -90,13 +107,16 @@ as 'oracle' user or root (assuming the database runs under user 'oracle')
 
 When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
-
 ### Oracle running as other user than 'oracle'
 
 DBCollect by default switches to user 'oracle' if you run it as root. If you do NOT run as root, run it as the user that Oracle database runs as.
 If you run as root and the database user is NOT 'oracle', use the -u/--user option:
 
 `dbcollect --user dbuser`
+
+Many systems have a split user configuration for Oracle clusterware (i.e. a `grid` user). This is fine as _dbcollect_ only needs the database user credentials.
+
+Having more than one `oracle` user for running databases is currently not supported. Let me know if you need this.
 
 ### Statspack
 
@@ -134,7 +154,7 @@ Windows is not (yet) supported.
 
 - Oracle RDBMS 11g or higher, SQL*Plus configured (dbcollect may work fine with Oracle 10g, mileage may vary)
 - Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris)
-- Python 2 installed (to run dbcollect vs separate scripts)
+- Python 2
 - SYS credentials (hence the 'oracle' user)
 - AWR or Statspack installed and configured
 - Retention at least 7 days (10080 minutes)
@@ -152,16 +172,19 @@ Windows is not (yet) supported.
 
 ## Safety
 
-- If you run as 'root', dbcollect switches to a non-root user early. By default this is 'oracle', use '-u user' to use another user
-- The scripts only contain SELECT statements and SQL*Plus formatting/reporting commands. No data will be changed directly on the database
+A lot of safety guards have been built into _dbcollect_. It is designed to not require root access and only writes files to the /tmp directory by default. Even if it fails for some reason, no harm can be done.
+
+- If you run as 'root', dbcollect switches to a non-root user early. By default this is 'oracle', use '-u user' to use another user.
+- The scripts only contain SELECT statements and SQL*Plus formatting/reporting commands. No data will be changed directly on the database.
 - The collect scripts can generate a large number of files in /tmp - usually a few hundred MB. Make sure there is enough space.
+- In some cases, _dbcollect_ may fail or run with warnings or errors. This will not cause further issues except that not all required data is collected.
 
 ## Source code
 
 dbcollect is packaged as a Python "zipapp" package which is a specially prepared ZIP file. You can unzip it with a normal unzip tool.
 For example, listing the files in the package:
 
-`unzip -l dbcollect`
+`unzip -l /usr/local/bin/dbcollect`
 
 ## Q&A
 
@@ -186,7 +209,7 @@ unzip dbcollect -d dbcollect-source
 
 Q: How do I know my download has not been tampered with?
 
-A: If you downloaded dbcollect from github using https, you should be good. If you want to make sure, get the MD5 hash and I can check if it is the correct one:
+A: If you downloaded dbcollect from github using https, you should be good. If you want to make sure, get the MD5 hash and I can check for you if it is the correct one:
 ```
 md5sum dbcollect
 ```

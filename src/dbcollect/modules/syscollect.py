@@ -65,6 +65,8 @@ def linux_info(archive, args):
         '/etc/issue',
         '/etc/motd',
         '/etc/multipath.conf',
+        '/etc/oratab',
+        '/var/opt/oracle/oratab',
         '/sys/class/dmi/id/sys_vendor',
         '/sys/class/dmi/id/product_name',
         '/sys/class/dmi/id/product_uuid',
@@ -72,14 +74,13 @@ def linux_info(archive, args):
         '/sys/class/dmi/id/board_vendor',
         '/sys/class/dmi/id/chassis_vendor']:
         archive.store(file)
-    for f in os.listdir('/etc/udev/rules.d/'):
+    for f in listdir('/etc/udev/rules.d/'):
         path = os.path.join('/etc/udev/rules.d/', f)
         if os.path.isfile(path) and f.endswith('.rules'):
             archive.store(path)
-
     # TODO:
     # numa?
-    # multipath / powerpath / scaleio?
+    # powerpath / scaleio? -> Need root?
 
     for dev in execute('lsblk -dno name').splitlines():
         for var in  ['model','rev','dev','queue_depth','vendor','serial']:
@@ -88,7 +89,7 @@ def linux_info(archive, args):
                 archive.store(path)
         archive.writestr('disks/{0}-links'.format(dev), execute('udevadm info -q symlink -n {0}'.format(dev)))
 
-    for dev in os.listdir('/sys/class/net'):
+    for dev in listdir('/sys/class/net'):
         if dev == 'lo':
             continue
         dir = os.path.join('/sys/class/net', dev)
@@ -127,7 +128,7 @@ def aix_info(archive, args):
     for vg in execute('lsvg').splitlines():
         zipexec(archive, 'vgs/{0}-lsvg_l'.format(vg), 'lsvg -l %s' % vg)
         zipexec(archive, 'vgs/{0}-lsvg_p'.format(vg), 'lsvg -p %s' % vg)
-    for sarfile in os.listdir('/var/adm/sa'):
+    for sarfile in listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
             zipexec(archive, 'sar/{0}-cpu'.format(sarfile),  'sar -uf %s' % path)
@@ -154,7 +155,7 @@ def sun_info(archive, args):
     zipexec(archive, 'dladm-part.txt',   'dladm show-part')
     zipexec(archive, 'dladm-vlan.txt',   'dladm show-vlan')
     zipexec(archive, 'dladm-vnic.txt',   'dladm show-vnic')
-    for sarfile in os.listdir('/var/adm/sa'):
+    for sarfile in listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
             zipexec(archive, 'sar/{0}-cpu'.format(sarfile),    'sar -uf %s' % path)
