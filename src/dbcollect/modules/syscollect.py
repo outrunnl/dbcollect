@@ -141,7 +141,7 @@ def sun_info(archive, args):
     zipexec(archive, 'prtdiag',      'prtdiag')
     zipexec(archive, 'psrinfo',      'psrinfo')
     zipexec(archive, 'psrinfo_t',    'psrinfo -t')
-    zipexec(archive, 'psrinfo_v0.,   'psrinfo -v 0')
+    zipexec(archive, 'psrinfo_v0',   'psrinfo -v 0')
     zipexec(archive, 'psrinfo_pv0',  'psrinfo -pv 0')
     zipexec(archive, 'iostat_enr',   'iostat -Enr')
     zipexec(archive, 'df_k',         'df -k')
