@@ -110,12 +110,12 @@ def linux_info(archive, args):
 
 def aix_info(archive, args):
     """System/SAR info for AIX (pSeries)"""
-    zipexec(archive, 'prtconf.txt',  'prtconf')
-    zipexec(archive, 'lparstat.txt', 'lparstat -i')
-    zipexec(archive, 'svmon.txt',    'svmon -G -O summary=basic,unit=KB')
-    zipexec(archive, 'dfpk.txt',     'df -Pk')
-    zipexec(archive, 'lsfsc.txt',    'lsfs -c')
-    zipexec(archive, 'adapters.txt', 'lsdev -c adapter -F name,status,description')
+    zipexec(archive, 'prtconf',  'prtconf')
+    zipexec(archive, 'lparstat', 'lparstat -i')
+    zipexec(archive, 'svmon',    'svmon -G -O summary=basic,unit=KB')
+    zipexec(archive, 'dfpk',     'df -Pk')
+    zipexec(archive, 'lsfsc',    'lsfs -c')
+    zipexec(archive, 'adapters', 'lsdev -c adapter -F name,status,description')
     for disk in execute('lsdev -Cc disk -Fname').splitlines():
         zipexec(archive, 'disks/{0}-size'.format(disk),   'getconf DISK_SIZE /dev/{0}'.format(disk))
         zipexec(archive, 'disks/{0}-lscfg'.format(disk),  'lscfg -vpl %s' % disk)
@@ -137,24 +137,24 @@ def aix_info(archive, args):
 
 def sun_info(archive, args):
     """System/SAR info for Sun Solaris (SPARC or Intel)"""
-    zipexec(archive, 'prtconf.txt',      'prtconf')
-    zipexec(archive, 'prtdiag.txt',      'prtdiag')
-    zipexec(archive, 'psrinfo.txt',      'psrinfo')
-    zipexec(archive, 'psrinfo_t.txt',    'psrinfo -t')
-    zipexec(archive, 'psrinfo_v0.txt',   'psrinfo -v 0')
-    zipexec(archive, 'psrinfo_pv0.txt',  'psrinfo -pv 0')
-    zipexec(archive, 'iostat_enr.txt',   'iostat -Enr')
-    zipexec(archive, 'df_k.txt',         'df -k')
-    zipexec(archive, 'df_n.txt',         'df -n') # df_k first
-    zipexec(archive, 'zpool_list.txt',   'zpool list -o name,size,free,allocated -H')
-    zipexec(archive, 'zpool_status.txt', 'zpool status')
-    zipexec(archive, 'zfs_list.txt',     'zfs list')
-    zipexec(archive, 'ifconfig.txt',     'ifconfig -a')
-    zipexec(archive, 'dladm-phys.txt',   'dladm show-phys')
-    zipexec(archive, 'dladm-link.txt',   'dladm show-link')
-    zipexec(archive, 'dladm-part.txt',   'dladm show-part')
-    zipexec(archive, 'dladm-vlan.txt',   'dladm show-vlan')
-    zipexec(archive, 'dladm-vnic.txt',   'dladm show-vnic')
+    zipexec(archive, 'prtconf',      'prtconf')
+    zipexec(archive, 'prtdiag',      'prtdiag')
+    zipexec(archive, 'psrinfo',      'psrinfo')
+    zipexec(archive, 'psrinfo_t',    'psrinfo -t')
+    zipexec(archive, 'psrinfo_v0.,   'psrinfo -v 0')
+    zipexec(archive, 'psrinfo_pv0',  'psrinfo -pv 0')
+    zipexec(archive, 'iostat_enr',   'iostat -Enr')
+    zipexec(archive, 'df_k',         'df -k')
+    zipexec(archive, 'df_n',         'df -n') # df_k first
+    zipexec(archive, 'zpool_list',   'zpool list -o name,size,free,allocated -H')
+    zipexec(archive, 'zpool_status', 'zpool status')
+    zipexec(archive, 'zfs_list',     'zfs list')
+    zipexec(archive, 'ifconfig',     'ifconfig -a')
+    zipexec(archive, 'dladm-phys',   'dladm show-phys')
+    zipexec(archive, 'dladm-link',   'dladm show-link')
+    zipexec(archive, 'dladm-part',   'dladm show-part')
+    zipexec(archive, 'dladm-vlan',   'dladm show-vlan')
+    zipexec(archive, 'dladm-vnic',   'dladm show-vnic')
     for sarfile in listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
