@@ -220,12 +220,13 @@ A: Inspect the zip file `/tmp/dbcollect-<hostname>.zip` and check its contents.
 
 ## License
 
-_dbcollect_ is licensed under GPLv3. See "COPYING" for more info.
+_dbcollect_ is licensed under GPLv3. See "COPYING" for more info or go to [GPLv3+ License Info](https://www.gnu.org/licenses/gpl-3.0.html)
 
 ## Author
 
-Bart Sjerps (bart &lt;at&gt; outrun &lt;dot&gt; nl) - with great contributions from my colleagues at DellEMC.<br>
-Original collect-awr version and other improvements by Graham Thornton (oraclejedi &lt;at&gt; gmail &lt;dot&gt; com).
+Bart Sjerps (bart &lt;at&gt; outrun &lt;dot&gt; nl) - with great contributions from others
+
+
 
 
 
