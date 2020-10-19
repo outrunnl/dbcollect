@@ -20,7 +20,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.4.5"
+__version__   = "1.4.6"
 
 def selfinfo():
     info = dict()
@@ -75,6 +75,7 @@ def main():
     parser.add_argument(      "--delete",    action="store_true", help="Delete previous zip file")
     parser.add_argument("-q", "--quiet",     action="store_true", help="Suppress output")
     parser.add_argument(      "--no-awr",    action="store_true", help="Skip AWR reports")
+    parser.add_argument(      "--no-strip",  action="store_true", help="Do not strip AWR reports from SQL sections")
     parser.add_argument(      "--no-sar",    action="store_true", help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true", help="Skip all Oracle info")
     parser.add_argument(      "--no-sys",    action="store_true", help="Skip OS info")

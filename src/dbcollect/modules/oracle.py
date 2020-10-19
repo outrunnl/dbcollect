@@ -9,9 +9,10 @@ Oracle functions for dbcollect
 """
 
 import os, re, pkgutil, tempfile
-from subprocess import Popen
+from subprocess import Popen, call
 from shutil import rmtree
 from lib import *
+from .awrstrip import awrstrip
 
 class OracleError(Exception):
     """Exception class for dealing with SQL*Plus issues"""
@@ -150,6 +151,10 @@ def gen_reports(archive, args, sid, orahome):
         os.chdir(tempdir)
         logging.info('Generating {0} reports for instance {1}, days={2}, offset={3}'.format(reptype, sid, args.days, args.offset))
         sqlplus(sid, orahome, '@' + scriptpath, output)
+        if not args.no_strip:
+            logging.info("Stripping AWR reports")
+            for file in [os.path.join(tempdir, f) for f in os.listdir(tempdir) if f.endswith('.html')]:
+                awrstrip(file, inplace=True)
         for f in listdir(tempdir):
             r = os.path.join(tempdir, f)
             archive.move(r, '{0}/{1}'.format(sid, f) )

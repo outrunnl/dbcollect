@@ -19,7 +19,7 @@ set pagesize 0 lines 999 tab off verify off feed off
 ALTER SESSION SET nls_timestamp_format='YYYY-MM-DD HH24:MI:SS';
 
 SELECT 'host echo Generating AWR reports. Please wait ...' || chr(10)
-  || 'set echo off head off feed off trims on lines 999 pages 50000' || chr(10)
+  || 'set echo off head off feed off trims on lines 32767 pages 50000' || chr(10)
   || 'alter session set nls_date_language=american;' header FROM dual;
 
 WITH reports AS (SELECT snap_id
