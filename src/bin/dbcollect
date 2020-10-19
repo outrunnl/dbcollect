@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/share/dbcollect/dbcollect.py "$@"
