@@ -26,7 +26,7 @@ def isrunning(sid):
     """Check if an instance with ORACLE_SID sid is running via the ora_pmon_<SID> process"""
     for line in execute('ps -eo user,args').splitlines():
         user, cmd = line.split()[0:2]
-        if cmd.lower() == 'ora_pmon_%s' % sid.lower():
+        if cmd == 'ora_pmon_{0}'.format(sid):
             return True
     return False
 

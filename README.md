@@ -175,6 +175,7 @@ Windows is not (yet) supported.
 A lot of safety guards have been built into _dbcollect_. It is designed to not require root access and only writes files to the /tmp directory by default. Even if it fails for some reason, no harm can be done.
 
 - If you run as 'root', dbcollect switches to a non-root user early. By default this is 'oracle', use '-u user' to use another user.
+- By default, SQL statements are removed from AWR reports as they could contain confidential information. Not available for Statspack.
 - The scripts only contain SELECT statements and SQL*Plus formatting/reporting commands. No data will be changed directly on the database.
 - The collect scripts can generate a large number of files in /tmp - usually a few hundred MB. Make sure there is enough space.
 - In some cases, _dbcollect_ may fail or run with warnings or errors. This will not cause further issues except that not all required data is collected.
@@ -194,7 +195,7 @@ A: Python 3 is not available by default on Linux (RHEL/OEL/CentOS). On EL6 I eve
 
 Q: Does dbcollect gather confidential data?
 
-A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. If confidential information is hardcoded into the SQL statements, they could be visible. The values of bind parameters is not visible. Stripping AWR/Statspack from these SQL statements is on the todo list.
+A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. For AWR, dbcollect removes sections containing SQL statements by default to prevent collecting pieces of potentially confidential data. The values of bind parameters are not visible.
 
 Q: dbcollect appears to be a binary package. How do I know what it is doing?
 
