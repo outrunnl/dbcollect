@@ -157,7 +157,7 @@ def gen_reports(archive, args, sid, orahome):
                 awrstrip(file, inplace=True)
         for f in listdir(tempdir):
             r = os.path.join(tempdir, f)
-            archive.move(r, '{0}/{1}'.format(sid, f) )
+            archive.move(r, 'oracle/{0}/{1}'.format(sid, f) )
         os.chdir(oldwd)
     except OracleError as e:
         logging.exception("Oracle Error {0}".format(e))
@@ -170,11 +170,24 @@ def gen_reports(archive, args, sid, orahome):
 def orainfo(archive, args):
     """Collect Oracle config and workload data"""
     logging.info('Collecting Oracle info')
+    excludelist = []
+    includelist = []
+    if args.exclude:
+        excludelist = getlist(args.exclude)
+    if args.include:
+        includelist = getlist(args.include)
     # Get oracle sids via oratab and scanning $ORACLE_HOME/dbs
     sids = [x for x in oratabsids()] + [x for x in oradbssids()]
     # Dedupe list of sids
     sids = list(set(sids))
     for sid, orahome, active in sids:
+        if includelist:
+            if sid not in includelist:
+                logging.info('Skipping Oracle instance {0} (not included)'.format(sid))
+                continue
+        if sid in excludelist:
+            logging.info('Excluding Oracle instance {0}'.format(sid))
+            continue
         if not active:
             logging.info('Skipping Oracle instance {0} (not running or available)'.format(sid))
             continue
@@ -199,13 +212,13 @@ def orainfo(archive, args):
         try:
             logging.info('Getting dbinfo for Oracle instance {0}'.format(sid))
             report = sqlplus(sid, orahome, sql)
-            archive.writestr('{0}/dbinfo-{1}.txt'.format(sid,sid),report)
+            archive.writestr('oracle/{0}/dbinfo-{1}.txt'.format(sid,sid),report)
             if status == 'OPEN':
                 if int(version.split('.')[0]) >= 12:
                     sql = getsql('{0}.sql'.format('pdbinfo'))
                     pdbreport = sqlplus(sid, orahome, sql)
                     logging.info('Getting pdbinfo for Oracle instance {0}'.format(sid))
-                    archive.writestr('{0}/pdbinfo-{1}.txt'.format(sid,sid),pdbreport)
+                    archive.writestr('oracle/{0}/pdbinfo-{1}.txt'.format(sid,sid),pdbreport)
                 if not args.no_awr:
                     gen_reports(archive, args, sid, orahome)
         except OracleError as e:

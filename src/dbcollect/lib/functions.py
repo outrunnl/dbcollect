@@ -22,6 +22,11 @@ def getfile(*args):
                 continue
             raise
 
+def getlist(path):
+    """Get a list of items from a file (include/exclude lists)"""
+    with open(path) as f:
+        return [x.strip() for x in f.readlines() if len(x)]
+
 def execute(cmd, hide_errors=False, opts=None):
     """
     Run a command, and return the output of stdout. Any stderr messages will be logged.

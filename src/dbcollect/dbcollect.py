@@ -20,7 +20,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.4.8"
+__version__   = "1.5.0"
 
 def selfinfo():
     info = dict()
@@ -67,23 +67,26 @@ def meta():
     return json.dumps(info,indent=2, sort_keys=True)
 
 def main():
-    parser = argparse.ArgumentParser()
+    print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(__version__))
+    parser = argparse.ArgumentParser(usage='dbcollect [options]')
     parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
     parser.add_argument("-D", "--debug",     action="store_true", help="Debug (Show errors)")
-    parser.add_argument("-S", "--statspack", action="store_true", help="Run statspack instead of AWR")
-    parser.add_argument(      "--force",     action="store_true", help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
-    parser.add_argument(      "--delete",    action="store_true", help="Delete previous zip file")
     parser.add_argument("-q", "--quiet",     action="store_true", help="Suppress output")
-    parser.add_argument(      "--no-awr",    action="store_true", help="Skip AWR reports")
-    parser.add_argument(      "--no-strip",  action="store_true", help="Do not strip AWR reports from SQL sections")
-    parser.add_argument(      "--no-sar",    action="store_true", help="Skip SAR reports")
-    parser.add_argument(      "--no-ora",    action="store_true", help="Skip all Oracle info")
-    parser.add_argument(      "--no-sys",    action="store_true", help="Skip OS info")
-    parser.add_argument("-o", "--output",    type=str, help="output file, default dbcollect-<hostname>.zip")
+    parser.add_argument(      "--delete",    action="store_true", help="Delete previous zip file")
     parser.add_argument(      "--tmpdir",    type=str, default='/tmp',   help="temp dir (/tmp)")
+    parser.add_argument(      "--output",    type=str, metavar='FILE',   help="output file, default dbcollect-<hostname>.zip")
     parser.add_argument("-u", "--user",      type=str, default='oracle', help="Run as user (default oracle)")
     parser.add_argument("-d", "--days",      type=int, default=10, help="Number of days to collect AWR data (default 10, max 999)")
     parser.add_argument(      "--offset",    type=int, default=0,  help="Number of days to shift AWR collect period, default 0, max 999")
+    parser.add_argument(      "--force",     action="store_true",  help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
+    parser.add_argument(      "--statspack", action="store_true",  help="Generate Statspack instead of AWR reports")
+    parser.add_argument(      "--no-strip",  action="store_true",  help="Do not strip AWR reports from SQL sections")
+    parser.add_argument(      "--no-awr",    action="store_true",  help="Skip AWR reports")
+    parser.add_argument(      "--no-sar",    action="store_true",  help="Skip SAR reports")
+    parser.add_argument(      "--no-ora",    action="store_true",  help="Skip Oracle collection")
+    parser.add_argument(      "--no-sys",    action="store_true",  help="Skip OS collection")
+    parser.add_argument(      "--include",   type=str, help="Include Oracle instances (only) from file", metavar='FILE')
+    parser.add_argument(      "--exclude",   type=str, help="Exclude Oracle instances from file", metavar='FILE')
     args = parser.parse_args()
 
     if args.version:
@@ -104,6 +107,10 @@ def main():
             os.unlink(zippath)
         except Exception as e:
             print("Cannot remove {0}, {1}".format(zippath, e))
+    if args.include:
+        args.include = os.path.realpath(args.include)
+    if args.exclude:
+        args.exclude = os.path.realpath(args.exclude)
     switchuser(args.user)
     try:
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
@@ -131,7 +138,7 @@ def main():
         logging.fatal("Aborted, exiting...")
         exit(10)
     except IOError as e:
-        logging.exception("IO Error {0}".format(e))
+        logging.exception("{0}: {1}".format(e.filename, os.strerror(e.errno)))
         logging.info("Aborting")
         exit(20)
     except DBCollectError as e:
