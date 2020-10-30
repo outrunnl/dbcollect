@@ -2,7 +2,7 @@ __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+"
 
-import os, logging
+import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED
 
 class ZipCreateError(Exception):
@@ -21,7 +21,7 @@ class Archive():
             self.prefix  = os.uname()[1]
             self.path    = path
             self.logpath = logpath
-            self.zip = ZipFile(self.path,'w', ZIP_DEFLATED)
+            self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
             comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
             self.zip.comment = comment.encode('utf-8')
         except Exception as e:
@@ -32,14 +32,21 @@ class Archive():
         try:
             if os.path.isfile(self.logpath):
                 self.zip.write(self.logpath,os.path.join(self.prefix, 'dbcollect.log'))
-        except OSError:
-            logging.error("Storing logfile failed")
+        except OSError as e:
+            logging.error("Storing logfile failed: %s", e)
         try:
             os.unlink(self.logpath)
-        except:
-            logging.warning("Removing logfile failed")
+        except Exception as e:
+            logging.warning("Removing logfile failed: %s", e)
         self.zip.close()
+    def checkfreespace(self):
+        """Get FS free space. Note this is Python2 only"""
+        stat = os.statvfs(self.path)
+        free = stat.f_bsize * stat.f_bfree
+        if free < 100 * 2 ** 20:
+            raise ZipCreateError('Free space below 100 MiB')
     def store(self, path, tag=None):
+        self.checkfreespace()
         if tag:
             fulltag = os.path.join(self.prefix, tag)
         else:
@@ -52,6 +59,7 @@ class Archive():
         except IOError as e:
             pass
     def move(self, path, tag=None):
+        self.checkfreespace()
         self.store(path, tag)
         os.unlink(path)
     def writestr(self, tag, data):

@@ -20,7 +20,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.4.7"
+__version__   = "1.4.8"
 
 def selfinfo():
     info = dict()
@@ -125,6 +125,7 @@ def main():
         logging.info("Finished")
     except ZipCreateError as e:
         logging.exception("{0}: {1}".format(e, zippath))
+        logging.info("Aborting")
         exit(20)
     except KeyboardInterrupt:
         logging.fatal("Aborted, exiting...")
