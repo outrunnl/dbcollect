@@ -22,13 +22,17 @@ SET LINESIZE 32767
 
 Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
 License: GPLv3+
-Version: 1.1
 """
 
 import os
 import sys
 import re
 import logging
+
+try:
+    from lxml import etree
+except ImportError:
+    from xml.etree import ElementTree as etree
 
 _deleted = 'Section removed by awrstrip'
 
@@ -44,18 +48,20 @@ def awrstrip(path, out=None, inplace=False):
     Returns:
     None
     """
-    try:
-        from lxml import etree
-    except ImportError:
-        logging.info('lxml package not found, fallback to xml package')
-        from xml.etree import ElementTree as etree
+    if 'lxml' not in sys.modules:
+        logging.info('python-lxml package not found, fallback to slower xml package')
     try:
         tree = etree.parse(path)
     except etree.ParseError:
-        logging.error('Parsing error in %s', path)
+        logging.error('Parsing error in %s, not stripped', path)
         return
     blacklist = []
-    for element in tree.iter():
+    try:
+        iter = tree.iter
+    except:
+        # Need this on Python 2.6
+        iter = tree.getiterator
+    for element in iter():
         if element.tag == 'table':
             # Look for tables with 'SQL' in the 'summary' attribute
             summary = element.get('summary')
@@ -78,7 +84,7 @@ def awrstrip(path, out=None, inplace=False):
         out = path
     if out and changed:
         try:
-            tree.write(out, encoding="utf-8", method='xml')
+            tree.write(out, encoding="utf-8")
             logging.info('Stripping %s', os.path.basename(out))
         except IOError as err:
             logging.error('IO Error writing to %s: %s', out, os.strerror(err.errno))

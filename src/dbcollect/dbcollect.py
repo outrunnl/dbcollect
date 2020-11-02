@@ -20,7 +20,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.5.0"
+__version__   = "1.5.1"
 
 def selfinfo():
     info = dict()
@@ -68,6 +68,7 @@ def meta():
 
 def main():
     print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(__version__))
+    sys.stdout.flush()
     parser = argparse.ArgumentParser(usage='dbcollect [options]')
     parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
     parser.add_argument("-D", "--debug",     action="store_true", help="Debug (Show errors)")
