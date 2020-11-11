@@ -81,7 +81,7 @@ def main():
     parser.add_argument(      "--offset",    type=int, default=0,  help="Number of days to shift AWR collect period, default 0, max 999")
     parser.add_argument(      "--force",     action="store_true",  help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
     parser.add_argument(      "--statspack", action="store_true",  help="Generate Statspack instead of AWR reports")
-    parser.add_argument(      "--no-strip",  action="store_true",  help="Do not strip AWR reports from SQL sections")
+    parser.add_argument(      "--no-strip",  action="store_true",  help="Do not strip SQL sections from AWR reports")
     parser.add_argument(      "--no-awr",    action="store_true",  help="Skip AWR reports")
     parser.add_argument(      "--no-sar",    action="store_true",  help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true",  help="Skip Oracle collection")
