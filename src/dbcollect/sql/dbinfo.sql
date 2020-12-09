@@ -36,10 +36,12 @@ SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
 ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
 ALTER SESSION SET nls_timestamp_format='YYYY-MM-DD HH24:MI:SS';
+ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
+
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.2.0
+PROMPT DBINFO version 1.2.2
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -360,9 +362,9 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT ASM DISKS
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-COL DISKNAME   FORMAT A20               HEAD 'Disk name'
+COL DISKNAME   FORMAT A30               HEAD 'Disk name'
 COL DG_NAME    FORMAT A30               HEAD 'Diskgroup'
-COL PATH       FORMAT A80               HEAD 'Path'
+COL PATH       FORMAT A120              HEAD 'Path'
 COL USED_MB    FORMAT 99,999,999,990.99 HEAD 'Used'
 COL FREE_MB    LIKE USED_MB             HEAD 'Free'
 COL ALLOCATED  LIKE USED_MB             HEAD 'Allocated'
@@ -404,8 +406,8 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT AWR RETENTION
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-COL METRIC  FORMAT A20   HEAD 'Metric'
-COL MINUTES FORMAT 99999 HEAD 'Minutes'
+COL METRIC  FORMAT A20    HEAD 'Metric'
+COL MINUTES FORMAT 999999 HEAD 'Minutes'
 
 SELECT 'Interval' Metric
 , extract(day from snap_interval)*24*60 +

@@ -13,6 +13,9 @@ except:
     print("ERROR: Cannot import module 'argparse'. Please install python-argparse first:\nyum install python-argparse")
     exit(10)
 
+if sys.version_info < (2.6):
+    sys.exit("Requires Python 2 (2.6 or higher, EL6)")
+
 from shutil import rmtree
 from lib import *
 from modules import *
@@ -20,7 +23,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.5.1"
+__version__   = "1.5.2"
 
 def selfinfo():
     info = dict()

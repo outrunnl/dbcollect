@@ -1,6 +1,6 @@
 Name:		dbcollect
 Summary:	Collect AWR/Statspack and system info
-Version:	1.4.7
+Version:	1.5.2
 Release:	1%{?dtap}
 License:	GPLv3+
 Group:		Applications/Databases

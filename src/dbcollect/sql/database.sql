@@ -11,12 +11,14 @@
 SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
 ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
+ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
+
 
 COL METRIC      FORMAT A20        HEAD 'Metric'
 COL VALUE       FORMAT A80        HEAD 'Value'
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.2.0
+PROMPT DBINFO version 1.2.2
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

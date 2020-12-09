@@ -1,0 +1,24 @@
+#!/bin/bash
+#============================================================================
+# Title       : dbcollect-wrapper
+# Description : Make dbcollect work without python-argparse on EL6
+# Version     : 1.0
+# Author      : Bart Sjerps <bart@outrun.nl>
+# License     : GPLv3+
+# ---------------------------------------------------------------------------
+# Instructions:
+# Place this file in $HOME/bin (usually /home/oracle/bin)
+# Also copy argparse.py to $HOME/bin
+# Make sure $HOME/bin is in $PATH
+# Then run dbcollect via the wrapper:
+# dbcollect-wrapper [options]
+#
+# The argparse.py file can be retrieved from the official CentOS package:
+# http://mirror.centos.org/centos/6/os/x86_64/Packages/python-argparse-1.2.1-2.1.el6.noarch.rpm
+# Extract argparse.py into the current dir:
+# rpm2cpio python-argparse-1.2.1-2.1.el6.noarch.rpm | cpio -idv ./usr/lib/python2.6/site-packages/argparse.py
+# Note that argparse.py will end up in <current-dir>/usr/lib/python2.6/site-packages/
+# Then move it to $HOME/bin/argparse.py
+# ---------------------------------------------------------------------------
+export PYTHONPATH=$HOME/bin
+dbcollect "$@"

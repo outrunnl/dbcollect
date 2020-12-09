@@ -18,6 +18,8 @@ On Enterprise Linux 6 (RHEL 6, OEL 6, CentOS 6) you need to have `python-argpars
 
 `yum install python-argparse`
 
+If you cannot install argparse, check out `dbcollect-wrapper` from the `scripts` directory.
+
 On IBM AIX, you need to install Python 2. You can get python for AIX from
 [AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
 
@@ -27,16 +29,29 @@ On Enterprise Linux 7 (RHEL 7, OEL 7, CentOS 7), Python2 is installed by default
 
 Enterprise Linux 8 has not been tested yet but should work fine.
 
+Older Linux versions (RHEL5) do not work unless there is a more recent version of Python on the system.
+
 ## Install
 
 ### Easy way
 
 The easiest way to install _dbcollect_ is to run this command on your database host:
 
-`curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/install | python`
+```
+curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | python
+sudo mv dbcollect /usr/local/bin
+```
 
 This will download _dbcollect_ and put it in /usr/local/bin (it asks for sudo access if you are not root).
 It requires internet access via https.
+
+You may want to inspect `download` first:
+```
+curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download -o dbcollect-download
+less dbcollect-download
+python dbcollect-download
+sudo mv dbcollect /usr/local/bin
+```
 
 ### Manual install
 

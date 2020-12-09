@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
-install - download and install the latest release of dbcollect to /usr/local/bin
+download - download and install the latest release of dbcollect to /usr/local/bin
 
 Script that can be run directly from github to install dbcollect.
 Usage:
-curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/install | python
+curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | python
 
 To keep things simple, there is only very basic exception handling.
-Runs as any user but asks for sudo permissions to move the binary to /usr/local/bin.
+Move the downloaded dbcollect to /usr/local/bin or $HOME/bin after downloading.
 
 Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
 License: GPLv3+
@@ -20,16 +20,7 @@ except ModuleNotFoundError:
     from urllib.request import urlopen, Request, HTTPError
 
 apiurl = 'https://api.github.com/repos/outrunnl/dbcollect/releases/latest'
-target = '/tmp/dbcollect'
-
-helptext = """
-# Show help
-dbcollect -h
-# Version info
-dbcollect -V
-# Show package contents
-unzip -v dbcollect
-"""
+target = 'dbcollect'
 
 def retrieve(url):
     """Retrieve the raw data from a url"""
@@ -39,7 +30,7 @@ def retrieve(url):
 
 def main():
     print("Github dbcollect downloader - download the latest dbcollect release")
-    print("Retrieving GitHub metadata from {0}".format(apiurl))
+    print("-> Retrieving GitHub metadata from {0}".format(apiurl))
 
     # Get the GitHub metadata (JSON) as dictionary
     info = json.loads(retrieve(apiurl))
@@ -49,30 +40,22 @@ def main():
     version     = info['tag_name'].lstrip('v')
 
     # Download the binary
-    print("Downloading binary version {0} from {1}".format(version, downloadurl))
+    print("-> Downloading binary version {0} from {1}".format(version, downloadurl))
     binary = retrieve(downloadurl)
 
     # Print MD5 hash for verification
     hash = hashlib.md5()
     hash.update(binary)
-    print("md5 hash: {0}".format(hash.hexdigest()))
+    print("-> md5 hash: {0}".format(hash.hexdigest()))
 
     # Save binary
-    print("Saving binary as {0}".format(target))
+    print("-> Saving binary as {0}".format(target))
     with open(target,'wb') as f:
         f.write(binary)
 
     # Set permissions
-    print("Setting permissions to mode 775")
+    print("-> Setting permissions to mode 775")
     os.chmod(target, 0o755)
-
-    # Move to /usr/local/bin using sudo
-    print('Moving {0} to /usr/local/bin'.format(target))
-    rc = os.system(r'sudo \mv {0} /usr/local/bin'.format(target))
-    if rc:
-        print("\nMoving failed, manually move {0} to /usr/local/bin".format(target))
-
-    print(helptext)
 
 try:
     main()
