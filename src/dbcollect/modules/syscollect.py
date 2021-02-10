@@ -19,7 +19,7 @@ def zipexec(archive, tag, cmd, **kwargs):
     if not out:
         archive.writestr('cmd/' + tag, '')
     else:
-        archive.writestr('cmd/' + tag, out.encode('utf-8'))
+        archive.writestr('cmd/' + tag, out)
 
 # Check to continue even if platform is unknown?
 def hostinfo(archive, args):

@@ -63,7 +63,10 @@ class Archive():
         self.store(path, tag)
         os.unlink(path)
     def writestr(self, tag, data):
-        self.zip.writestr(os.path.join(self.prefix, tag), data)
+        try:
+            self.zip.writestr(os.path.join(self.prefix, tag), data)
+        except Exception as e:
+            logging.warning("Writing data to zip file failed: %s", e)
 
 def buildstamp(zipname):
     """Gets the build timestamp for a zipapp archive.

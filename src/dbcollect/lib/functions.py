@@ -48,7 +48,7 @@ def execute(cmd, hide_errors=False, opts=None):
         if not hide_errors:
             if stderr:
                 logging.error('{0}, {1}'.format(cmd, stderr))
-        return stdout.decode('utf-8').rstrip('\n')
+        return stdout.rstrip('\n')
     except OSError as oe:
         if oe.errno == errno.ENOENT:
             # Command failed or does not exist
