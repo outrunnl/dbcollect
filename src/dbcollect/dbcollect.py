@@ -23,7 +23,7 @@ from modules import *
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.5.3"
+__version__   = "1.5.4"
 
 def selfinfo():
     info = dict()
@@ -88,6 +88,8 @@ def main():
     parser.add_argument(      "--no-awr",    action="store_true",  help="Skip AWR reports")
     parser.add_argument(      "--no-sar",    action="store_true",  help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true",  help="Skip Oracle collection")
+    parser.add_argument(      "--no-oratab", action="store_true",  help="Ignore oratab for instance detection")
+    parser.add_argument(      "--no-orainv", action="store_true",  help="Ignore Oracle inventory for instance detection (oratab only)")
     parser.add_argument(      "--no-sys",    action="store_true",  help="Skip OS collection")
     parser.add_argument(      "--include",   type=str, help="Include Oracle instances (only) from file", metavar='FILE')
     parser.add_argument(      "--exclude",   type=str, help="Exclude Oracle instances from file", metavar='FILE')

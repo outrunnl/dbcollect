@@ -177,7 +177,15 @@ def orainfo(archive, args):
     if args.include:
         includelist = getlist(args.include)
     # Get oracle sids via oratab and scanning $ORACLE_HOME/dbs
-    sids = [x for x in oratabsids()] + [x for x in oradbssids()]
+    sids = []
+    if args.no_oratab:
+        logging.info('Skipping instance detection from oratab')
+    else:
+        sids += [x for x in oratabsids()]
+    if args.no_orainv:
+        logging.info('Skipping instance detection from Oracle Inventory')
+    else:
+        sids += [x for x in oradbssids()]
     # Dedupe list of sids
     sids = list(set(sids))
     for sid, orahome, active in sids:
