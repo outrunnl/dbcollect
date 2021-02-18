@@ -1,5 +1,8 @@
 DBCollect - Oracle Database Info Collector
-=
+======================
+
+![logo](https://github.com/outrunnl/dbcollect/blob/master/artwork/dbcollect-logo.png)
+
 
 ## Description
 
@@ -27,7 +30,7 @@ On Solaris, Python should be already available.
 
 On Enterprise Linux 7 (RHEL 7, OEL 7, CentOS 7), Python2 is installed by default including the argparse module.
 
-Enterprise Linux 8 has not been tested yet but should work fine.
+Enterprise Linux 8 (RHEL 8, OEL 8) are not yet supported (TBD).
 
 Older Linux versions (RHEL5) do not work unless there is a more recent version of Python on the system.
 
@@ -73,6 +76,15 @@ unzip dbcollect -d /usr/local/src/dbcollect
 python /usr/local/src/dbcollect/dbcollect.py
 ```
 
+## Updating
+
+dbcollect has a self-updating feature that fetches a new version if available from github. It requires https access to github.com.
+To use this run
+```
+dbcollect --update
+```
+If you don't run this as root (or using sudo) you manually have to move /tmp/dbcollect to /usr/local/bin (or another location in $PATH)
+
 ## Info collected by dbcollect:
 
 - AWR or Statspack reports for a default period of about 10 days
@@ -83,8 +95,9 @@ python /usr/local/src/dbcollect/dbcollect.py
 - ASM disk group and disk info
 - Init parameters
 - Feature usage
-- UNIX/Linux: CPU, memory, disks, network interfaces etc
-- SAR: Binary SAR files (Linux) or SAR reports (UNIX)
+- Linux: CPU, memory, disks, network interfaces etc
+- AIX, Solaris (SPARC): CPU, memory, limited other info
+- SAR: Binary SAR files (Linux) or SAR reports (UNIX) (Linux SAR provides much more detail)
 - HP/UX: Not supported (let me know if you need it)
 - Windows: Not yet supported (TBD)
 

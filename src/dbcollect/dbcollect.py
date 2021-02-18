@@ -19,11 +19,12 @@ if sys.version_info < (2.6):
 from shutil import rmtree
 from lib import *
 from modules import *
+from modules.updater import update
 
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.5.4"
+__version__   = "1.5.5"
 
 def selfinfo():
     info = dict()
@@ -75,6 +76,7 @@ def main():
     parser = argparse.ArgumentParser(usage='dbcollect [options]')
     parser.add_argument("-V", "--version",   action="store_true", help="Version and copyright info")
     parser.add_argument("-D", "--debug",     action="store_true", help="Debug (Show errors)")
+    parser.add_argument(      "--update",    action="store_true", help="Check for updates")
     parser.add_argument("-q", "--quiet",     action="store_true", help="Suppress output")
     parser.add_argument(      "--delete",    action="store_true", help="Delete previous zip file")
     parser.add_argument(      "--tmpdir",    type=str, default='/tmp',   help="temp dir (/tmp)")
@@ -97,6 +99,9 @@ def main():
 
     if args.version:
         printversion()
+        return
+    if args.update:
+        update(__version__)
         return
     if args.quiet:
         sys.stdout = open('/dev/null','w')
