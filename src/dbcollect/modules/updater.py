@@ -1,3 +1,8 @@
+"""
+updater.py - OS and system functions for dbcollect
+Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
+License: GPLv3+
+"""
 from urllib2 import urlopen, Request, HTTPError, URLError
 import os, sys, json, logging
 from shutil import move

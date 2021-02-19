@@ -54,7 +54,7 @@ def execute(cmd, hide_errors=False, opts=None):
             # Command failed or does not exist
             logging.warning('executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
         else:
-            logging.error('error executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
+            logging.warning('error executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
 
 
 def filedate(path):
