@@ -34,9 +34,7 @@ def sqlplus(sid, orahome, sql, output=False):
     """Run SQL*Plus script or command as SYSDBA. Note sql must be of type <bytes>
     Output is hidden and returned if output == False, or else sent to stdout
     """
-    env = {}
-    env['ORACLE_HOME'] = orahome
-    env['ORACLE_SID'] = sid
+    env = dict(ORACLE_HOME=orahome, ORACLE_SID=sid)
     sqlpluscmd = ([os.path.join(orahome, 'bin', 'sqlplus'),'-L','-S','/', 'as','sysdba'])
     if output:
         proc = Popen(sqlpluscmd, env=env, stdin=PIPE)
@@ -49,15 +47,20 @@ def sqlplus(sid, orahome, sql, output=False):
 
 def sidstatus(sid, orahome):
     """Try to connect to ORACLE_SID and return the status and version
-    Return None if connect fails
+    Return status and version
     """
+    env = dict(ORACLE_HOME=orahome, ORACLE_SID=sid)
     sql = "set pagesize 0 tab off colsep |\nWHENEVER SQLERROR EXIT SQL.SQLCODE\nselect status, version from v$instance;"
-    try:
-        connect = sqlplus(sid, orahome, sql.encode('utf-8')).rstrip()
-        status, version = [x.strip() for x in connect.split('|')]
-    except OracleError as e:
-        logging.error(e)
-        return None, None
+    sqlpluscmd = ([os.path.join(orahome, 'bin', 'sqlplus'),'-L','-S','/', 'as','sysdba'])
+    proc = Popen(sqlpluscmd, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = proc.communicate(sql)
+    if proc.returncode:
+        if 'ORA-01034' in stdout:
+            return 'UNAVAILABLE', ''
+        else:
+            logging.warning(e)
+            return None, None
+    status, version = [x.strip() for x in stdout.split('|')]
     return status, version
 
 def orahomes():
@@ -160,9 +163,9 @@ def gen_reports(archive, args, sid, orahome):
             archive.move(r, 'oracle/{0}/{1}'.format(sid, f) )
         os.chdir(oldwd)
     except OracleError as e:
-        logging.exception("Oracle Error {0}".format(e))
+        logging.exception("Oracle Error %s", e)
     except OSError as e:
-        logging.exception("{0}".format(e))
+        logging.exception("%s", e)
     finally:
         if os.path.isdir(tempdir):
             rmtree(tempdir)
@@ -172,6 +175,7 @@ def orainfo(archive, args):
     logging.info('Collecting Oracle info')
     excludelist = []
     includelist = []
+    processed_sids = []
     if args.exclude:
         excludelist = getlist(args.exclude)
     if args.include:
@@ -191,43 +195,48 @@ def orainfo(archive, args):
     for sid, orahome, active in sids:
         if includelist:
             if sid not in includelist:
-                logging.info('Skipping Oracle instance {0} (not included)'.format(sid))
+                logging.info('Skipping Oracle instance %s (not included)', sid)
                 continue
         if sid in excludelist:
-            logging.info('Excluding Oracle instance {0}'.format(sid))
+            logging.info('Excluding Oracle instance %s', sid)
             continue
         if not active:
-            logging.info('Skipping Oracle instance {0} (not running or available)'.format(sid))
+            logging.info('Skipping Oracle instance %s (not running or available)', sid)
             continue
-        logging.info('Processing Oracle instance {0}'.format(sid))
+        if sid in processed_sids:
+            logging.info('Skipping Oracle instance %s (already processed)', sid)
+            continue
+        logging.info('Processing Oracle instance %s', sid)
         status, version = sidstatus(sid, orahome)
-        if status == None:
-            logging.info("SQL*Plus login failed, continuing with next SID")
+        if status in (None,'UNAVAILABLE'):
+            logging.warning("SQL*Plus login failed, continuing with next SID")
             continue
         elif status not in ['STARTED','MOUNTED', 'OPEN']:
-            logging.error('Skipping instance {0} (cannot connect)'.format(sid))
+            logging.error('Skipping instance %s (cannot connect)', sid)
+            continue
         elif status == 'STARTED':
-            logging.info('Oracle instance {0} is not mounted'.format(sid))
+            logging.info('Oracle instance %s is not mounted', sid)
             sql = getsql('instance.sql')
         elif status == 'MOUNTED':
-            logging.info('Oracle instance {0} is mounted (not open)'.format(sid))
+            logging.info('Oracle instance %s is mounted (not open)', sid)
             sql = getsql('database.sql')
         elif status == 'OPEN':
             sql = getsql('dbinfo.sql')
         else:
-            logerror("Oracle instance {0} has unknown state: {1}".format(sid, status))
+            logerror("Oracle instance %s has unknown state: %s", sid, status)
             continue
         try:
-            logging.info('Getting dbinfo for Oracle instance {0}'.format(sid))
+            logging.info('Getting dbinfo for Oracle instance %s', sid)
             report = sqlplus(sid, orahome, sql)
             archive.writestr('oracle/{0}/dbinfo-{1}.txt'.format(sid,sid),report)
             if status == 'OPEN':
                 if int(version.split('.')[0]) >= 12:
                     sql = getsql('{0}.sql'.format('pdbinfo'))
                     pdbreport = sqlplus(sid, orahome, sql)
-                    logging.info('Getting pdbinfo for Oracle instance {0}'.format(sid))
+                    logging.info('Getting pdbinfo for Oracle instance %s', sid)
                     archive.writestr('oracle/{0}/pdbinfo-{1}.txt'.format(sid,sid),pdbreport)
                 if not args.no_awr:
                     gen_reports(archive, args, sid, orahome)
+            processed_sids.append(sid)
         except OracleError as e:
             logging.error(e)
