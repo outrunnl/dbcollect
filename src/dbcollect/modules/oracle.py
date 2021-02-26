@@ -145,7 +145,7 @@ def gen_reports(archive, args, sid, orahome):
         sql = getsql('genawr.sql')
         output = False if args.quiet else True
     try:
-        tempdir = tempfile.mkdtemp(prefix = os.path.join(args.tmpdir, '{0}-{1}'.format(reptype, sid)))
+        tempdir = tempfile.mkdtemp(prefix = os.path.join('/tmp', '{0}-{1}'.format(reptype, sid)))
         tempsql = sqlplus(sid, orahome, sql.format(args.days, args.offset))
         scriptpath = os.path.join(tempdir, '{0}reports.sql'.format(reptype))
         with open(scriptpath,'w') as f:

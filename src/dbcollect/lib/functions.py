@@ -27,6 +27,13 @@ def getlist(path):
     with open(path) as f:
         return [x.strip() for x in f.readlines() if len(x)]
 
+def saferemove(path):
+    """Delete a file only if it exists in /tmp"""
+    if path.startswith('/tmp'):
+        os.unlink(path)
+    else:
+        raise ValueError('Trying to remove file outside /tmp')
+
 def execute(cmd, hide_errors=False, opts=None):
     """
     Run a command, and return the output of stdout. Any stderr messages will be logged.

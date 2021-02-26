@@ -24,7 +24,7 @@ from modules.updater import update
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.5.5"
+__version__   = "1.5.6"
 
 def selfinfo():
     info = dict()
@@ -79,7 +79,6 @@ def main():
     parser.add_argument(      "--update",    action="store_true", help="Check for updates")
     parser.add_argument("-q", "--quiet",     action="store_true", help="Suppress output")
     parser.add_argument(      "--delete",    action="store_true", help="Delete previous zip file")
-    parser.add_argument(      "--tmpdir",    type=str, default='/tmp',   help="temp dir (/tmp)")
     parser.add_argument(      "--output",    type=str, metavar='FILE',   help="output file, default dbcollect-<hostname>.zip")
     parser.add_argument("-u", "--user",      type=str, default='oracle', help="Run as user (default oracle)")
     parser.add_argument("-d", "--days",      type=int, default=10, help="Number of days to collect AWR data (default 10, max 999)")
@@ -111,11 +110,11 @@ def main():
         else:
             zippath = os.path.join(os.getcwd(),os.path.splitext(args.output)[0] + '.zip')
     else:
-        zippath = (os.path.join(args.tmpdir, 'dbcollect-{0}.zip'.format(platform.uname()[1])))
-    logpath = (os.path.join(args.tmpdir, 'dbcollect.log'))
+        zippath = (os.path.join('/tmp', 'dbcollect-{0}.zip'.format(platform.uname()[1])))
+    logpath = '/tmp/dbcollect.log'
     if args.delete and os.path.isfile(zippath):
         try:
-            os.unlink(zippath)
+            saferemove(zippath)
         except Exception as e:
             print("Cannot remove {0}, {1}".format(zippath, e))
     if args.include:

@@ -6,6 +6,7 @@ License: GPLv3+
 from urllib2 import urlopen, Request, HTTPError, URLError
 import os, sys, json, logging
 from shutil import move
+from lib.functions import saferemove
 
 _apiurl  = 'https://api.github.com/repos/outrunnl/dbcollect/releases/latest'
 _tmpfile = '/tmp/dbcollect'
@@ -28,14 +29,14 @@ def update(current):
     version     = info['tag_name'].lstrip('v')
     downloadurl = info['assets'][0]['browser_download_url']
     logging.info('Current version: %s', current)
-    logging.info('New version:     %s', version)
+    logging.info('Release version: %s', version)
     if version <= current:
         logging.info("Already up to date")
         return
     logging.info("Downloading from %s", downloadurl)
     binary = retrieve(downloadurl)
     if os.path.exists(_tmpfile):
-        os.unlink(_tmpfile)
+        saferemove(_tmpfile)
     try:
         with open(_tmpfile,'w') as f:
             logging.info('Writing %s (%s bytes)', _tmpfile, len(binary))
