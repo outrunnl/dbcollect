@@ -4,6 +4,7 @@ __license__   = "GPLv3+"
 
 import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED
+from functions import saferemove
 
 class ZipCreateError(Exception):
     """Exception class for dealing with ZIP archives"""
@@ -17,15 +18,14 @@ class Archive():
     """
     zip = None
     def __init__(self, path, logpath, version):
-        try:
-            self.prefix  = os.uname()[1]
-            self.path    = path
-            self.logpath = logpath
-            self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
-            comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
-            self.zip.comment = comment.encode('utf-8')
-        except Exception as e:
-            raise ZipCreateError("Cannot create zipfile")
+        self.prefix  = os.uname()[1]
+        self.path    = path
+        self.logpath = logpath
+        if os.path.exists(self.path):
+            raise ZipCreateError("ZIP file already exists")
+        self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
+        comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
+        self.zip.comment = comment.encode('utf-8')
     def __del__(self):
         if not self.zip:
             return
@@ -35,7 +35,7 @@ class Archive():
         except OSError as e:
             logging.error("Storing logfile failed: %s", e)
         try:
-            os.unlink(self.logpath)
+            saferemove(self.logpath)
         except Exception as e:
             logging.warning("Removing logfile failed: %s", e)
         self.zip.close()
@@ -61,7 +61,7 @@ class Archive():
     def move(self, path, tag=None):
         self.checkfreespace()
         self.store(path, tag)
-        os.unlink(path)
+        saferemove(path)
     def writestr(self, tag, data):
         try:
             self.zip.writestr(os.path.join(self.prefix, tag), data)
