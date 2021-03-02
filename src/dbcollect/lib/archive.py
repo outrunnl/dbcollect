@@ -18,15 +18,14 @@ class Archive():
     """
     zip = None
     def __init__(self, path, logpath, version):
-        try:
-            self.prefix  = os.uname()[1]
-            self.path    = path
-            self.logpath = logpath
-            self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
-            comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
-            self.zip.comment = comment.encode('utf-8')
-        except Exception as e:
-            raise ZipCreateError("Cannot create zipfile")
+        self.prefix  = os.uname()[1]
+        self.path    = path
+        self.logpath = logpath
+        if os.path.exists(self.path):
+            raise ZipCreateError("ZIP file already exists")
+        self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
+        comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
+        self.zip.comment = comment.encode('utf-8')
     def __del__(self):
         if not self.zip:
             return
