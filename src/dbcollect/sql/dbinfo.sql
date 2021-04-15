@@ -30,6 +30,7 @@
 --         cpu count for RAC, removed spool parameters, break headings in
 --         sections, added archivelogs, asmdisks, dnfs + awr sections,
 --         many small fixes, wider page
+-- 1.3.0 - Added ASM files summary section, fix backup file report
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -41,7 +42,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.2.2
+PROMPT DBINFO version 1.3.0
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -199,7 +200,7 @@ COL SIZE_MB    FORMAT 99,999,999,990.99 HEAD 'Size'
 COL BACKUPTYPE FORMAT A12    HEAD 'Backup type'
 COL FILE_TYPE  FORMAT A15    HEAD 'File type'
 COL OBSOLETE   FORMAT A10    HEAD 'Obsolete'
-COL COMPRESSED FORMAT A10    HEAD 'Compress'
+COL COMPRESSED FORMAT A10    HEAD 'Compressed'
 COL STATUS     FORMAT A10    HEAD 'Status'
 COL DEVTYPE    FORMAT A10    HEAD 'Target'
 COL FILES      FORMAT 999990 HEAD 'Files'
@@ -207,6 +208,8 @@ COL FILES      FORMAT 999990 HEAD 'Files'
 SELECT file_type
 , BACKUP_TYPE BACKUPTYPE
 , COMPRESSED
+, OBSOLETE
+, STATUS
 , SUM(BYTES)/1048576 SIZE_MB
 , count(*)           FILES
 FROM (
@@ -229,7 +232,7 @@ FROM (
 WHERE 1=1
 AND file_type NOT IN ('ARCHIVED LOG','DATAFILE')
 AND status IS NOT NULL
-GROUP BY FILE_TYPE, BACKUP_TYPE, COMPRESSED
+GROUP BY FILE_TYPE, BACKUP_TYPE, COMPRESSED, OBSOLETE, STATUS
 ORDER BY 1, 2
 /
 
@@ -385,6 +388,33 @@ FROM gv$asm_disk disk
 LEFT OUTER JOIN v$asm_diskgroup dg ON disk.group_number = dg.group_number AND dg.group_number <> 0
 JOIN v$instance ON inst_id=instance_number
 ORDER BY disk.name,path
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT ASM SUMMARY
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF SIZE_MB SPACE_MB FILES ON REPORT
+
+COL FILETYPE  FORMAT A20               HEAD 'Filetype'
+COL DG_NAME   FORMAT A25               HEAD 'Diskgroup'
+COL SIZE_MB   FORMAT 99,999,999,990.99 HEAD 'Size'
+COL SPACE_MB  LIKE SIZE_MB             HEAD 'Allocated'
+COL FILES     FORMAT 999990            HEAD 'Files'
+
+SELECT f.type filetype
+, name dg_name
+, sum(f.bytes)/1048576 SIZE_MB
+, sum(f.space)/1048576 SPACE_MB
+, count(*) files
+FROM v$asm_file f
+JOIN v$asm_diskgroup d USING (group_number)
+GROUP BY f.type, name
+ORDER BY 1, 2
 /
 
 CLEAR COMPUTES COLUMNS
