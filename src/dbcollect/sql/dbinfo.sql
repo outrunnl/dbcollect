@@ -31,6 +31,7 @@
 --         sections, added archivelogs, asmdisks, dnfs + awr sections,
 --         many small fixes, wider page
 -- 1.3.0 - Added ASM files summary section, fix backup file report
+-- 1.3.1 - Added Compression summary
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -332,6 +333,44 @@ CLEAR COMPUTES COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT TABLE COMPRESSION SUMMARY
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Works only on 11g+
+
+COL MIB         FORMAT 999999990.99
+COL compression FORMAT A15        head 'Compression'
+COL tables      FORMAT 999990     head 'Tables'
+COL partitions  LIKE tables       head 'Part'
+COL datasize    LIKE MIB          head 'Datasize'
+COL allocated   LIKE MIB          head 'Allocated'
+COL free        LIKE MIB          head 'Free'
+COL ratio       FORMAT 990.99     head 'Ratio'
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
+
+SELECT coalesce(t.compress_for,'NONE') compression
+, sum(tbl)                             tables
+, sum(bytes)/1048576                   datasize
+, sum(block_size*blocks)/1048576       allocated
+, sum(block_size*empty_blocks)/1048576 free
+, sum(bytes)/sum(block_size*blocks)    ratio
+FROM (
+  SELECT tablespace_name, num_rows, 1 tbl, 0 part, compress_for
+  , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM dba_tables
+  UNION ALL
+  SELECT tablespace_name, num_rows, 0 tbl, 1 part, compress_for
+  , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM dba_tab_partitions
+) t
+JOIN dba_tablespaces USING (tablespace_name)
+GROUP BY t.compress_for
+ORDER BY t.compress_for NULLS FIRST
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT ASM DISK GROUPS
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -349,11 +388,11 @@ COMPUTE SUM LABEL "Total" OF USED_MB FREE_MB ALLOCATED ON REPORT
 SELECT name dg_name
 , allocation_unit_size/1024/1024 au_size
 -- , decode(state,'MOUNTED','Y','CONNECTED','Y','DISMOUNTED','N','E') state
-, decode(type, 'EXTERN',  1, 'NORMAL',    2 ,'HIGH',       3 , 0 ) mirrors
+, decode(type, 'EXTERN',1,'NORMAL',2,'HIGH',3,0) MIRRORS
 , (total_mb - free_mb) USED_MB
 , free_mb              FREE_MB
 , total_mb             ALLOCATED
-, ROUND((1- (free_mb / nullif(total_mb,0)))*100, 2) PCT_USED
+, ROUND((1- (free_mb / NULLIF(total_mb,0)))*100, 2) PCT_USED
 FROM v$asm_diskgroup
 ORDER BY name
 /
@@ -426,10 +465,11 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 COL SVRNAME FORMAT A40  HEAD 'NFS Server'
 COL DIRNAME FORMAT A120 HEAD 'Directory'
-SELECT svrname
-, dirname
+SELECT svrname, dirname
 FROM v$dnfs_servers
 /
+
+CLEAR COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
