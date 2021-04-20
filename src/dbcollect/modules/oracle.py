@@ -15,6 +15,15 @@ class OracleError(Exception):
     """Exception class for dealing with SQL*Plus issues"""
     pass
 
+class Shared:
+    """Container class for sharing between threads"""
+    excluded = []
+    included = []
+    processed = []
+    def __init__(self, args, archive):
+        self.args = args
+        self.archive = archive
+
 def getsql(name):
     """Gets a sql script from the sql module, returns as string"""
     return pkgutil.get_data('sql',name)
@@ -143,7 +152,6 @@ def gen_reports(shared, sid, orahome):
         output = False if shared.args.quiet else True
     try:
         tempdir = tempfile.mkdtemp(prefix = os.path.join('/tmp', '{0}-{1}'.format(reptype, sid)))
-        logging.info('tempdir %s', tempdir)
         tempsql = sqlplus(sid, orahome, sql.format(shared.args.days, shared.args.offset))
         scriptpath = os.path.join(tempdir, '{0}reports.sql'.format(reptype))
         with open(scriptpath,'w') as f:
@@ -168,15 +176,6 @@ def gen_reports(shared, sid, orahome):
     finally:
         if os.path.isdir(tempdir):
             rmtree(tempdir)
-
-class Shared:
-    """Container class for sharing between threads"""
-    excluded = []
-    included = []
-    processed = []
-    def __init__(self, args, archive):
-        self.args = args
-        self.archive = archive
 
 def instance_info(shared, sid, orahome, active):
     logging.info('Processing Oracle instance %s', sid)
