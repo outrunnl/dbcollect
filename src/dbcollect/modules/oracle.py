@@ -4,14 +4,11 @@ Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
 License: GPLv3+
 """
 
-"""
-Oracle functions for dbcollect
-"""
-
-import os, re, pkgutil, tempfile
+import os, re, pkgutil, threading, tempfile
 from subprocess import Popen, call
 from shutil import rmtree
 from lib import *
+from lib.threads import lock
 from .awrstrip import awrstrip
 
 class OracleError(Exception):
@@ -126,41 +123,43 @@ def checkawrlicense(sid, orahome):
         logging.error("AWR detection failed")
     return False
 
-def gen_reports(archive, args, sid, orahome):
+def gen_reports(shared, sid, orahome):
     """Generate AWR or Statspack reports in tmpdir
     Move the reports to the archive when done
     """
-    if args.statspack:
+    if shared.args.statspack:
         reptype = 'statspack'
         sql = getsql('gensp.sql')
         output = False
     else:
         if not checkawrlicense(sid, orahome):
-            if args.force:
+            if shared.args.force:
                 logging.warning("No prior AWR usage detected, continuing anyway (--force)")
             else:
                 logging.error("No prior AWR usage detected, skipping AWR reports (try --force or --statspack)")
                 return
         reptype = 'awr'
         sql = getsql('genawr.sql')
-        output = False if args.quiet else True
+        output = False if shared.args.quiet else True
     try:
         tempdir = tempfile.mkdtemp(prefix = os.path.join('/tmp', '{0}-{1}'.format(reptype, sid)))
-        tempsql = sqlplus(sid, orahome, sql.format(args.days, args.offset))
+        logging.info('tempdir %s', tempdir)
+        tempsql = sqlplus(sid, orahome, sql.format(shared.args.days, shared.args.offset))
         scriptpath = os.path.join(tempdir, '{0}reports.sql'.format(reptype))
         with open(scriptpath,'w') as f:
             f.write(tempsql)
         oldwd = os.getcwd()
         os.chdir(tempdir)
-        logging.info('Generating {0} reports for instance {1}, days={2}, offset={3}'.format(reptype, sid, args.days, args.offset))
+        logging.info('Generating {0} reports for instance {1}, days={2}, offset={3}'.format(reptype, sid, shared.args.days, shared.args.offset))
         sqlplus(sid, orahome, '@' + scriptpath, output)
-        if not args.no_strip:
+        if not shared.args.no_strip:
             logging.info("Stripping AWR reports")
             for file in [os.path.join(tempdir, f) for f in os.listdir(tempdir) if f.endswith('.html')]:
                 awrstrip(file, inplace=True)
         for f in listdir(tempdir):
             r = os.path.join(tempdir, f)
-            archive.move(r, 'oracle/{0}/{1}'.format(sid, f) )
+            with lock:
+                shared.archive.move(r, 'oracle/{0}/{1}'.format(sid, f) )
         os.chdir(oldwd)
     except OracleError as e:
         logging.exception("Oracle Error %s", e)
@@ -170,16 +169,66 @@ def gen_reports(archive, args, sid, orahome):
         if os.path.isdir(tempdir):
             rmtree(tempdir)
 
+class Shared:
+    """Container class for sharing between threads"""
+    excluded = []
+    included = []
+    processed = []
+    def __init__(self, args, archive):
+        self.args = args
+        self.archive = archive
+
+def instance_info(shared, sid, orahome, active):
+    logging.info('Processing Oracle instance %s', sid)
+    args = shared.args
+    archive = shared.archive
+    processed = shared.processed
+    status, version = sidstatus(sid, orahome)
+    if status in (None,'UNAVAILABLE'):
+        logging.warning("SQL*Plus login failed, continuing with next SID")
+        return
+    elif status not in ['STARTED','MOUNTED', 'OPEN']:
+        logging.error('Skipping instance %s (cannot connect)', sid)
+        return
+    elif status == 'STARTED':
+        logging.info('Oracle instance %s is not mounted', sid)
+        sql = getsql('instance.sql')
+    elif status == 'MOUNTED':
+        logging.info('Oracle instance %s is mounted (not open)', sid)
+        sql = getsql('database.sql')
+    elif status == 'OPEN':
+        sql = getsql('dbinfo.sql')
+    else:
+        logerror("Oracle instance %s has unknown state: %s", sid, status)
+        return
+    try:
+        logging.info('Getting dbinfo for Oracle instance %s', sid)
+        report = sqlplus(sid, orahome, sql)
+        with lock:
+            archive.writestr('oracle/{0}/dbinfo-{1}.txt'.format(sid,sid),report)
+        if status == 'OPEN':
+            if int(version.split('.')[0]) >= 12:
+                sql = getsql('{0}.sql'.format('pdbinfo'))
+                pdbreport = sqlplus(sid, orahome, sql)
+                logging.info('Getting pdbinfo for Oracle instance %s', sid)
+                with lock:
+                    archive.writestr('oracle/{0}/pdbinfo-{1}.txt'.format(sid,sid),pdbreport)
+            if not args.no_awr:
+                gen_reports(shared, sid, orahome)
+        processed.append(sid)
+    except OracleError as e:
+        logging.error(e)
+    except Exception as e:
+        logging.exception("%s", e)
+
 def orainfo(archive, args):
     """Collect Oracle config and workload data"""
     logging.info('Collecting Oracle info')
-    excludelist = []
-    includelist = []
-    processed_sids = []
+    shared = Shared(args, archive)
     if args.exclude:
-        excludelist = getlist(args.exclude)
+        shared.excluded = getlist(args.exclude)
     if args.include:
-        includelist = getlist(args.include)
+        shared.included = getlist(args.include)
     # Get oracle sids via oratab and scanning $ORACLE_HOME/dbs
     sids = []
     if args.no_oratab:
@@ -192,51 +241,29 @@ def orainfo(archive, args):
         sids += [x for x in oradbssids()]
     # Dedupe list of sids
     sids = list(set(sids))
+
+    # Start workers
+    logging.info('Max threads is %d', args.threads)
+    threads = list()
     for sid, orahome, active in sids:
-        if includelist:
-            if sid not in includelist:
+        if shared.included:
+            if sid not in shared['included']:
                 logging.info('Skipping Oracle instance %s (not included)', sid)
                 continue
-        if sid in excludelist:
+        if sid in shared.excluded:
             logging.info('Excluding Oracle instance %s', sid)
             continue
         if not active:
             logging.info('Skipping Oracle instance %s (not running or available)', sid)
             continue
-        if sid in processed_sids:
+        if sid in shared.processed:
             logging.info('Skipping Oracle instance %s (already processed)', sid)
             continue
-        logging.info('Processing Oracle instance %s', sid)
-        status, version = sidstatus(sid, orahome)
-        if status in (None,'UNAVAILABLE'):
-            logging.warning("SQL*Plus login failed, continuing with next SID")
-            continue
-        elif status not in ['STARTED','MOUNTED', 'OPEN']:
-            logging.error('Skipping instance %s (cannot connect)', sid)
-            continue
-        elif status == 'STARTED':
-            logging.info('Oracle instance %s is not mounted', sid)
-            sql = getsql('instance.sql')
-        elif status == 'MOUNTED':
-            logging.info('Oracle instance %s is mounted (not open)', sid)
-            sql = getsql('database.sql')
-        elif status == 'OPEN':
-            sql = getsql('dbinfo.sql')
-        else:
-            logerror("Oracle instance %s has unknown state: %s", sid, status)
-            continue
-        try:
-            logging.info('Getting dbinfo for Oracle instance %s', sid)
-            report = sqlplus(sid, orahome, sql)
-            archive.writestr('oracle/{0}/dbinfo-{1}.txt'.format(sid,sid),report)
-            if status == 'OPEN':
-                if int(version.split('.')[0]) >= 12:
-                    sql = getsql('{0}.sql'.format('pdbinfo'))
-                    pdbreport = sqlplus(sid, orahome, sql)
-                    logging.info('Getting pdbinfo for Oracle instance %s', sid)
-                    archive.writestr('oracle/{0}/pdbinfo-{1}.txt'.format(sid,sid),pdbreport)
-                if not args.no_awr:
-                    gen_reports(archive, args, sid, orahome)
-            processed_sids.append(sid)
-        except OracleError as e:
-            logging.error(e)
+        thread = threading.Thread(target=instance_info, name='worker_' + sid, args=(shared, sid, orahome, active))
+        while threading.active_count() > args.threads:
+            time.sleep(1)
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        logging.debug('waiting for %s', thread.name)
+        thread.join()

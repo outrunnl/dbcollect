@@ -94,6 +94,7 @@ def main():
     parser.add_argument(      "--no-sys",    action="store_true",  help="Skip OS collection")
     parser.add_argument(      "--include",   type=str, help="Include Oracle instances (only) from file", metavar='FILE')
     parser.add_argument(      "--exclude",   type=str, help="Exclude Oracle instances from file", metavar='FILE')
+    parser.add_argument(      "--threads",   type=int, default=4,  help="Max number of threads (default 4)")
     args = parser.parse_args()
 
     if args.version:
