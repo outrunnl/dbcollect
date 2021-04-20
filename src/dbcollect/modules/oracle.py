@@ -64,7 +64,7 @@ def sidstatus(sid, orahome):
         if 'ORA-01034' in stdout:
             return 'UNAVAILABLE', ''
         else:
-            logging.warning(e)
+            logging.warning('Oracle status check failed, sqlplus return code %d', proc.returncode)
             return None, None
     status, version = [x.strip() for x in stdout.split('|')]
     return status, version
@@ -222,7 +222,7 @@ def instance_info(shared, sid, orahome, active):
 
 def orainfo(archive, args):
     """Collect Oracle config and workload data"""
-    logging.info('Collecting Oracle info')
+    logging.info('Collecting Oracle info (max threads = %d)', args.threads)
     shared = Shared(args, archive)
     if args.exclude:
         shared.excluded = getlist(args.exclude)
@@ -242,7 +242,6 @@ def orainfo(archive, args):
     sids = list(set(sids))
 
     # Start workers
-    logging.info('Max threads is %d', args.threads)
     threads = list()
     for sid, orahome, active in sids:
         if shared.included:

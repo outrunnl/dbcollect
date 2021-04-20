@@ -38,19 +38,19 @@ def linux_info(archive, args):
         lsblk = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched'
     else:
         lsblk = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname'
-    zipexec(archive, 'lscpu'     , 'lscpu')
-    zipexec(archive, 'lsscsi'    , 'lsscsi')
-    zipexec(archive, 'sestatus'  , 'sestatus')
-    zipexec(archive, 'lsmod'     , 'lsmod')
-    zipexec(archive, 'dmesg'     , 'dmesg')
-    zipexec(archive, 'psef'      , 'ps -ef')
-    zipexec(archive, 'psfaux'    , 'ps faux')
-    zipexec(archive, 'lsblk'     , lsblk)
-    zipexec(archive, 'dfpt'      , 'df -PT')
-    zipexec(archive, 'iplink'    , 'ip -o link show')
-    zipexec(archive, 'ipaddr'    , 'ip -o addr show')
-    zipexec(archive, 'rpmqf'     , 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n')
-    zipexec(archive, 'sysctla'   , 'sysctl -a', hide_errors=True)
+    zipexec(archive, 'lscpu'   , 'lscpu')
+    zipexec(archive, 'lsscsi'  , 'lsscsi')
+    zipexec(archive, 'sestatus', 'sestatus')
+    zipexec(archive, 'lsmod'   , 'lsmod')
+    zipexec(archive, 'dmesg'   , 'dmesg')
+    zipexec(archive, 'psef'    , 'ps -ef')
+    zipexec(archive, 'psfaux'  , 'ps faux')
+    zipexec(archive, 'lsblk'   , lsblk)
+    zipexec(archive, 'dfpt'    , 'df -PT')
+    zipexec(archive, 'iplink'  , 'ip -o link show')
+    zipexec(archive, 'ipaddr'  , 'ip -o addr show')
+    zipexec(archive, 'rpmqf'   , 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n')
+    zipexec(archive, 'sysctla' , 'sysctl -a', hide_errors=True)
     for file in ['/proc/cpuinfo',
         '/proc/meminfo',
         '/proc/filesystems',
@@ -61,8 +61,9 @@ def linux_info(archive, args):
         '/proc/misc',
         '/proc/uptime',
         '/etc/os-release',
-        '/etc/system-release',
-        '/etc/issue',
+        '/etc/system-release']:
+        archive.store(file)
+    for file in ['/etc/issue',
         '/etc/motd',
         '/etc/multipath.conf',
         '/etc/oratab',
@@ -73,7 +74,7 @@ def linux_info(archive, args):
         '/sys/class/dmi/id/board_name',
         '/sys/class/dmi/id/board_vendor',
         '/sys/class/dmi/id/chassis_vendor']:
-        archive.store(file)
+        archive.store(file, ignore=True)
     for f in listdir('/etc/udev/rules.d/'):
         path = os.path.join('/etc/udev/rules.d/', f)
         if os.path.isfile(path) and f.endswith('.rules'):

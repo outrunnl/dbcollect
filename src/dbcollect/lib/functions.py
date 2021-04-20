@@ -9,7 +9,7 @@ def listdir(dir):
     """Return all files/dirs in dir, or empty list if not exists"""
     if not os.path.isdir(dir):
         return []
-    return os.listdir(dir)
+    return sorted(os.listdir(dir))
 
 def getfile(*args):
     """try each file from paths until readable, try next if not exists or no access"""

@@ -45,19 +45,25 @@ class Archive():
         free = stat.f_bsize * stat.f_bfree
         if free < 100 * 2 ** 20:
             raise ZipCreateError('Free space below 100 MiB')
-    def store(self, path, tag=None):
+    def store(self, path, tag=None, ignore=False):
         self.checkfreespace()
         if tag:
             fulltag = os.path.join(self.prefix, tag)
         else:
             fulltag = os.path.join(self.prefix, path.lstrip('/'))
+        if not os.path.isfile(path):
+            logging.debug("Skipping %s (nonexisting)", path)
+            return
         try:
             logging.debug('retrieving file {0}'.format(path))
             self.zip.write(path, fulltag)
         except OSError as e:
-            pass
+            if not ignore:
+                logging.error("OS Error retrieving %s: %s", e.filename, os.strerror(e.errno))
         except IOError as e:
-            pass
+            if not ignore:
+                logging.error("IO Error retrieving %s: %s", e.filename, os.strerror(e.errno))
+
     def move(self, path, tag=None):
         self.checkfreespace()
         self.store(path, tag)

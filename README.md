@@ -247,6 +247,64 @@ Q: I want to check what information dbcollect has gathered
 
 A: Inspect the zip file `/tmp/dbcollect-<hostname>.zip` and check its contents.
 
+## Troubleshooting
+
+Tip: if something fails, run dbcollect with the ```-D``` (debug) option. This will show the content of exception debug messages and print the full dbcollect.log logfile when finished.
+
+```ERROR    : No prior AWR usage detected, skipping AWR reports (try --force or --statspack)```
+
+dbcollect refuses to generate AWR reports because it cannot determine if you have a proper (diagnostics pack) license. You can force it with the ```--force``` option if you are sure you have the license (note that during an audit, Oracle can determine you have used the feature in the past). See [Important Note](#important-note)
+
+```
+ERROR    : IO Error retrieving /var/log/sa/sa01: Permission denied```
+
+Solution: dbcollect runs as non-root (see [Security](https://github.com/outrunnl/dbcollect/blob/master/SECURITY.md)) and cannot read the SAR files.
+You can solve this (temporarily) by running ```chmod o+r /var/log/sa/sa*```
+
+IO Errors on other files than SAR:
+
+Some systems have non-standard security policies, preventing dbcollect to read these files. It may be undesirable to change the permissions with ```chmod```. In these cases you can use file access control lists to set an ACL permission without changing the basic permissions. The command is
+```setfacl -m u:oracle:- <file(s)>``` - assuming the database user under which dbcollect runs is oracle.
+If these files are 'pseudo' files (such as in /sys, /proc etc) the permissions will be reset to normal at the first reboot.
+
+```INFO     : python-lxml package not found, fallback to slower xml package```
+
+This is just informational. If you want to speed things up a bit, do ```yum install python-lxml```.
+
+```ERROR: Unknown platform```
+
+You're trying to run dbcollect on a platform that is not supported (Possibly HP-UX, Windows or Mac?)
+
+```ERROR: Cannot access Oracle inventory```
+
+dbcollect uses the Inventory to find ORACLE_HOME directories. Without this, not all Oracle instances may be detected (only those with a valid oratab entry)
+
+```ERROR: Oracle Error```
+
+Something went wrong running an SQLPlus script. Usually the error message from SQLPlus is also printed.
+
+```ERROR: Skipping instance <SID> (cannot connect)```
+
+An Oracle instance is detected and found to be running but the state (open, mounted, started, etc) cannot be determined.
+
+```ERROR: Parsing error in <AWR file>, not stripped```
+
+To strip SQL text from AWR reports, dbcollect uses an XML parser. The parser reported errors during parsing (maybe the AWR html is corrupted). The AWR report is saved without modifications (this means SQL text may still be there)
+
+```ERROR: Storing logfile failed: <file>```
+
+dbcollect cannot save the logfile ```/tmp/dbcollect.log``` in the zip file for some reason.
+
+    WARNING  : Oracle status check failed, sqlplus return code 1
+    WARNING  : SQL*Plus login failed, continuing with next SID
+
+dbcollect cannot login as sysdba to the database instance. Maybe because it uses the wrong user id (use ```--user <oracle_user>```)
+
+    Requires Python 2 (2.6 or higher, EL6)
+
+You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or another UNIX system with a Python version before 2.6. This is not supported.
+
+
 ## License
 
 _dbcollect_ is licensed under GPLv3. See "COPYING" for more info or go to [GPLv3+ License Info](https://www.gnu.org/licenses/gpl-3.0.html)
