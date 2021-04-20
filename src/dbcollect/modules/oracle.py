@@ -168,7 +168,7 @@ def gen_reports(shared, sid, orahome):
             r = os.path.join(tempdir, f)
             with lock:
                 shared.archive.move(r, 'oracle/{0}/{1}'.format(sid, f) )
-        os.chdir(oldwd)
+        os.chdir('/tmp')
     except OracleError as e:
         logging.exception("Oracle Error %s", e)
     except OSError as e:
