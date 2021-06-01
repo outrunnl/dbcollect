@@ -13,7 +13,7 @@ to the logfile for diagnostic purposes.
 logsetup must be called AFTER switching users, or strange things will happen.
 """
 
-import logging
+import sys, logging
 
 class DBCollectError(Exception):
     """Generic exception class"""
@@ -50,3 +50,18 @@ def logsetup(logpath, debug = False, quiet=False):
         consoleHandler.setLevel(logging.INFO)
     consoleHandler.setFormatter(logging.Formatter('%(levelname)-8s : %(message)s', datefmt='%Y-%m-%d-%I:%M:%S'))
     logging.getLogger().addHandler(consoleHandler)
+
+def exception_handler(func):
+    """Decorator to catch CTRL-C and other exceptions (multiprocessing)
+    This prevents a mess of error messages from different processes
+    """
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except KeyboardInterrupt:
+            logging.warning('%s interrupted', func.__name__)
+            sys.exit(1)
+        except Exception as e:
+            logging.exception('Exception in %s: %s', func.__name__, e)
+            sys.exit(99)
+    return inner

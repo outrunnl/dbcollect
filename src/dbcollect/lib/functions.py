@@ -11,6 +11,16 @@ def listdir(dir):
         return []
     return sorted(os.listdir(dir))
 
+def makedir(dir):
+    """Call mkdir but ignore if dir already exists"""
+    try:
+        os.mkdir(dir)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            pass
+        else:
+            raise
+
 def getfile(*args):
     """try each file from paths until readable, try next if not exists or no access"""
     for path in args:
@@ -21,11 +31,6 @@ def getfile(*args):
             if e.errno in [errno.ENOENT, errno.EACCES]:
                 continue
             raise
-
-def getlist(path):
-    """Get a list of items from a file (include/exclude lists)"""
-    with open(path) as f:
-        return [x.strip() for x in f.readlines() if len(x)]
 
 def saferemove(path):
     """Delete a file only if it exists in /tmp"""
@@ -62,7 +67,6 @@ def execute(cmd, hide_errors=False, opts=None):
             logging.warning('executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
         else:
             logging.warning('error executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
-
 
 def filedate(path):
     """Return mtime for a file"""

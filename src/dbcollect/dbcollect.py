@@ -5,7 +5,7 @@ Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
 License: GPLv3+
 """
 
-import os, sys, json, logging, pkgutil, platform, datetime
+import os, sys, json, logging, pkgutil, platform
 sys.dont_write_bytecode = True
 try:
     import argparse
@@ -17,8 +17,12 @@ if sys.version_info < (2.6):
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
 from shutil import rmtree
-from lib import *
-from modules import *
+from lib.log import logsetup, DBCollectError
+from lib.functions import saferemove, now, utcnow, timezone, md5hash
+from lib.archive import Archive, ZipCreateError, buildstamp
+from lib.user import switchuser, username, usergroup, usergroups
+from modules.oracle import oracle_info
+from modules.syscollect import host_info
 from modules.updater import update
 
 __author__    = "Bart Sjerps <bart@outrun.nl>"
@@ -84,19 +88,15 @@ def main():
     parser.add_argument("-d", "--days",      type=int, default=10, help="Number of days to collect AWR data (default 10, max 999)")
     parser.add_argument(      "--offset",    type=int, default=0,  help="Number of days to shift AWR collect period, default 0, max 999")
     parser.add_argument(      "--force",     action="store_true",  help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
-    parser.add_argument(      "--statspack", action="store_true",  help="Generate Statspack instead of AWR reports")
     parser.add_argument(      "--no-strip",  action="store_true",  help="Do not strip SQL sections from AWR reports")
     parser.add_argument(      "--no-awr",    action="store_true",  help="Skip AWR reports")
     parser.add_argument(      "--no-sar",    action="store_true",  help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true",  help="Skip Oracle collection")
-    parser.add_argument(      "--no-oratab", action="store_true",  help="Ignore oratab for instance detection")
-    parser.add_argument(      "--no-orainv", action="store_true",  help="Ignore Oracle inventory for instance detection (oratab only)")
     parser.add_argument(      "--no-sys",    action="store_true",  help="Skip OS collection")
-    parser.add_argument(      "--include",   type=str, metavar='FILE', help="Include Oracle instances (only) from file")
-    parser.add_argument(      "--exclude",   type=str, metavar='FILE', help="Exclude Oracle instances from file")
-    parser.add_argument(      "--threads",   type=int, default=4,      help="Max number of threads (default 4)")
+    parser.add_argument(      "--include",   type=str,             help="Include Oracle instances (comma separated)")
+    parser.add_argument(      "--exclude",   type=str,             help="Exclude Oracle instances (comma separated)")
+    parser.add_argument(      "--tasks",     type=int,             help="Max number of tasks (default 25%% of cpus)")
     args = parser.parse_args()
-
     if args.version:
         printversion()
         return
@@ -118,10 +118,6 @@ def main():
             saferemove(zippath)
         except Exception as e:
             print("Cannot remove {0}, {1}".format(zippath, e))
-    if args.include:
-        args.include = os.path.realpath(args.include)
-    if args.exclude:
-        args.exclude = os.path.realpath(args.exclude)
     switchuser(args.user)
     try:
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
@@ -136,9 +132,9 @@ def main():
         logging.info('Zip file is {0}'.format(zippath))
         archive.writestr('meta.json', meta())
         if not args.no_sys:
-            syscollect.hostinfo(archive, args)
+            host_info(archive, args)
         if not args.no_ora:
-            oracle.orainfo(archive, args)
+            oracle_info(archive, args)
         logging.info('Zip file {0} is created succesfully.'.format(zippath))
         logging.info("Finished")
     except ZipCreateError as e:

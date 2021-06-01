@@ -49,7 +49,7 @@ def awrstrip(path, out=None, inplace=False):
     None
     """
     if 'lxml' not in sys.modules:
-        logging.info('python-lxml package not found, fallback to slower xml package')
+        logging.debug('python-lxml package not found, fallback to slower xml package')
     try:
         tree = etree.parse(path)
     except etree.ParseError:
@@ -85,7 +85,6 @@ def awrstrip(path, out=None, inplace=False):
     if out and changed:
         try:
             tree.write(out, encoding="utf-8")
-            logging.info('Stripping %s', os.path.basename(out))
         except IOError as err:
             logging.error('IO Error writing to %s: %s', out, os.strerror(err.errno))
 

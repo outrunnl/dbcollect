@@ -22,7 +22,7 @@ def zipexec(archive, tag, cmd, **kwargs):
         archive.writestr('cmd/' + tag, out)
 
 # Check to continue even if platform is unknown?
-def hostinfo(archive, args):
+def host_info(archive, args):
     """Get OS and run the corresponding OS/SAR module"""
     system = platform.system()
     logging.info('Collecting OS info ({0})'.format(system))
