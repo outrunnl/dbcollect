@@ -8,8 +8,8 @@ DBCollect - Oracle Database Info Collector
 
 _dbcollect_ is a metadata collection tool for Oracle databases.
 
-The main part is a Python tool that collects various system files and
-the output of some commands, as well as AWR or Statspack reports for each
+It is written in Python, and collects various OS configuration files and
+the output of some system commands, as well as AWR or Statspack reports for each
 database instance, and other database information.
 
 The results are collected in a ZIP file named (default):
@@ -27,6 +27,8 @@ On IBM AIX, you need to install Python 2. You can get python for AIX from
 [AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
 
 On Solaris, Python should be already available.
+
+HP-UX has not yet been tested (mileage may vary, let me know if you want to help testing)
 
 On Enterprise Linux 7 (RHEL 7, OEL 7, CentOS 7), Python2 is installed by default including the argparse module.
 
@@ -48,12 +50,9 @@ sudo mv dbcollect /usr/local/bin
 This will download _dbcollect_ and put it in /usr/local/bin (it asks for sudo access if you are not root).
 It requires internet access via https.
 
-You may want to inspect `download` first:
+You may want to inspect `download` first before running it:
 ```
-curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download -o dbcollect-download
-less dbcollect-download
-python dbcollect-download
-sudo mv dbcollect /usr/local/bin
+curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | less
 ```
 
 ### Manual install
@@ -72,7 +71,11 @@ Place _dbcollect_ in /usr/local/bin and make it executable:
 
 ```
 cd /usr/local/bin
+# Inspect only
+unzip -v dbcollect
+# Unpack in another folder
 unzip dbcollect -d /usr/local/src/dbcollect
+# Run it from other folder
 python /usr/local/src/dbcollect/dbcollect.py
 ```
 
@@ -107,16 +110,21 @@ More collectors may be added in the future.
 
 ### Important note
 
-By default, _dbcollect_ attempts to collect Oracle AWR reports in HTML format. For this,
-Oracle requires Diagnostics Pack (see Oracle doc id 1490798.1).
-_dbcollect_ can not directly determine if you have this license or not. As an indirect method, 
-it checks the dba_feature_usage_statistics table whether "AWR Reports" has been used previously or not.
-If this is NOT the case, dbcollect produces an error message "No prior AWR usage detected" and proceeds with the next database if any.
+Ideally, _dbcollect_ collects Oracle AWR reports in HTML format as HTML can be processed (parsed) reliably.
+It can also generate Statspack reports. This is how _dbcollect_ decides which reports to produce:
 
-It is possible that you are licensed correctly but never used AWR reports on this specific database - in that case,
-DBCollect thinks you are not licensed and gives up.
+Oracle AWR reports require Diagnostics Pack (see Oracle doc id 1490798.1).
+_dbcollect_ can not directly determine if you have this license or not - it checks the dba_feature_usage_statistics
+table whether "AWR Reports" has been used previously or not, and falls back to Statspack otherwise, unless the ```--force``` flag
+has been specified. The decision flow is as follows:
 
-If you ARE licensed, you can run dbcollect with the --force option. DBcollect will only warn about the AWR detection and just generate the reports anyway.
+1. Check if 'AWR Reports' is a feature that has been used before. If so, use AWR reports
+2. If AWR usage is not detected but the ```--force``` flag has been specified, use AWR reports
+3. If AWR usage is not detected and no ```--force``` flag is specified, check if STATSPACK is available. If so, use Statspack
+4. If we get to this point, give up for this instance and issue an error, continue with the next instance
+
+So if you ARE licensed but _dbcollect_ complains, you can run dbcollect with the --force option. 
+DBcollect will only warn about the AWR detection and just generate the reports anyway.
 
 **Use the `--force` flag ONLY if you are sure you are correctly licensed!
 **
@@ -148,12 +156,7 @@ Having more than one `oracle` user for running databases is currently not suppor
 
 ### Statspack
 
-By default, dbcollect attempts to run AWR reports but has a built-in protection against license violations
-if no previous AWR usage can be detected. If you don't have Diagnostics/Tuning package,
-you can run Statspack reports instead, provided statspack is running and collecting metrics:
-
-`dbcollect --statspack`
-
+If no AWR usage is detected and no `--force` flag is used, _dbcollect_ checks for STATSPACK data.
 Statspack is not configured by default on Oracle but requires initial setup.
 
 To setup Statspack, see [Oracle-base: Statspack](https://oracle-base.com/articles/8i/statspack-8i)
@@ -162,9 +165,9 @@ After setup, you need to wait 7 to 10 days to let it collect performance informa
 
 ### Changing collect period
 
-By default, dbcollect collects the last 10 days of AWR/Statspack data.
+By default, _dbcollect_ collects the last 10 days of AWR/Statspack data. SAR (sysstat) usually goes back up to 31 days (all SAR files are collected).
 
-To collect a longer period, use the --days option:
+To collect a longer AWR/Statspack reports period, use the --days option (up to 999 days):
 
 `dbcollect --days 14`
 
@@ -176,37 +179,33 @@ If you want to collect reports from a longer time ago (say, 20 days ago up to 10
 
 DBCollect now supports AIX and Solaris systems. You need to have Python 2 installed.
 
-Windows is not (yet) supported.
+Windows and HP-UX are not (yet) supported.
 
 ## Requirements
 
-- Oracle RDBMS 11g or higher, SQL*Plus configured (dbcollect may work fine with Oracle 10g, mileage may vary)
-- Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris)
+- Oracle RDBMS 10g or higher
+- Enterprise Linux 6 or 7, Solaris 11, IBM AIX 7
 - Python 2
+- Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris)
 - SYS credentials (hence the 'oracle' user)
 - AWR or Statspack installed and configured
-- Retention at least 7 days (10080 minutes)
-- Interval maximum 1 hour (60 minutes)
-- Some free temp space for the generated files (typically a few 100 MB but can be larger depending on snapshot intervals and other factors)
+- Retention should be at least 7 days (10080 minutes) for a reasonable period of workload data
+- AWR Snapshot Interval: maximum 1 hour (60 minutes)
+- Some free temp space for the generated files (typically a few hundred MB, but can be larger depending on snapshot intervals and other factors)
 
 ## Known limitations and caveats
 
-- The tablespaces report their default compression settings, which may not reflect the actual table compression
-- Not all support files may be reported
-- Backup files, logs etc may no longer exist but still be reported. Best effort.
+- Backup files, logs etc may no longer exist but still be reported, depending on backup catalog accuracy. Best effort.
 - Very long names for files, tablespaces, disk groups etc may be truncated/wrapped
 - Very large sized elements or very large amounts of objects may result in `####` notation and no longer be useful. Limits have been increased to insane values so this should not be a problem
-- Newer Oracle versions (20c) may cause unreliable numbers
+- Newer Oracle versions (20c and up) may cause unreliable numbers, not yet tested
+- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient.
 
 ## Safety
 
 A lot of safety guards have been built into _dbcollect_. It is designed to not require root access and only writes files to the /tmp directory by default. Even if it fails for some reason, no harm can be done.
 
-- If you run as 'root', dbcollect switches to a non-root user early. By default this is 'oracle', use '-u user' to use another user.
-- By default, SQL statements are removed from AWR reports as they could contain confidential information. Not available for Statspack.
-- The scripts only contain SELECT statements and SQL*Plus formatting/reporting commands. No data will be changed directly on the database.
-- The collect scripts can generate a large number of files in /tmp - usually a few hundred MB. Make sure there is enough space.
-- In some cases, _dbcollect_ may fail or run with warnings or errors. This will not cause further issues except that not all required data is collected.
+More info can be found in [DBCollect Security](https://github.com/outrunnl/dbcollect/blob/master/SECURITY.md)
 
 ## Source code
 
@@ -219,7 +218,7 @@ For example, listing the files in the package:
 
 Q: Why is dbcollect written in Python 2? This is no longer supported!
 
-A: Python 3 is not available by default on Linux (RHEL/OEL/CentOS). On EL6 I even had to backport support for Python 2.6. I plan to make it work with both python 2 and 3 in the future.
+A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. I plan to make it work with both python 2 and 3 in the future.
 
 Q: Does dbcollect gather confidential data?
 
@@ -251,7 +250,7 @@ A: Inspect the zip file `/tmp/dbcollect-<hostname>.zip` and check its contents.
 
 Tip: if something fails, run dbcollect with the ```-D``` (debug) option. This will show the content of exception debug messages and print the full dbcollect.log logfile when finished.
 
-```ERROR    : No prior AWR usage detected, skipping AWR reports (try --force or --statspack)```
+```ERROR    : Skipping <SID>: No prior AWR usage or Statspack detected (try --force)```
 
 dbcollect refuses to generate AWR reports because it cannot determine if you have a proper (diagnostics pack) license. You can force it with the ```--force``` option if you are sure you have the license (note that during an audit, Oracle can determine you have used the feature in the past). See [Important Note](#important-note)
 
@@ -293,7 +292,7 @@ To strip SQL text from AWR reports, dbcollect uses an XML parser. The parser rep
 
 ```ERROR: Storing logfile failed: <file>```
 
-dbcollect cannot save the logfile ```/tmp/dbcollect.log``` in the zip file for some reason.
+dbcollect cannot save the logfile ```/tmp/dbcollect.log``` in the zip file for some reason. Try removing an existing ```/tmp/dbcollect.log``` file first.
 
     WARNING  : Oracle status check failed, sqlplus return code 1
     WARNING  : SQL*Plus login failed, continuing with next SID
@@ -304,6 +303,9 @@ dbcollect cannot login as sysdba to the database instance. Maybe because it uses
 
 You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or another UNIX system with a Python version before 2.6. This is not supported.
 
+### Generating the AWR reports takes a very long time
+
+This is usually the case if you run _dbcollect_ on Oracle RAC. There are a number of known issues that cause it to be very slow.
 
 ## License
 

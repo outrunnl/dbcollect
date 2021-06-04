@@ -144,13 +144,6 @@ class Instance():
         """Check if AWR reports have been used before
         If not, we must prevent running due to license violations (unless --force)
         """
-
-        ### TESTING ###
-        hostname = os.uname()[1]
-        if hostname == 'db03.lan' and self.sid == 'demo':
-            return False
-        ### TESTING ###
-
         sql = self.getsql('awrusage.sql')
         r = self.query(sql)
         # Return true if we detected at least 1 usage of 'AWR Report'
@@ -323,15 +316,22 @@ def get_instances(workdir, args):
     orainst = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
     oratab  = getfile('/etc/oratab','/var/opt/oracle/oratab')
     # get a list of ORACLE_HOMEs via inventory
-    if orainst:
+    if not orainst:
+        logging.error('oraInst.loc not found or readable')
+    else:
         r = re.match(r'inventory_loc=(.*)', orainst)
         if r:
             inventory = getfile(os.path.join(r.group(1),'ContentsXML/inventory.xml'))
-            for home_name, oracle_home in re.findall("<HOME NAME=\"(\S+)\"\sLOC=\"(\S+)\"", inventory):
-                if os.path.isdir(oracle_home):
-                    orahomes.append(oracle_home)
+            if not inventory:
+                logging.error('inventory.xml not found or readable')
+            else:
+                for home_name, oracle_home in re.findall("<HOME NAME=\"(\S+)\"\sLOC=\"(\S+)\"", inventory):
+                    if os.path.isdir(oracle_home):
+                        orahomes.append(oracle_home)
     # add list of ORACLE_HOMEs from oratab
-    if oratab:
+    if not oratab:
+        logging.error('oratab not found or readable')
+    else:
         for line in oratab.splitlines():
             r = re.match('(\w+):(\S+):.*', line)
             if r:
