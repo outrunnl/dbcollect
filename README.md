@@ -135,11 +135,20 @@ More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.co
 
 ### Basic operation
 
+Get a list of options:
+
+`dbcollect -h`
+
 In most cases you can just run
 
 `dbcollect`
 
 as 'oracle' user or root (assuming the database runs under user 'oracle')
+
+If you get this error:
+```ERROR    : ZIP file already exists: /tmp/dbcollect-db02.lan.zip```
+
+Run `dbcollect --delete` to clean up the old zipfile.
 
 When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
@@ -153,6 +162,11 @@ If you run as root and the database user is NOT 'oracle', use the -u/--user opti
 Many systems have a split user configuration for Oracle clusterware (i.e. a `grid` user). This is fine as _dbcollect_ only needs the database user credentials.
 
 Having more than one `oracle` user for running databases is currently not supported. Let me know if you need this.
+A workaround for systems with multiple Oracle users:
+
+```ps -eo user,args | awk '$2 ~ /ora_pmon_/ {print $1}' | xargs -I% dbcollect --user % --output /tmp/dbcollect-% <other options>```
+
+This will create multiple zip files (one for each active user).
 
 ### Statspack
 
@@ -199,7 +213,7 @@ Windows and HP-UX are not (yet) supported.
 - Very long names for files, tablespaces, disk groups etc may be truncated/wrapped
 - Very large sized elements or very large amounts of objects may result in `####` notation and no longer be useful. Limits have been increased to insane values so this should not be a problem
 - Newer Oracle versions (20c and up) may cause unreliable numbers, not yet tested
-- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient.
+- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient. See [Troubleshooting](#Troubleshooting).
 
 ## Safety
 
@@ -219,6 +233,10 @@ For example, listing the files in the package:
 Q: Why is dbcollect written in Python 2? This is no longer supported!
 
 A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. I plan to make it work with both python 2 and 3 in the future.
+
+Q: How long will it take to run _dbcollect_ ?
+
+A: This mostly depends on how many AWR/Statspack reports need to be generated. Collecting the OS information usually only takes a few seconds. For normal environments, an AWR report (HTML) takes a about 1-2 seconds, Statspack even less. For a single instance environment, 10 day collect period, 1 hour interval, the amount of reports is about 240 so _dbcollect_ will run for under 10 minutes. There are some known Oracle issues with AWR generation resulting in much longer times. The latest version of _dbcollect_ predicts the remaining time so you have an idea.
 
 Q: Does dbcollect gather confidential data?
 
@@ -305,7 +323,8 @@ You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or anot
 
 ### Generating the AWR reports takes a very long time
 
-This is usually the case if you run _dbcollect_ on Oracle RAC. There are a number of known issues that cause it to be very slow.
+This is especially the case if you run _dbcollect_ on Oracle RAC. There are a number of known issues that cause it to be very slow. I have observed up to 20 seconds per AWR report (usually about 0.5 seconds) making _dbcollect_ run for over an hour or more for a typical 10-day, 1-hour interval, single database cluster.
+Check Support notes for fixes and workarounds: 2404906.1, 2565465.1, 2318124.1, 29932310.8, 2148489.1, 29470291.8. Or be very patient.
 
 ## License
 
