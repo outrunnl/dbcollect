@@ -28,7 +28,7 @@ from modules.updater import update
 __author__    = "Bart Sjerps <bart@outrun.nl>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.5.8"
+__version__   = "1.5.9"
 
 def selfinfo():
     info = dict()
