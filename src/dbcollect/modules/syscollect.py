@@ -112,6 +112,7 @@ def linux_info(archive, args):
 def aix_info(archive, args):
     """System/SAR info for AIX (pSeries)"""
     zipexec(archive, 'prtconf',  'prtconf')
+    zipexec(archive, 'psef',     'ps -ef')
     zipexec(archive, 'lparstat', 'lparstat -i')
     zipexec(archive, 'svmon',    'svmon -G -O summary=basic,unit=KB')
     zipexec(archive, 'dfpk',     'df -Pk')
@@ -132,6 +133,8 @@ def aix_info(archive, args):
     for sarfile in listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
+            if sarfile.startswith('sar'):
+                continue
             zipexec(archive, 'sar/{0}-cpu'.format(sarfile),  'sar -uf %s' % path)
             zipexec(archive, 'sar/{0}-disk'.format(sarfile), 'sar -df %s' % path)
             zipexec(archive, 'sar/{0}-swap'.format(sarfile), 'sar -rf %s' % path)
@@ -145,6 +148,7 @@ def sun_info(archive, args):
     zipexec(archive, 'psrinfo_v0',   'psrinfo -v 0')
     zipexec(archive, 'psrinfo_pv0',  'psrinfo -pv 0')
     zipexec(archive, 'iostat_enr',   'iostat -Enr')
+    zipexec(archive, 'psef',         'ps -ef')
     zipexec(archive, 'df_k',         'df -k')
     zipexec(archive, 'df_n',         'df -n') # df_k first
     zipexec(archive, 'zpool_list',   'zpool list -o name,size,free,allocated -H')
@@ -159,6 +163,8 @@ def sun_info(archive, args):
     for sarfile in listdir('/var/adm/sa'):
         path = os.path.join('/var/adm/sa', sarfile)
         if sarfile.startswith('sa'):
+            if sarfile.startswith('sar'):
+                continue
             zipexec(archive, 'sar/{0}-cpu'.format(sarfile),    'sar -uf %s' % path)
             zipexec(archive, 'sar/{0}-buffer'.format(sarfile), 'sar -bf %s' % path)
             zipexec(archive, 'sar/{0}-disk'.format(sarfile),   'sar -df %s' % path)
