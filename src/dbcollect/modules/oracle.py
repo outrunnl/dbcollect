@@ -257,7 +257,7 @@ def oracle_info(archive, args):
                 file, tag = shared.files.get()
                 if file.endswith('.html'):
                     reports_arch += 1
-                    if not shared.args.no_strip:
+                    if shared.args.strip:
                         # Strip AWR reports from SQL text
                         logging.debug("Stripping AWR report %s", file)
                         awrstrip(file, inplace=True)
