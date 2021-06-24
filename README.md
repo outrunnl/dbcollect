@@ -240,7 +240,7 @@ A: This mostly depends on how many AWR/Statspack reports need to be generated. C
 
 Q: Does dbcollect gather confidential data?
 
-A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. For AWR, dbcollect removes sections containing SQL statements by default to prevent collecting pieces of potentially confidential data. The values of bind parameters are not visible.
+A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. For AWR, dbcollect can remove sections containing SQL statements to prevent collecting pieces of potentially confidential data. The values of bind parameters are not visible. See the ```--strip``` option.
 
 Q: dbcollect appears to be a binary package. How do I know what it is doing?
 

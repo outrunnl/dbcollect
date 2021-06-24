@@ -82,11 +82,11 @@ The purpose of this tool is to make it as easy as possible to grab Oracle data. 
 
 ## SQL query text
 
-AWR and Statspack reports do not contain actual table data. They do usually show the actual SQL statements of active queries. _dbcollect_ by default strips AWR reports from SQL code and replaces these with a 'removed' message. Notes:
+AWR and Statspack reports do not contain actual table data. They do usually show the actual SQL statements of active queries. _dbcollect_ can strip AWR reports from SQL code and replace these with a 'removed' message (using the ```--strip``` option). Notes:
 
-* This is only done for AWR (html) reports, not Statspack (as these are plain text and no good way exists of parsing the data)
+* This can only be done for AWR (html) reports, not for Statspack (as these are plain text and no good way exists of parsing the data)
 * Parsing html requires the optional Python package lxml, or, if lxml is not installed, the default xml package (slower but always available)
-* Stripping AWR reports can be disabled using the ```--no-strip``` option if it is preferred that the AWR reports remain unchanged
+* Stripping AWR reports can be enabled using the ```--strip``` option if it is preferred that the AWR reports contain no SQL code
 * If stripping fails (due to errors when parsing html) an error is reported and the file remains unchanged
 
 ## Execution time

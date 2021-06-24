@@ -43,7 +43,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.0
+PROMPT DBINFO version 1.3.1
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,17 +197,19 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB FILES ON REPORT
 
-COL SIZE_MB    FORMAT 99,999,999,990.99 HEAD 'Size'
-COL BACKUPTYPE FORMAT A12    HEAD 'Backup type'
-COL FILE_TYPE  FORMAT A15    HEAD 'File type'
-COL OBSOLETE   FORMAT A10    HEAD 'Obsolete'
-COL COMPRESSED FORMAT A10    HEAD 'Compressed'
-COL STATUS     FORMAT A10    HEAD 'Status'
-COL DEVTYPE    FORMAT A10    HEAD 'Target'
-COL FILES      FORMAT 999990 HEAD 'Files'
+COL SIZE_MB     FORMAT 99,999,999,990.99 HEAD 'Size'
+COL BACKUPTYPE  FORMAT A12    HEAD 'Backup type'
+COL INCREMENTAL FORMAT A12    HEAD 'Incremental'
+COL FILE_TYPE   FORMAT A15    HEAD 'File type'
+COL OBSOLETE    FORMAT A10    HEAD 'Obsolete'
+COL COMPRESSED  FORMAT A10    HEAD 'Compressed'
+COL STATUS      FORMAT A10    HEAD 'Status'
+COL DEVTYPE     FORMAT A10    HEAD 'Target'
+COL FILES       FORMAT 999990 HEAD 'Files'
 
 SELECT file_type
-, BACKUP_TYPE BACKUPTYPE
+, BACKUP_TYPE  BACKUPTYPE
+, BS_INCR_TYPE INCREMENTAL
 , COMPRESSED
 , OBSOLETE
 , STATUS
@@ -216,6 +218,7 @@ SELECT file_type
 FROM (
     SELECT file_type
     , backup_type
+    , bs_incr_type
     , compressed
     , obsolete
     , status
@@ -224,6 +227,7 @@ FROM (
     UNION ALL
     SELECT 'FLASHBACK_LOG'
     , TYPE
+    , ''
     , 'NO'
     , ''
     , ''
@@ -231,9 +235,9 @@ FROM (
     FROM v$flashback_database_logfile
 )
 WHERE 1=1
-AND file_type NOT IN ('ARCHIVED LOG','DATAFILE')
+AND file_type NOT IN ('DATAFILE')
 AND status IS NOT NULL
-GROUP BY FILE_TYPE, BACKUP_TYPE, COMPRESSED, OBSOLETE, STATUS
+GROUP BY FILE_TYPE, BACKUP_TYPE, BS_INCR_TYPE, COMPRESSED, OBSOLETE, STATUS
 ORDER BY 1, 2
 /
 

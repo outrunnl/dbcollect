@@ -242,53 +242,57 @@ def oracle_info(archive, args):
             except OracleError as e:
                 logging.error(e)
         # start workers - min 1, no more than available jobs
-        num_workers = max(1, min(maxtasks, shared.jobs.qsize()))
-        logging.info('Generating Oracle AWR/Statspack reports, with %d workers', num_workers)
-        for i in range(num_workers):
-            proc = Process(target=worker, name='worker {0}'.format(i), args=(shared, ))
-            proc.start()
-            workers.append(proc)
-        # loop until all workers are done and all files processed
-        starttime = datetime.now()
-        while any([x.is_alive() for x in workers]) or not shared.files.empty():
-            time.sleep(0.1)
-            # Move files from file queue into archive and keep track of counts
-            while not shared.files.empty():
-                file, tag = shared.files.get()
-                if file.endswith('.html'):
-                    reports_arch += 1
-                    if shared.args.strip:
-                        # Strip AWR reports from SQL text
-                        logging.debug("Stripping AWR report %s", file)
-                        awrstrip(file, inplace=True)
-                if 'statspack' in file:
-                    reports_arch += 1
-                archive.move(file, tag)
-            # Report progress
-            reports_found = 0
-            for root, dirs, files in os.walk(tempdir):
-                # Count AWR and statspack files in tempdir
-                for file in files:
-                    if file.endswith('.html') or 'statspack' in file:
-                        reports_found += 1
-            # If number found changed, recalc stats and update status message
-            if reports_found != prev:
-                reports_done = reports_arch + reports_found
-                remaining    = reports_total - reports_done
-                if not reports_done == 0:
-                    pct_done  = float(reports_done) / reports_total
-                    elapsed   = datetime.now() - starttime
-                    eta       = remaining * elapsed / reports_done
-                    eta_t     = timedelta(seconds=eta.seconds)
-                    elapsed_t = timedelta(seconds=elapsed.seconds)
-                    prev      = reports_found
-                    msg = 'report {0} of {1} ({2:.1%} done), elapsed: {3}, remaining: {4}'.format(
-                        reports_done, reports_total, pct_done, elapsed_t, eta_t)
-                    shared.status(msg)
-        for proc in workers:
-            proc.join()
-            if proc.exitcode:
-                shared.error('Thread %s ended with rc=%d', proc.name, proc.exitcode)
+        if not args.no_awr:
+            num_workers = max(1, min(maxtasks, shared.jobs.qsize()))
+            logging.info('Generating Oracle AWR/Statspack reports, with %d workers', num_workers)
+            for i in range(num_workers):
+                proc = Process(target=worker, name='worker {0}'.format(i), args=(shared, ))
+                proc.start()
+                workers.append(proc)
+            # loop until all workers are done and all files processed
+            starttime = datetime.now()
+            while any([x.is_alive() for x in workers]) or not shared.files.empty():
+                time.sleep(0.1)
+                # Move files from file queue into archive and keep track of counts
+                while not shared.files.empty():
+                    file, tag = shared.files.get()
+                    if file.endswith('.html'):
+                        reports_arch += 1
+                        if shared.args.strip:
+                            # Strip AWR reports from SQL text
+                            logging.info("Stripping AWR report %s", file)
+                            awrstrip(file, inplace=True)
+                    if 'statspack' in file:
+                        reports_arch += 1
+                    archive.move(file, tag)
+                # Report progress
+                reports_found = 0
+                for root, dirs, files in os.walk(tempdir):
+                    # Count AWR and statspack files in tempdir
+                    for file in files:
+                        if file.endswith('.html') or 'statspack' in file:
+                            reports_found += 1
+                # If number found changed, recalc stats and update status message
+                if reports_found != prev:
+                    reports_done = reports_arch + reports_found
+                    remaining    = reports_total - reports_done
+                    if not reports_done == 0:
+                        pct_done  = float(reports_done) / reports_total
+                        elapsed   = datetime.now() - starttime
+                        eta       = remaining * elapsed / reports_done
+                        eta_t     = timedelta(seconds=eta.seconds)
+                        elapsed_t = timedelta(seconds=elapsed.seconds)
+                        prev      = reports_found
+                        msg = 'report {0} of {1} ({2:.1%} done), elapsed: {3}, remaining: {4}'.format(
+                            reports_done, reports_total, pct_done, elapsed_t, eta_t)
+                        shared.status(msg)
+            for proc in workers:
+                proc.join()
+                if proc.exitcode:
+                    shared.error('Thread %s ended with rc=%d', proc.name, proc.exitcode)
+            shared.info('Generating Oracle AWR/Statspack reports completed')
+        else:
+            shared.info('Skipping Oracle AWR/Statspack reports')
     except KeyboardInterrupt as e:
         # Needed because we need a finally section
         raise
@@ -296,7 +300,7 @@ def oracle_info(archive, args):
         # Write the last known status
         if(msg):
             print(msg)
-        shared.info('Generating Oracle AWR/Statspack reports completed')
+
         # Make sure subprocesses are killed
         for proc in workers:
             proc.terminate()
