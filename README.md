@@ -273,7 +273,8 @@ Tip: if something fails, run dbcollect with the ```-D``` (debug) option. This wi
 dbcollect refuses to generate AWR reports because it cannot determine if you have a proper (diagnostics pack) license. You can force it with the ```--force``` option if you are sure you have the license (note that during an audit, Oracle can determine you have used the feature in the past). See [Important Note](#important-note)
 
 ```
-ERROR    : IO Error retrieving /var/log/sa/sa01: Permission denied```
+ERROR    : IO Error retrieving /var/log/sa/sa01: Permission denied
+```
 
 Solution: dbcollect runs as non-root (see [Security](https://github.com/outrunnl/dbcollect/blob/master/SECURITY.md)) and cannot read the SAR files.
 You can solve this (temporarily) by running ```chmod o+r /var/log/sa/sa*```
