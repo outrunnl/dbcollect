@@ -17,6 +17,7 @@ if sys.version_info < (2.6):
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
 from shutil import rmtree
+from lib.config import versioninfo
 from lib.log import logsetup, DBCollectError
 from lib.functions import saferemove, now, utcnow, timezone, md5hash
 from lib.archive import Archive, ZipCreateError, buildstamp
@@ -24,11 +25,6 @@ from lib.user import switchuser, username, usergroup, usergroups
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update
-
-__author__    = "Bart Sjerps <bart@outrun.nl>"
-__copyright__ = "Copyright 2020, Bart Sjerps"
-__license__   = "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html"
-__version__   = "1.6.0"
 
 def selfinfo():
     info = dict()
@@ -49,16 +45,16 @@ def selfinfo():
 
 def printversion():
     info = selfinfo()
-    print ('Author:    {0}'.format(__author__))
-    print ('Copyright: {0}'.format(__copyright__))
-    print ('License:   {0}'.format(__license__))
-    print ('Version:   {0}'.format(__version__))
+    print ('Author:    {0}'.format(versioninfo['author']))
+    print ('Copyright: {0}'.format(versioninfo['copyright']))
+    print ('License:   {0}'.format(versioninfo['license']))
+    print ('Version:   {0}'.format(versioninfo['version']))
     print ('Builddate: {0}'.format(info['builddate']))
 
 def meta():
     info = dict()
     info['application']   = 'dbcollect'
-    info['version']       = __version__
+    info['version']       = versioninfo['version']
     info['machine']       = platform.machine()        # x86_64 | sun4v | 00F6035A4C00 (AIX) | AMD64 etc...
     info['system']        = platform.system()         # Linux  | SunOS | SunOS | AIX | Windows
     info['processor']     = platform.processor()      # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
@@ -75,7 +71,7 @@ def meta():
     return json.dumps(info,indent=2, sort_keys=True)
 
 def main():
-    print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(__version__))
+    print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(versioninfo['version']))
     sys.stdout.flush()
     parser = argparse.ArgumentParser(usage='dbcollect [options]')
     parser.add_argument("-V", "--version", action="store_true", help="Version and copyright info")
@@ -101,7 +97,7 @@ def main():
         printversion()
         return
     if args.update:
-        update(__version__)
+        update(versioninfo['version'])
         return
     if args.quiet:
         sys.stdout = open('/dev/null','w')
@@ -125,9 +121,8 @@ def main():
         logging.fatal("Cannot create logfile: {0}".format(e))
         exit(15)
     try:
-        version = 'dbcollect version {0}\n'.format(__version__)
-        archive = Archive(zippath, logpath, __version__)
-        logging.info('dbcollect {0} - database and system info collector'.format(__version__))
+        archive = Archive(zippath, logpath, versioninfo['version'])
+        logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
         logging.info('Current user is {0}'.format(username()))
         logging.info('Zip file is {0}'.format(zippath))
         archive.writestr('meta.json', meta())

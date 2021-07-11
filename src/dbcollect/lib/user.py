@@ -56,3 +56,13 @@ def usergroups():
     """Return the groups for the current user"""
     user = pwd.getpwuid(os.getuid()).pw_name
     return [g.gr_name for g in grp.getgrall() if user in g.gr_mem]
+
+def getuser(uid):
+    """Return the username for a given uid"""
+    uinfo = pwd.getpwuid(uid)
+    return uinfo.pw_name
+
+def getgroup(gid):
+    """Return the groupname for a given gid"""
+    ginfo = grp.getgrgid(gid)
+    return ginfo.gr_name

@@ -63,14 +63,13 @@ class Archive():
         except IOError as e:
             if not ignore:
                 logging.error("IO Error retrieving %s: %s", e.filename, os.strerror(e.errno))
-
     def move(self, path, tag=None):
         self.checkfreespace()
         self.store(path, tag)
         saferemove(path)
     def writestr(self, tag, data):
         try:
-            self.zip.writestr(os.path.join(self.prefix, tag), data)
+            self.zip.writestr(os.path.join(self.prefix, tag.lstrip('/')), data)
         except Exception as e:
             logging.warning("Writing data to zip file failed: %s", e)
 

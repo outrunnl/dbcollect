@@ -8,18 +8,10 @@ License: GPLv3+
 Collect Linux/UNIX OS config and performance (SAR) data
 """
 
-import os, sys, platform
+import os, sys, re, platform
+from lib.config import linux_cmds, linux_files, aix_cmds, sun_cmds
+from lib.fileformat import Datafile
 from lib import *
-
-def zipexec(archive, tag, cmd, **kwargs):
-    """Execute cmd and store output in archive using tag
-    Store empty file if execute failed
-    """
-    out = execute(cmd, **kwargs)
-    if not out:
-        archive.writestr('cmd/' + tag, '')
-    else:
-        archive.writestr('cmd/' + tag, out)
 
 # Check to continue even if platform is unknown?
 def host_info(archive, args):
@@ -32,63 +24,62 @@ def host_info(archive, args):
     else:
         logging.error("Unknown platform - {0}".format(system))
 
+
+def zipexec(archive, cmd, prefix=None, tag=None):
+    """Execute cmd and store output in archive using tag and header
+    Store empty file if execute failed
+    """
+    df = Datafile()
+    data = df.execute(cmd)
+    if not tag:
+        if cmd.startswith('lsblk'):       tag = 'lsblk'
+        elif cmd.startswith('rpm -qa'):   tag = 'rpm_qa_queryformat'
+        elif cmd.startswith('svmon'):     tag = 'svmon_g_o'
+        elif cmd.startswith('lsdev -c'):  tag = 'lsdev_c_adapter'
+        elif cmd.startswith('zpool'):     tag = '_'.join(cmd.split()[:2])
+        else:
+            tag = re.sub(r'[^0-9a-zA-Z_ ]', '', '_'.join(cmd.split()))
+    if not prefix:
+        prefix = 'cmd'
+    archive.writestr(prefix + '/' + tag, data)
+
+def zipfile(archive, path):
+    df = Datafile()
+    data = df.file(path)
+    if data:
+        archive.writestr(path, data)
+
+def linux_lsblk(archive):
+    out, err, rc = execute('lsblk -V')
+    version = out.split()[-1]
+    if version.startswith('2.1'):
+        cmd = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched'
+    else:
+        cmd = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname'
+    zipexec(archive, cmd)
+
 def linux_info(archive, args):
     """System/SAR info for Linux"""
-    if os.path.isfile('/lib64/ld-2.12.so'): # Legacy EL 6
-        lsblk = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched'
-    else:
-        lsblk = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname'
-    zipexec(archive, 'lscpu'   , 'lscpu')
-    zipexec(archive, 'lsscsi'  , 'lsscsi')
-    zipexec(archive, 'sestatus', 'sestatus')
-    zipexec(archive, 'lsmod'   , 'lsmod')
-    zipexec(archive, 'dmesg'   , 'dmesg')
-    zipexec(archive, 'psef'    , 'ps -ef')
-    zipexec(archive, 'psfaux'  , 'ps faux')
-    zipexec(archive, 'lsblk'   , lsblk)
-    zipexec(archive, 'dfpt'    , 'df -PT')
-    zipexec(archive, 'iplink'  , 'ip -o link show')
-    zipexec(archive, 'ipaddr'  , 'ip -o addr show')
-    zipexec(archive, 'rpmqf'   , 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n')
-    zipexec(archive, 'sysctla' , 'sysctl -a', hide_errors=True)
-    for file in ['/proc/cpuinfo',
-        '/proc/meminfo',
-        '/proc/filesystems',
-        '/proc/partitions',
-        '/proc/devices',
-        '/proc/mounts',
-        '/proc/mdstat',
-        '/proc/misc',
-        '/proc/uptime',
-        '/etc/os-release',
-        '/etc/system-release']:
-        archive.store(file)
-    for file in ['/etc/issue',
-        '/etc/motd',
-        '/etc/multipath.conf',
-        '/etc/oratab',
-        '/var/opt/oracle/oratab',
-        '/sys/class/dmi/id/sys_vendor',
-        '/sys/class/dmi/id/product_name',
-        '/sys/class/dmi/id/product_uuid',
-        '/sys/class/dmi/id/board_name',
-        '/sys/class/dmi/id/board_vendor',
-        '/sys/class/dmi/id/chassis_vendor']:
-        archive.store(file, ignore=True)
+    for cmd in linux_cmds:
+        zipexec(archive, cmd)
+    linux_lsblk(archive)
+    for file in linux_files:
+        zipfile(archive, file)
     for f in listdir('/etc/udev/rules.d/'):
         path = os.path.join('/etc/udev/rules.d/', f)
         if os.path.isfile(path) and f.endswith('.rules'):
-            archive.store(path)
+            zipfile(archive, path)
     # TODO:
     # numa?
     # powerpath / scaleio? -> Need root?
 
-    for dev in execute('lsblk -dno name').splitlines():
+    out, err, rc = execute('lsblk -dno name')
+    for dev in out.rstrip().splitlines():
         for var in  ['model','rev','dev','queue_depth','vendor','serial']:
             path = os.path.join('/sys/class/block/{0}/device/{1}'.format(dev, var))
             if os.path.isfile(path):
-                archive.store(path)
-        archive.writestr('disks/{0}-links'.format(dev), execute('udevadm info -q symlink -n {0}'.format(dev)))
+                zipfile(archive, path)
+        zipexec(archive, 'udevadm info -q symlink -n {0}'.format(dev), prefix='disks', tag='{0}-links'.format(dev))
 
     for dev in listdir('/sys/class/net'):
         if dev == 'lo':
@@ -99,7 +90,7 @@ def linux_info(archive, args):
         for var in ['mtu', 'speed', 'address']:
             path = os.path.join(dir, var)
             if os.path.isfile(path):
-                archive.store(path)
+                zipfile(archive, path)
     if not args.no_sar:
         logging.info('Collecting Linux SAR files')
         for sarfile in listdir('/var/log/sa'):
@@ -111,61 +102,57 @@ def linux_info(archive, args):
 
 def aix_info(archive, args):
     """System/SAR info for AIX (pSeries)"""
-    zipexec(archive, 'prtconf',  'prtconf')
-    zipexec(archive, 'psef',     'ps -ef')
-    zipexec(archive, 'lparstat', 'lparstat -i')
-    zipexec(archive, 'svmon',    'svmon -G -O summary=basic,unit=KB')
-    zipexec(archive, 'dfpk',     'df -Pk')
-    zipexec(archive, 'lsfsc',    'lsfs -c')
-    zipexec(archive, 'adapters', 'lsdev -c adapter -F name,status,description')
-    for disk in execute('lsdev -Cc disk -Fname').splitlines():
-        zipexec(archive, 'disks/{0}-size'.format(disk),   'getconf DISK_SIZE /dev/{0}'.format(disk))
-        zipexec(archive, 'disks/{0}-lscfg'.format(disk),  'lscfg -vpl %s' % disk)
-        zipexec(archive, 'disks/{0}-lspath'.format(disk), 'lspath -l %s -F parent,status' % disk)
-        zipexec(archive, 'disks/{0}-lsattr'.format(disk), 'lsattr -El %s' % disk)
-    for nic in execute('ifconfig -l').split():
+    logging.info('Collecting AIX System info')
+    for cmd in aix_cmds:
+        zipexec(archive, cmd)
+    disks, err, rc = execute('lsdev -Cc disk -Fname')
+    nics, err, rc = execute('ifconfig -l')
+    vgs, err, rc =  execute('lsvg')
+    logging.info('Collecting AIX Disk info')
+    for disk in disks.splitlines():
+        prefix = 'disk/{0}'.format(disk)
+        zipexec(archive, 'getconf DISK_SIZE /dev/{0}'.format(disk), prefix=prefix, tag='disksize')
+        zipexec(archive, 'lscfg -vpl %s' % disk, prefix=prefix, tag='lscfg')
+        zipexec(archive, 'lspath -l %s -F parent,status' % disk, prefix=prefix, tag='lspath')
+        zipexec(archive, 'lsattr -El %s' % disk, prefix=prefix, tag='lsattr')
+    logging.info('Collecting AIX Network info')
+    for nic in nics.split():
         if nic.startswith('lo'): continue
-        zipexec(archive, 'nics/{0}-lsattr'.format(nic), 'lsattr -E -l %s -F description,value' % nic)
-        zipexec(archive, 'nics/{0}-entstat'.format(nic), 'entstat -d %s' % nic)
-    for vg in execute('lsvg').splitlines():
-        zipexec(archive, 'vgs/{0}-lsvg_l'.format(vg), 'lsvg -l %s' % vg)
-        zipexec(archive, 'vgs/{0}-lsvg_p'.format(vg), 'lsvg -p %s' % vg)
-    for sarfile in listdir('/var/adm/sa'):
-        path = os.path.join('/var/adm/sa', sarfile)
-        if sarfile.startswith('sa'):
-            if sarfile.startswith('sar'):
-                continue
-            zipexec(archive, 'sar/{0}-cpu'.format(sarfile),  'sar -uf %s' % path)
-            zipexec(archive, 'sar/{0}-disk'.format(sarfile), 'sar -df %s' % path)
-            zipexec(archive, 'sar/{0}-swap'.format(sarfile), 'sar -rf %s' % path)
+        prefix = 'nic/{0}'.format(nic)
+        zipexec(archive, 'lsattr -E -l %s -F description,value' % nic, prefix=prefix, tag='lsattr')
+        zipexec(archive, 'entstat -d %s' % nic, prefix=prefix, tag='entstat')
+    logging.info('Collecting AIX LVM info')
+    for vg in vgs.splitlines():
+        prefix = 'lvm/{0}'.format(vg)
+        zipexec(archive, 'lsvg -l %s' % vg, prefix=prefix, tag='lvs')
+        zipexec(archive, 'lsvg -p %s' % vg, prefix=prefix, tag='pvs')
+    if not args.no_sar:
+        logging.info('Collecting UNIX SAR reports')
+        for sarfile in listdir('/var/adm/sa'):
+            path = os.path.join('/var/adm/sa', sarfile)
+            if sarfile.startswith('sa'):
+                if sarfile.startswith('sar'):
+                    continue
+                prefix = 'sar/{0}'.format(sarfile)
+                zipexec(archive, 'sar -uf %s' % path, prefix=prefix, tag='cpu')
+                zipexec(archive, 'sar -bf %s' % path, prefix=prefix, tag='block')
+                zipexec(archive, 'sar -df %s' % path, prefix=prefix, tag='disk')
+                zipexec(archive, 'sar -rf %s' % path, prefix=prefix, tag='swap')
 
 def sun_info(archive, args):
     """System/SAR info for Sun Solaris (SPARC or Intel)"""
-    zipexec(archive, 'prtconf',      'prtconf')
-    zipexec(archive, 'prtdiag',      'prtdiag')
-    zipexec(archive, 'psrinfo',      'psrinfo')
-    zipexec(archive, 'psrinfo_t',    'psrinfo -t')
-    zipexec(archive, 'psrinfo_v0',   'psrinfo -v 0')
-    zipexec(archive, 'psrinfo_pv0',  'psrinfo -pv 0')
-    zipexec(archive, 'iostat_enr',   'iostat -Enr')
-    zipexec(archive, 'psef',         'ps -ef')
-    zipexec(archive, 'df_k',         'df -k')
-    zipexec(archive, 'df_n',         'df -n') # df_k first
-    zipexec(archive, 'zpool_list',   'zpool list -o name,size,free,allocated -H')
-    zipexec(archive, 'zpool_status', 'zpool status')
-    zipexec(archive, 'zfs_list',     'zfs list')
-    zipexec(archive, 'ifconfig',     'ifconfig -a')
-    zipexec(archive, 'dladm-phys',   'dladm show-phys')
-    zipexec(archive, 'dladm-link',   'dladm show-link')
-    zipexec(archive, 'dladm-part',   'dladm show-part')
-    zipexec(archive, 'dladm-vlan',   'dladm show-vlan')
-    zipexec(archive, 'dladm-vnic',   'dladm show-vnic')
-    for sarfile in listdir('/var/adm/sa'):
-        path = os.path.join('/var/adm/sa', sarfile)
-        if sarfile.startswith('sa'):
-            if sarfile.startswith('sar'):
-                continue
-            zipexec(archive, 'sar/{0}-cpu'.format(sarfile),    'sar -uf %s' % path)
-            zipexec(archive, 'sar/{0}-buffer'.format(sarfile), 'sar -bf %s' % path)
-            zipexec(archive, 'sar/{0}-disk'.format(sarfile),   'sar -df %s' % path)
-            zipexec(archive, 'sar/{0}-swap'.format(sarfile),   'sar -rf %s' % path)
+    logging.info('Collecting Solaris System info')
+    for cmd in sun_cmds:
+        zipexec(archive, cmd)
+    if not args.no_sar:
+        logging.info('Collecting UNIX SAR reports')
+        for sarfile in listdir('/var/adm/sa'):
+            path = os.path.join('/var/adm/sa', sarfile)
+            if sarfile.startswith('sa'):
+                if sarfile.startswith('sar'):
+                    continue
+                prefix = 'sar/{0}'.format(sarfile)
+                zipexec(archive, 'sar -uf %s' % path, prefix=prefix, tag='cpu')
+                zipexec(archive, 'sar -bf %s' % path, prefix=prefix, tag='buffer')
+                zipexec(archive, 'sar -df %s' % path, prefix=prefix, tag='disk')
+                zipexec(archive, 'sar -rf %s' % path, prefix=prefix, tag='swap')

@@ -39,7 +39,7 @@ def saferemove(path):
     else:
         raise ValueError('Trying to remove file outside /tmp')
 
-def execute(cmd, hide_errors=False, opts=None):
+def execute(cmd):
     """
     Run a command, and return the output of stdout. Any stderr messages will be logged.
     If the command fails (i.e. does not exists or exits with non-zero return code), logs an error
@@ -47,26 +47,13 @@ def execute(cmd, hide_errors=False, opts=None):
     Provide opts as an array with extra options, these will be appended w/o changes.
     """
     command = cmd.split(' ')
-    if opts:
-        command += opts
     env = {}
     # Setting PATH for UNIX and Linux. On AIX we also need objrepos
     env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
     env['ODMDIR'] = '/etc/objrepos'
-    try:
-        logging.debug('Executing command: {0}'.format(cmd))
-        proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = proc.communicate()
-        if not hide_errors:
-            if stderr:
-                logging.error('{0}, {1}'.format(cmd, stderr))
-        return stdout.rstrip('\n')
-    except OSError as oe:
-        if oe.errno == errno.ENOENT:
-            # Command failed or does not exist
-            logging.warning('executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
-        else:
-            logging.warning('error executing {0}: {1}'.format(command[0], os.strerror(oe.errno)))
+    proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = proc.communicate()
+    return (stdout, stderr, proc.returncode)
 
 def filedate(path):
     """Return mtime for a file"""
@@ -92,3 +79,8 @@ def now():
 
 def timezone():
     return time.strftime("%Z", time.gmtime())
+
+def stat2time(mtime):
+    """Converts stat() timestamps to datetime. Truncate subseconds"""
+    epoch = datetime.datetime(1970, 1, 1)
+    return epoch + datetime.timedelta(seconds=int(mtime))
