@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- Title       : awrusage.sql
 -- Description : Report number of usages of 'AWR report' for current DBID
--- Author      : Bart Sjerps <bart@outrun.nl>
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
 SELECT detected_usages FROM dba_feature_usage_statistics u1

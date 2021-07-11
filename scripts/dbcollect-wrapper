@@ -3,7 +3,7 @@
 # Title       : dbcollect-wrapper
 # Description : Make dbcollect work without python-argparse on EL6
 # Version     : 1.0
-# Author      : Bart Sjerps <bart@outrun.nl>
+# Author      : Bart Sjerps <bart@dirty-cache.com>
 # License     : GPLv3+
 # ---------------------------------------------------------------------------
 # Instructions:

@@ -1,9 +1,8 @@
 -----------------------------------------------------------------------------
 -- Title       : awrrep.sql
 -- Description : creates AWR report (txt format) of the latest snapshot
--- Author      : Bart Sjerps <bart@outrun.nl>
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
--- Disclaimer  : See /usr/share/doc/outrun-sql/COPYING
 -----------------------------------------------------------------------------
 -- Revision history:
 -- 2016-11-10 : Created

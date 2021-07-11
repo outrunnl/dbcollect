@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- Title       : getsps.sql
 -- Description : generate SQL to retrieve Statspack reports
--- Author      : Bart Sjerps <bart@outrun.nl>
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
 -- Parameters  : days = amount of days for which to collect data
 --               offset = days to timeshift back. 0 = until and including today

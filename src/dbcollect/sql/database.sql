@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- Title       : database.sql
 -- Description : collect only instance information
--- Author      : Bart Sjerps <bart@outrun.nl>
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
 -----------------------------------------------------------------------------
 -- This script collects instance and database info about the current connected

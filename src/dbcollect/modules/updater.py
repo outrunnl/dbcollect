@@ -1,6 +1,6 @@
 """
 updater.py - OS and system functions for dbcollect
-Copyright (c) 2020 - Bart Sjerps <bart@outrun.nl>
+Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 from urllib2 import urlopen, Request, HTTPError, URLError

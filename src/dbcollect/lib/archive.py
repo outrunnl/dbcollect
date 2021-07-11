@@ -1,4 +1,4 @@
-__author__    = "Bart Sjerps <bart@outrun.nl>"
+__author__    = "Bart Sjerps <bart@dirty-cache.com>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+"
 

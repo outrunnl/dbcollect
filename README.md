@@ -333,7 +333,7 @@ _dbcollect_ is licensed under GPLv3. See "COPYING" for more info or go to [GPLv3
 
 ## Author
 
-Bart Sjerps (bart &lt;at&gt; outrun &lt;dot&gt; nl) - with great contributions from others
+Bart Sjerps (bart &lt;at&gt; dirty-cache &lt;dot&gt; com) - with great contributions from others
 
 
 

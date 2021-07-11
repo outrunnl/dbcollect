@@ -1,7 +1,7 @@
 -- -----------------------------------------------------------------------------
 -- Title       : dbinfo.sql
 -- Description : collect database information
--- Author      : Bart Sjerps <bart@outrun.nl>
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
 -- -----------------------------------------------------------------------------
 -- Requires: Oracle database >= 11.2
@@ -12,7 +12,7 @@
 -- have both reasonable readability and parseability.
 -- Sizes are in Mibibytes (MiB) unless otherwise specified.
 --
--- Created by Bart Sjerps (bart<at>outrun.nl) with code snippets from
+-- Created by Bart Sjerps with code snippets from
 -- various people, including Graham Thornton, Asad Samdani and others.
 --
 -- This script uses only SELECT and SQL*Plus formatting/reporting statements,

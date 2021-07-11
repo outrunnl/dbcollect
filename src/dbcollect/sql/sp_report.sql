@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- Title       : sp-report.sql
 -- Description : Template for generating Statspack reports
--- Author      : Bart Sjerps <bart@outrun.nl>
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
 -- Notes       : Not to be called directly but from Python so vars are expanded
 -----------------------------------------------------------------------------
