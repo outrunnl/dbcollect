@@ -5,7 +5,7 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, logging, pkgutil, platform
+import os, sys, json, logging, pkgutil, platform, logging
 sys.dont_write_bytecode = True
 try:
     import argparse
@@ -13,7 +13,7 @@ except:
     print("ERROR: Cannot import module 'argparse'. Please install python-argparse first:\nyum install python-argparse")
     exit(10)
 
-if sys.version_info < (2.6):
+if sys.version_info.major == 2 and sys.version_info.minor < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
 from shutil import rmtree

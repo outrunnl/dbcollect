@@ -4,7 +4,7 @@ __license__   = "GPLv3+"
 
 import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED
-from functions import saferemove
+from lib.functions import saferemove
 
 class ZipCreateError(Exception):
     """Exception class for dealing with ZIP archives"""

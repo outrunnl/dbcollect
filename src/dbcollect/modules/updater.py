@@ -3,7 +3,11 @@ updater.py - OS and system functions for dbcollect
 Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
-from urllib2 import urlopen, Request, HTTPError, URLError
+try:
+    from urllib2 import urlopen, Request, HTTPError, URLError
+except ImportError:
+    from urllib.request import Request, urlopen
+
 import os, sys, json, logging
 from shutil import move
 from lib.functions import saferemove

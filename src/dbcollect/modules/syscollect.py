@@ -4,14 +4,10 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-"""
-Collect Linux/UNIX OS config and performance (SAR) data
-"""
-
-import os, sys, re, platform
+import os, sys, re, platform, logging
 from lib.config import linux_cmds, linux_files, aix_cmds, sun_cmds
 from lib.fileformat import Datafile
-from lib import *
+from lib.functions import execute, listdir
 
 # Check to continue even if platform is unknown?
 def host_info(archive, args):
