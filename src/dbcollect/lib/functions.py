@@ -2,7 +2,7 @@ __author__    = "Bart Sjerps <bart@dirty-cache.com>"
 __copyright__ = "Copyright 2020, Bart Sjerps"
 __license__   = "GPLv3+"
 
-import os, logging, pkgutil, datetime, time, hashlib, errno
+import os, sys, logging, pkgutil, datetime, time, hashlib, errno
 from subprocess import call, Popen, PIPE
 
 def listdir(dir):
@@ -51,7 +51,10 @@ def execute(cmd):
     # Setting PATH for UNIX and Linux. On AIX we also need objrepos
     env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
     env['ODMDIR'] = '/etc/objrepos'
-    proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    if sys.version_info.major == 2:
+        proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    else:
+        proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
     stdout, stderr = proc.communicate()
     return (stdout, stderr, proc.returncode)
 

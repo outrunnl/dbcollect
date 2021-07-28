@@ -4,7 +4,7 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, io, platform, logging
+import sys, os, io, platform, logging
 from collections import OrderedDict
 from lib.config import versioninfo
 from lib.functions import now, utcnow, stat2time, execute
@@ -29,14 +29,19 @@ class Datafile():
         self.info['mediatype']    = None
         self.info['format']       = None
         self.info['fields']       = None
+    def write(self, s):
+        if sys.version_info.major == 2:
+            self.buf.write(s)
+        else:
+            self.buf.write(s.encode())
     def header(self, errors=None):
-        self.buf.write('# ---\n')
+        self.write('# ---\n')
         for k, v in self.info.items():
-            self.buf.write('# {0}: {1}\n'.format(k,v))
+            self.write('# {0}: {1}\n'.format(k, v))
         if errors:
             for line in errors.splitlines():
-                self.buf.write('# error: {0}\n'.format(line))
-        self.buf.write('# ---\n')
+                self.write('# error: {0}\n'.format(line))
+        self.write('# ---\n')
     def execute(self, cmd):
         """Execute a command and return the output with the header.
         Also record status and errors"""
@@ -55,7 +60,7 @@ class Datafile():
         finally:
             self.header(err)
             if out:
-                self.buf.write(out)
+                self.write(out)
             self.buf.seek(0)
             return self.buf.read()
     def file(self, path):
@@ -87,6 +92,6 @@ class Datafile():
         finally:
             self.header()
             if data:
-                self.buf.write(data)
+                self.write(data)
             self.buf.seek(0)
             return self.buf.read()

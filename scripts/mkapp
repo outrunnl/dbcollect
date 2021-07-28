@@ -15,7 +15,7 @@ makeapp() {
   python3 -m zipapp \
 	--output "$1" \
 	--main dbcollect:main \
-	--python "/usr/bin/env python2" \
+	--python "/usr/bin/env python" \
 	 $gitdir/src/$progname
 }
 

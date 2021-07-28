@@ -66,7 +66,10 @@ class Instance():
             raise OracleError('{0} not found'.format(self.sqlplus))
     def getsql(self, name):
         """Directly get an SQL script from the Python package"""
-        return get_data('sql',name)
+        if sys.version_info.major == 2:
+            return get_data('sql',name)
+        else:
+            return get_data('sql',name).decode()
     def log_error(self, s):
         """Write errors to log file"""
         data = 'Oracle error on {0}:\n---\n{1}\n---\n'.format(self.sid, s)
@@ -76,7 +79,10 @@ class Instance():
     def query(self, sql):
         """Run SQL*Plus query and return the output. Log errors if they appear"""
         header   = "WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n"
-        proc     = Popen(self.args, env=self.env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        if sys.version_info.major == 2:
+            proc     = Popen(self.args, env=self.env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        else:
+            proc     = Popen(self.args, env=self.env, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
         out, err = proc.communicate(header + sql)
         if proc.returncode:
             self.log_error(out + err)
@@ -89,7 +95,10 @@ class Instance():
         The working directory is set to allow SQL*Plus to write spool files to current directory
         """
         with open('/dev/null','w') as devnull:
-            proc = Popen(self.args + ('@' + self.script,), env=self.env, cwd=self.workdir, stdin=PIPE, stdout=devnull)
+            if sys.version_info.major == 2:
+                proc = Popen(self.args + ('@' + self.script,), env=self.env, cwd=self.workdir, stdin=PIPE, stdout=devnull)
+            else:
+                proc = Popen(self.args + ('@' + self.script,), env=self.env, cwd=self.workdir, stdin=PIPE, stdout=devnull, encoding='utf-8')
             out, err = proc.communicate('exit;\n')
         if proc.returncode:
             raise OracleError('SQLPlus execute exited with returncode {0}\n'.format(proc.returncode))
@@ -97,7 +106,10 @@ class Instance():
         """Get instance status"""
         # Check if ora_pmon_<SID> exists
         env    = dict(PATH='/usr/sbin:/usr/bin:/bin:/sbin')
-        proc   = Popen('ps -eo args'.split(), env=env, stdout=PIPE)
+        if sys.version_info.major == 2:
+            proc   = Popen('ps -eo args'.split(), env=env, stdout=PIPE)
+        else:
+            proc   = Popen('ps -eo args'.split(), env=env, stdout=PIPE, encoding='utf-8')
         out, _ = proc.communicate()
         if not re.search(r'^ora_pmon_%s$' % self.sid, out, re.MULTILINE):
             return 'DOWN'
