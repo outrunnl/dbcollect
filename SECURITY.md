@@ -30,7 +30,7 @@ As dbcollect typically runs on production database systems, it has been designed
 * All Oracle database operations are performed using Oracle SQL*Plus and can only perform database 'SELECT' statements. No items like views, procedures, functions, directories are created in the database. No data can be directly modified. <sup>4</sup>
 * OS level commands are limited to those that do not require 'root' access and cannot modify configurations, but only collect configuration parameters.
 * The _dbcollect_ Python code is frequently verified with 'pylint' to detect and remediate potential bugs and issues.
-* _dbcollect_ only runs one command or SQL script at a time - this limits CPU usage to a maximum of about one CPU (core) at all times. By far the most CPU resources are caused by generation of AWR reports in SQL*Plus.
+* _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 25% of available CPUs unless changed with the --tasks parameter.
 * As '/tmp' on most Unix/Linux systems is a separate file system and the only place where files are written, the system cannot become unstable due to filling up other file systems to 100% capacity.
 * The file system of the path where the output ZIP file is located is monitored - so _dbcollect_ will abort with an error if file system free space falls below 100MiB.
 * The only function in the tool that accesses external (internet) sites is the ```--update``` function which is contained in one simple Python module (```updater.py```) and is only used for updating _dbcollect_ itself, and is restricted to hard-coded URLs on the dbcollect repository on ```github.com```.
@@ -52,7 +52,6 @@ Notes:
 * A GPG signed RPM package is also available upon request
 * The _dbcollect_ package is a [Python zipapp](https://docs.python.org/3/library/zipapp.html#the-python-zip-application-archive-format) package. This is not a binary format but just a ZIP file containing the Python (and other) files that can be executed directly. You can unzip the _dbcollect_ package using standard unzip: ```unzip dbcollect``` to inspect the Python code.
 * All SQL*Plus scripts are located in the package's ```sql``` directory for further inspection.
-* Python version 2 is required to run the tools. Although Python 2 is no longer supported as of 2020, this is a deliberate choice because many systems run older OS versions and don't have Python 3 installed. Python 3 would require many users installing additional (RPM or OS) packages on their systems which is often not possible or desirable. Making _dbcollect_ work with both Python 2 and 3 - or alternatively, provide a separate Python 3 version - is on the todo list. Note that on RHEL 8, it does not work at all (to be fixed). 
 
 ## Collected data
 
@@ -68,8 +67,9 @@ _dbcollect_ does not collect any end user data, passwords, encryption keys, or o
 For exact details on what data is collected, check the following files/packages:
 
 1. syscollect.py (OS and SAR data)
-2. genawr.sql (AWR reports) or gensp.sql (Statspack reports)
-3. database.sql, instance.sql, dbinfo.sql, pdbinfo.sql (Additional database information)
+2. config.py (list of OS commands to run on each OS to collect system info)
+3. awr_report.sql (AWR reports) or sp_report.sql (Statspack reports)
+4. database.sql, instance.sql, dbinfo.sql, pdbinfo.sql (Additional database information)
 
 ## Database / instance detection
 

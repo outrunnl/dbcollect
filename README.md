@@ -17,13 +17,17 @@ The results are collected in a ZIP file named (default):
 
 ## Prerequisites
 
-On Enterprise Linux 6 (RHEL 6, OEL 6, CentOS 6) you need to have `python-argparse` installed:
+Check if Python is installed on your system and in your $PATH.
 
-`yum install python-argparse`
+```python --version```
 
-If you cannot install argparse, check out `dbcollect-wrapper` from the `scripts` directory.
+It should give you a version of 2.6 or higher. On Enterprise Linux 6 (RHEL 6, OEL 6, CentOS 6) you need to have `python-argparse` installed.
 
-On IBM AIX, you need to install Python 2. You can get python for AIX from
+```yum install python-argparse```
+
+If you cannot install argparse (maybe you have no root access), check out `dbcollect-wrapper` from the `scripts` directory.
+
+On IBM AIX, you need to install Python first. You can get python for AIX from
 [AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
 
 On Solaris, Python should be already available.
@@ -32,7 +36,9 @@ HP-UX has not yet been tested (mileage may vary, let me know if you want to help
 
 On Enterprise Linux 7 (RHEL 7, OEL 7, CentOS 7), Python2 is installed by default including the argparse module.
 
-Enterprise Linux 8 (RHEL 8, OEL 8) are not yet supported (TBD).
+Enterprise Linux 8 (RHEL 8, OEL 8) should now work fine as dbcollect is Python3 compatible. 'python' may not be configured by default, you can set 'python' to use python3:
+
+```alternatives --set python /usr/bin/python3```
 
 Older Linux versions (RHEL5) do not work unless there is a more recent version of Python on the system.
 
@@ -49,6 +55,8 @@ sudo mv dbcollect /usr/local/bin
 
 This will download _dbcollect_ and put it in /usr/local/bin (it asks for sudo access if you are not root).
 It requires internet access via https.
+
+If you don't have 'root' access but can only login as 'oracle' (dba), put dbcollect in /home/oracle/bin and login again.
 
 You may want to inspect `download` first before running it:
 ```
@@ -191,16 +199,16 @@ If you want to collect reports from a longer time ago (say, 20 days ago up to 10
 
 ### Non-Linux (UNIX) systems
 
-DBCollect now supports AIX and Solaris systems. You need to have Python 2 installed.
+DBCollect now supports AIX and Solaris systems. You need to have Python installed.
 
-Windows and HP-UX are not (yet) supported.
+Windows and HP-UX are not (yet) supported although on HP-UX, it may work fine to collect Oracle information (not SAR and system info). Let me know if you want to help with testing.
 
 ## Requirements
 
-- Oracle RDBMS 10g or higher
-- Enterprise Linux 6 or 7, Solaris 11, IBM AIX 7
-- Python 2
-- Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris)
+- Oracle RDBMS 10g or higher, tested up to 19.x
+- Enterprise Linux 6, 7 or 8, Solaris 11, IBM AIX 7
+- Python 2 or 3
+- Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris) OR detectable via ORACLE_HOMES listed in the Oracle Inventory
 - SYS credentials (hence the 'oracle' user)
 - AWR or Statspack installed and configured
 - Retention should be at least 7 days (10080 minutes) for a reasonable period of workload data
@@ -232,7 +240,7 @@ For example, listing the files in the package:
 
 Q: Why is dbcollect written in Python 2? This is no longer supported!
 
-A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. I plan to make it work with both python 2 and 3 in the future.
+A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. Update: dbcollect now works on Python 2 and Python 3.
 
 Q: How long will it take to run _dbcollect_ ?
 
