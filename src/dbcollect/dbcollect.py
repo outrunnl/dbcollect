@@ -5,7 +5,7 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, logging, pkgutil, platform, logging
+import os, sys, json, logging, pkgutil, platform, logging, datetime
 sys.dont_write_bytecode = True
 try:
     import argparse
