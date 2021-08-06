@@ -367,6 +367,7 @@ FROM (
   , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM dba_tab_partitions
 ) t
 JOIN dba_tablespaces USING (tablespace_name)
+WHERE blocks > 0
 GROUP BY t.compress_for
 ORDER BY t.compress_for NULLS FIRST
 /

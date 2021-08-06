@@ -3,7 +3,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2021, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.7.2"
+    'version': "1.7.3"
 }
 
 linux_cmds = [
@@ -19,8 +19,8 @@ linux_cmds = [
     'ip -o addr show',
     'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
     'sysctl -a',
-    'numact -H',
-    'numact -s',
+    'numactl -H',
+    'numactl -s',
     ]
 
 linux_files = [
