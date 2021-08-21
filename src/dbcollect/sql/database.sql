@@ -18,7 +18,7 @@ COL METRIC      FORMAT A20        HEAD 'Metric'
 COL VALUE       FORMAT A80        HEAD 'Value'
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.2.2
+PROMPT DBINFO version 1.2.3
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,11 +32,11 @@ UNION ALL SELECT 'version',        version                  FROM v$instance
 UNION ALL SELECT 'inst_number',    to_char(instance_number) FROM v$instance
 UNION ALL SELECT 'startup',        to_char(startup_time)    FROM v$instance
 UNION ALL SELECT 'rac',            parallel                 FROM v$instance
-UNION ALL SELECT 'inst_role',      instance_role            FROM v$instance
+UNION ALL SELECT 'inst_role',      instance_role            FROM v$instance -- 11+ only
 UNION ALL SELECT 'status',         status                   FROM v$instance
 UNION ALL SELECT 'db_status',      database_status          FROM v$instance
 UNION ALL SELECT 'logins',         logins                   FROM v$instance
-UNION ALL SELECT 'blocked',        blocked                  FROM v$instance
+UNION ALL SELECT 'blocked',        blocked                  FROM v$instance -- 11+ only
 UNION ALL SELECT 'uptime (days)',  to_char(round(sysdate - startup_time,2)) FROM v$instance
 UNION ALL SELECT lower(replace(stat_name,'NUM_','')), to_char(value)
           FROM   v$osstat

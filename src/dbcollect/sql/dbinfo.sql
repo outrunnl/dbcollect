@@ -32,6 +32,7 @@
 --         many small fixes, wider page
 -- 1.3.0 - Added ASM files summary section, fix backup file report
 -- 1.3.1 - Added Compression summary
+-- 1.3.2 - Clean up some formatting, moved 11g sections to new file
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -43,7 +44,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.1
+PROMPT DBINFO version 1.3.2
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -64,7 +65,7 @@ UNION ALL SELECT 'inst_role',      instance_role            FROM v$instance
 UNION ALL SELECT 'status',         status                   FROM v$instance
 UNION ALL SELECT 'db_status',      database_status          FROM v$instance
 UNION ALL SELECT 'logins',         logins                   FROM v$instance
-UNION ALL SELECT 'blocked',        blocked                  FROM v$instance
+UNION ALL SELECT 'blocked',        blocked                  FROM v$instance -- 11+ only?
 UNION ALL SELECT 'uptime (days)',  to_char(round(sysdate - startup_time,2)) FROM v$instance
 UNION ALL SELECT lower(replace(stat_name,'NUM_','')), to_char(value)
           FROM   v$osstat
@@ -119,7 +120,7 @@ COMPUTE SUM LABEL "Total" OF DBFILES SIZE_MB ON REPORT
 
 COL SIZE_MB     FORMAT 99,999,999,990.99 HEAD 'Size'
 COL FILETYPE    FORMAT A20               HEAD 'Filetype'
-COL DBFILES     FORMAT 9990              HEAD 'Files'
+COL DBFILES     FORMAT 99990             HEAD 'Files'
 
 SELECT FTYPE FILETYPE
 , DBFILES
@@ -151,7 +152,7 @@ COL FILENAME    FORMAT A200              HEAD 'Filename'
 SELECT TYPE       FILETYPE
 , BLOCK_SIZE/1024 BLOCKSIZE
 , BYTES/1048576   SIZE_MB
-, NAME          FILENAME
+, NAME            FILENAME
 FROM (
   SELECT           'DATAFILE' type, bytes, block_size, name   FROM v$datafile
   UNION ALL SELECT 'TEMPFILE',      bytes, block_size, name   FROM v$tempfile
@@ -171,7 +172,6 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB FILES ON REPORT
 
-COL THREAD#    FORMAT 99      HEAD 'Thread'
 COL SIZE_MB    FORMAT 99,999,999,990.99 HEAD 'Size'
 COL STATUS     FORMAT A10     HEAD 'Status'
 COL COMPRESSED FORMAT A10     HEAD 'Compress'
@@ -204,7 +204,6 @@ COL FILE_TYPE   FORMAT A15    HEAD 'File type'
 COL OBSOLETE    FORMAT A10    HEAD 'Obsolete'
 COL COMPRESSED  FORMAT A10    HEAD 'Compressed'
 COL STATUS      FORMAT A10    HEAD 'Status'
-COL DEVTYPE     FORMAT A10    HEAD 'Target'
 COL FILES       FORMAT 999990 HEAD 'Files'
 
 SELECT file_type
@@ -214,7 +213,7 @@ SELECT file_type
 , OBSOLETE
 , STATUS
 , SUM(BYTES)/1048576 SIZE_MB
-, count(*)           FILES
+, COUNT(*)           FILES
 FROM (
     SELECT file_type
     , backup_type
@@ -245,6 +244,23 @@ CLEAR COMPUTES COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT BLOCK CHANGE TRACKING
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL STATUS      FORMAT A10               HEAD 'Status'
+COL SIZE_MB     FORMAT 99,999,999,990.99 HEAD 'Size'
+COL FILENAME    FORMAT A200              HEAD 'Filename'
+
+SELECT status
+, bytes/1048576 SIZE_MB
+, filename
+FROM V$BLOCK_CHANGE_TRACKING
+/
+
+CLEAR COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT TABLESPACES
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -260,10 +276,10 @@ COL ALLOCATED  LIKE USED_MB             HEAD 'Allocated'
 COL PCT_USED   FORMAT 990.99            HEAD 'Used %'
 
 BREAK ON REPORT
-COMPUTE SUM LABEL "Total" OF ALLOCATED FREE_MB USED_MB OBJECTS ON REPORT
+COMPUTE SUM LABEL "Total" OF FILES ALLOCATED FREE_MB USED_MB OBJECTS ON REPORT
 
 WITH DF AS (SELECT tablespace_name
-  , (select count(*) from dba_segments where dba_segments.tablespace_name = DF.tablespace_name) objects
+  , (SELECT count(*) FROM dba_segments WHERE dba_segments.tablespace_name = DF.tablespace_name) objects
   , count(*) files
   , sum(bytes)/1024/1024 allocated
   FROM dba_data_files DF
@@ -293,7 +309,7 @@ FROM   DF, FS, TS
 WHERE  fs.tablespace_name = DF.tablespace_name
 AND    fs.tablespace_name = TS.tablespace_name
 GROUP BY DF.tablespace_name,ts_type,compr,encrypted,free_mb,allocated,files,objects
-union all
+UNION ALL
 SELECT TF.tablespace_name
 , count(*)             files
 , 'TEMP'               ts_type
@@ -311,7 +327,6 @@ ORDER BY 1
 /
 
 CLEAR COMPUTES COLUMNS
-
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -337,45 +352,6 @@ CLEAR COMPUTES COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT TABLE COMPRESSION SUMMARY
-PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--- Works only on 11g+
-
-COL MIB         FORMAT 999999990.99
-COL compression FORMAT A15        head 'Compression'
-COL tables      FORMAT 999990     head 'Tables'
-COL partitions  LIKE tables       head 'Part'
-COL datasize    LIKE MIB          head 'Datasize'
-COL allocated   LIKE MIB          head 'Allocated'
-COL free        LIKE MIB          head 'Free'
-COL ratio       FORMAT 990.99     head 'Ratio'
-
-BREAK ON REPORT
-COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
-
-SELECT coalesce(t.compress_for,'NONE') compression
-, sum(tbl)                             tables
-, sum(bytes)/1048576                   datasize
-, sum(block_size*blocks)/1048576       allocated
-, sum(block_size*empty_blocks)/1048576 free
-, sum(bytes)/sum(block_size*blocks)    ratio
-FROM (
-  SELECT tablespace_name, num_rows, 1 tbl, 0 part, compress_for
-  , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM dba_tables
-  UNION ALL
-  SELECT tablespace_name, num_rows, 0 tbl, 1 part, compress_for
-  , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM dba_tab_partitions
-) t
-JOIN dba_tablespaces USING (tablespace_name)
-WHERE blocks > 0
-GROUP BY t.compress_for
-ORDER BY t.compress_for NULLS FIRST
-/
-
-CLEAR COMPUTES COLUMNS
-
-PROMPT
-PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT ASM DISK GROUPS
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -393,7 +369,7 @@ COMPUTE SUM LABEL "Total" OF USED_MB FREE_MB ALLOCATED ON REPORT
 SELECT name dg_name
 , allocation_unit_size/1024/1024 au_size
 -- , decode(state,'MOUNTED','Y','CONNECTED','Y','DISMOUNTED','N','E') state
-, decode(type, 'EXTERN',1,'NORMAL',2,'HIGH',3,0) MIRRORS
+, DECODE(type, 'EXTERN',1,'NORMAL',2,'HIGH',3,0) MIRRORS
 , (total_mb - free_mb) USED_MB
 , free_mb              FREE_MB
 , total_mb             ALLOCATED
@@ -462,19 +438,6 @@ ORDER BY 1, 2
 /
 
 CLEAR COMPUTES COLUMNS
-
-PROMPT
-PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DNFS SERVERS
-PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-COL SVRNAME FORMAT A40  HEAD 'NFS Server'
-COL DIRNAME FORMAT A120 HEAD 'Directory'
-SELECT svrname, dirname
-FROM v$dnfs_servers
-/
-
-CLEAR COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -572,5 +535,3 @@ ORDER BY name
 CLEAR COMPUTES COLUMNS
 
 PROMPT
-
-SET LINES 120

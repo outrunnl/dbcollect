@@ -80,9 +80,9 @@ class Instance():
         """Run SQL*Plus query and return the output. Log errors if they appear"""
         header   = "WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n"
         if sys.version_info.major == 2:
-            proc     = Popen(self.args, env=self.env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            proc     = Popen(self.args, env=self.env, cwd=self.workdir, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         else:
-            proc     = Popen(self.args, env=self.env, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
+            proc     = Popen(self.args, env=self.env, cwd=self.workdir, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
         out, err = proc.communicate(header + sql)
         if proc.returncode:
             self.log_error(out + err)
@@ -118,6 +118,7 @@ class Instance():
     def dbinfo(self):
         """Collect database info"""
         status = self.status()
+        major = 0
         if status == 'DOWN':
             logging.warning('Skipped %s (DOWN)', self.sid)
         elif status == 'ERROR':
@@ -131,6 +132,10 @@ class Instance():
         elif status == 'OPEN':
             # Get common database/instance info
             sql = self.getsql('dbinfo.sql')
+            version = self.query("select version from v$instance;")
+            major   = int(version.split('.')[0])
+            if major >= 11:
+                sql += self.getsql('dbinfo_11.sql')
         else:
             # Should never happen:
             logging.critical('Skipped %s (unknown status %s)', self.sid, status)
@@ -139,8 +144,6 @@ class Instance():
                 data = self.query(sql)
                 f.write(data)
                 f.write('\n')
-            version = self.query("select version from v$instance;")
-            major = int(version.split('.')[0])
             if major >= 12:
                 # Get CDB/PDB info (Oracle 12 and higher)
                 with open(os.path.join(self.workdir, 'pdbinfo.txt'), 'w') as f:
@@ -148,6 +151,18 @@ class Instance():
                     data = self.query(sql)
                     f.write(data)
                     f.write('\n')
+            # Handle the LiveOptics capacity scripts
+            if major < 11:
+                ver = '10g'
+            elif major == 11:
+                ver = '11g'
+            elif major >= 12:
+                ver = '12c'
+            now = datetime.now().strftime("%Y%m%d")
+            sql = self.getsql('capacity_{0}.sql'.format(ver))
+            self.query(sql)
+            sql = self.getsql('capacity_splunk_{0}.sql'.format(ver))
+            self.query(sql)
             return True
     def has_statspack(self):
         r = self.query("select count(table_name) from all_tables where table_name = 'STATS$SNAPSHOT';")
