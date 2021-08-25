@@ -71,7 +71,7 @@ It can also generate Statspack reports. This is how _dbcollect_ decides which re
 
 Oracle AWR reports require Diagnostics Pack (see Oracle doc id 1490798.1).
 _dbcollect_ can not directly determine if you have this license or not - it checks the dba_feature_usage_statistics
-table whether "AWR Reports" has been used previously or not, and falls back to Statspack otherwise, unless the ```--force``` flag
+table whether "AWR Reports" has been used previously or not, and falls back to Statspack otherwise, unless the ```--force-awr``` flag
 has been specified. The decision flow is as follows:
 
 1. Check if 'AWR Reports' is a feature that has been used before. If so, use AWR reports
@@ -213,7 +213,7 @@ A: Inspect the zip file `/tmp/dbcollect-<hostname>.zip` and check its contents.
 
 Tip: if something fails, run dbcollect with the ```-D``` (debug) option. This will show the content of exception debug messages and print the full dbcollect.log logfile when finished.
 
-```ERROR    : Skipping <SID>: No prior AWR usage or Statspack detected (try --force)```
+```ERROR    : Skipping <SID>: No prior AWR usage or Statspack detected (try --force-awr)```
 
 dbcollect refuses to generate AWR reports because it cannot determine if you have a proper (diagnostics pack) license. You can force it with the ```--force``` option if you are sure you have the license (note that during an audit, Oracle can determine you have used the feature in the past). See [Important Note](#important-note)
 
@@ -280,8 +280,3 @@ _dbcollect_ is licensed under GPLv3. See "COPYING" for more info or go to [GPLv3
 ## Author
 
 Bart Sjerps (bart &lt;at&gt; dirty-cache &lt;dot&gt; com) - with great contributions from others
-
-
-
-
-

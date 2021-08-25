@@ -169,7 +169,7 @@ class Instance():
         return int(r) == 1
     def check_awr(self):
         """Check if AWR reports have been used before
-        If not, we must prevent running due to license violations (unless --force)
+        If not, we must prevent running due to license violations (unless --force-awr)
         """
         sql = self.getsql('awrusage.sql')
         r = self.query(sql)
@@ -188,7 +188,7 @@ class Instance():
             report = self.getsql('awr_report.sql')
             logging.info('{0}: AWR usage detected, generating reports '.format(self.sid))
         elif args.force_awr:
-            # AWR usage not detected but --force specified, use AWR anyway with warning
+            # AWR usage not detected but --force-awr specified, use AWR anyway with warning
             logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force-awr)".format(self.sid))
             sql += self.getsql('getawrs.sql')
             report = self.getsql('awr_report.sql')
