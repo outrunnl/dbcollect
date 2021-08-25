@@ -17,11 +17,11 @@ class Archive():
     Files and strings are prefixed with the hostname to avoid making a mess un unzip
     """
     zip = None
-    def __init__(self, path, logpath, version):
+    def __init__(self, path, logpath, version, overwrite=False):
         self.prefix  = os.uname()[1]
         self.path    = path
         self.logpath = logpath
-        if os.path.exists(self.path):
+        if os.path.exists(self.path) and not overwrite:
             raise ZipCreateError("ZIP file already exists")
         self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
         comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)

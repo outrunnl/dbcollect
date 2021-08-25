@@ -11,7 +11,7 @@ from multiprocessing import Process, Lock, Queue, cpu_count, active_children, cu
 from subprocess import Popen, PIPE
 from shutil import rmtree
 from lib.functions import getfile, listdir, makedir
-from lib.log import exception_handler
+from lib.log import exception_handler, DBCollectError
 from .awrstrip import awrstrip
 
 class OracleError(Exception):
@@ -187,9 +187,9 @@ class Instance():
             sql += self.getsql('getawrs.sql')
             report = self.getsql('awr_report.sql')
             logging.info('{0}: AWR usage detected, generating reports '.format(self.sid))
-        elif args.force:
+        elif args.force_awr:
             # AWR usage not detected but --force specified, use AWR anyway with warning
-            logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force)".format(self.sid))
+            logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force-awr)".format(self.sid))
             sql += self.getsql('getawrs.sql')
             report = self.getsql('awr_report.sql')
         elif self.has_statspack():
@@ -197,10 +197,12 @@ class Instance():
             logging.info('{0}: No awr, Statspack detected'.format(self.sid))
             sql += self.getsql('getsps.sql')
             report = self.getsql('sp_report.sql')
+        elif args.ignore:
+            # AWR not detected or allowed, statspack not detected, skip
+            logging.warning("Skipping {0}: No prior AWR usage or Statspack detected (--ignore)".format(self.sid))
         else:
             # AWR not detected or allowed, statspack not detected, give up
-            logging.error("Skipping {0}: No prior AWR usage or Statspack detected (try --force)".format(self.sid))
-            return
+            raise DBCollectError("No AWR or Statspack detected for {0} (try --force-awr or --ignore)".format(self.sid))
         # Get list of report parameters
         out = self.query(sql)
         lines = out.splitlines()
