@@ -42,59 +42,9 @@ Enterprise Linux 8 (RHEL 8, OEL 8) should now work fine as dbcollect is Python3 
 
 Older Linux versions (RHEL5) do not work unless there is a more recent version of Python on the system.
 
-## Install
+## Installing and usage
 
-### Easy way
-
-The easiest way to install _dbcollect_ is to run this command on your database host:
-
-```
-curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | python
-sudo mv dbcollect /usr/local/bin
-```
-
-This will download _dbcollect_ and put it in /usr/local/bin (it asks for sudo access if you are not root).
-It requires internet access via https.
-
-If you don't have 'root' access but can only login as 'oracle' (dba), put dbcollect in /home/oracle/bin and login again.
-
-You may want to inspect `download` first before running it:
-```
-curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | less
-```
-
-### Manual install
-
-You can download or inspect the installer first if needed. If you prefer to manually download _dbcollect_, download it from this link:
-
-[latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest)
-
-Place _dbcollect_ in /usr/local/bin and make it executable:
-
-`chmod 755 /usr/local/bin/dbcollect`
-
-(alternatively you can run it via `python /usr/local/bin/dbcollect`)
-
-`dbcollect` is a single `zipapp` package. If you prefer to unzip it first before running, for example:
-
-```
-cd /usr/local/bin
-# Inspect only
-unzip -v dbcollect
-# Unpack in another folder
-unzip dbcollect -d /usr/local/src/dbcollect
-# Run it from other folder
-python /usr/local/src/dbcollect/dbcollect.py
-```
-
-## Updating
-
-dbcollect has a self-updating feature that fetches a new version if available from github. It requires https access to github.com.
-To use this run
-```
-dbcollect --update
-```
-If you don't run this as root (or using sudo) you manually have to move /tmp/dbcollect to /usr/local/bin (or another location in $PATH)
+See [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTIONS.md) for information on installation and usage.
 
 ## Info collected by dbcollect:
 
@@ -114,8 +64,6 @@ If you don't run this as root (or using sudo) you manually have to move /tmp/dbc
 
 More collectors may be added in the future.
 
-## Usage
-
 ### Important note
 
 Ideally, _dbcollect_ collects Oracle AWR reports in HTML format as HTML can be processed (parsed) reliably.
@@ -127,38 +75,23 @@ table whether "AWR Reports" has been used previously or not, and falls back to S
 has been specified. The decision flow is as follows:
 
 1. Check if 'AWR Reports' is a feature that has been used before. If so, use AWR reports
-2. If AWR usage is not detected but the ```--force``` flag has been specified, use AWR reports
-3. If AWR usage is not detected and no ```--force``` flag is specified, check if STATSPACK is available. If so, use Statspack
-4. If we get to this point, give up for this instance and issue an error, continue with the next instance
+2. If AWR usage is not detected but the ```--force-awr``` flag has been specified, use AWR reports
+3. If AWR usage is not detected and no ```--force-awr``` flag is specified, check if STATSPACK is available. If so, use Statspack
 
-So if you ARE licensed but _dbcollect_ complains, you can run dbcollect with the --force option. 
+If we get to this point:
+
+*  Abort with an error, or
+*  Give up for this instance and issue a warning, continue with the next instance (if `--ignore` is specified)
+
+So if you ARE licensed but _dbcollect_ complains, you can run dbcollect with the --force-awr option.
 DBcollect will only warn about the AWR detection and just generate the reports anyway.
 
-**Use the `--force` flag ONLY if you are sure you are correctly licensed!
+**Use the `--force-awr` flag ONLY if you are sure you are correctly licensed!
 **
 
 If you are NOT licensed for diagnostics pack then you can use Statspack instead (see section below)
 
 More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.com/articles/misc/tracking-database-feature-usage)
-
-### Basic operation
-
-Get a list of options:
-
-`dbcollect -h`
-
-In most cases you can just run
-
-`dbcollect`
-
-as 'oracle' user or root (assuming the database runs under user 'oracle')
-
-If you get this error:
-```ERROR    : ZIP file already exists: /tmp/dbcollect-db02.lan.zip```
-
-Run `dbcollect --delete` to clean up the old zipfile.
-
-When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
 ### Oracle running as other user than 'oracle'
 
@@ -178,7 +111,7 @@ This will create multiple zip files (one for each active user).
 
 ### Statspack
 
-If no AWR usage is detected and no `--force` flag is used, _dbcollect_ checks for STATSPACK data.
+If no AWR usage is detected and no `--force-awr` flag is used, _dbcollect_ checks for STATSPACK data.
 Statspack is not configured by default on Oracle but requires initial setup.
 
 To setup Statspack, see [Oracle-base: Statspack](https://oracle-base.com/articles/8i/statspack-8i)
@@ -238,9 +171,13 @@ For example, listing the files in the package:
 
 ## Q&A
 
+Q: Is dbcollect safe to run?
+
+A: dbcollect is designed to run as non-root user but it has to be the oracle user or a user with sysdba privileges. The SQL scripts only contain SELECT statements so they cannot modify database data. The Python tools cannot delete/overwrite any file except in `/tmp` or the output ZIP file otherwise specified in the arguments. External commands are not executed as root and are verified to only gather system info, not modify anything. CPU consumption is limited by default to 25%. These restrictions should make one confident that dbcollect is safe to run on production systems.
+
 Q: Why is dbcollect written in Python 2? This is no longer supported!
 
-A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. Update: dbcollect now works on Python 2 and Python 3.
+A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. Update: dbcollect now works on both Python 2 and Python 3.
 
 Q: How long will it take to run _dbcollect_ ?
 
@@ -326,7 +263,8 @@ dbcollect cannot save the logfile ```/tmp/dbcollect.log``` in the zip file for s
 
 dbcollect cannot login as sysdba to the database instance. Maybe because it uses the wrong user id (use ```--user <oracle_user>```)
 
-    Requires Python 2 (2.6 or higher, EL6)
+
+```Requires Python 2 (2.6 or higher, EL6)```
 
 You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or another UNIX system with a Python version before 2.6. This is not supported.
 
