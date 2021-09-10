@@ -246,7 +246,8 @@ You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or anot
 You are probably running on Enterprise Linux 8 - which by default has python 3 installed, but 'python' is not set to run python3. Run ```alternatives --set python /usr/bin/python3``` so that 'python' starts python3. The same problem has been observed on Solaris/SPARC in some cases.
 
 ```ERROR: Cannot import module 'argparse'. Please install python-argparse first:
-yum install python-argparse```
+yum install python-argparse
+```
 
 On Enterprise Linux, python-argparse is not installed by default (but in most cases it is there as other packages require it). Install python-argparse (as root) and retry. If you cannot install argparse (maybe you have no root access), check out `dbcollect-wrapper` from the `scripts` directory.
 
