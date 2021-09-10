@@ -13,7 +13,7 @@ except:
     print("ERROR: Cannot import module 'argparse'. Please install python-argparse first:\nyum install python-argparse")
     exit(10)
 
-if sys.version_info.major == 2 and sys.version_info.minor < 6:
+if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
 from shutil import rmtree
