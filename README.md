@@ -6,7 +6,11 @@ DBCollect - Oracle Database Info Collector
 
 ## Description
 
-_dbcollect_ is a metadata collection tool for Oracle databases.
+_dbcollect_ is a metadata collection tool for Oracle databases, providing workload and config data from database hosts for:
+
+* Dell LiveOptics
+* Dell's internal Splunk-based Workload Analyzer for Oracle (used by Oracle specialists at Dell)
+* The advanced DB workload analyzer tool I have developed (more info TBD)
 
 It is written in Python, and collects various OS configuration files and
 the output of some system commands, as well as AWR or Statspack reports for each
@@ -15,32 +19,9 @@ database instance, and other database information.
 The results are collected in a ZIP file named (default):
 `/tmp/dbcollect-<hostname>.zip`
 
-## Prerequisites
+For LiveOptics and Dell's Workload Analyzer, the per-database directories in the ZIP file contain all files you need to upload to the reporting tools.
 
-Check if Python is installed on your system and in your $PATH.
-
-```python --version```
-
-It should give you a version of 2.6 or higher. On Enterprise Linux 6 (RHEL 6, OEL 6, CentOS 6) you need to have `python-argparse` installed.
-
-```yum install python-argparse```
-
-If you cannot install argparse (maybe you have no root access), check out `dbcollect-wrapper` from the `scripts` directory.
-
-On IBM AIX, you need to install Python first. You can get python for AIX from
-[AIX Toolbox (IBM)](https://www.ibm.com/support/pages/aix-toolbox-linux-applications-overview)
-
-On Solaris, Python should be already available.
-
-HP-UX has not yet been tested (mileage may vary, let me know if you want to help testing)
-
-On Enterprise Linux 7 (RHEL 7, OEL 7, CentOS 7), Python2 is installed by default including the argparse module.
-
-Enterprise Linux 8 (RHEL 8, OEL 8) should now work fine as dbcollect is Python3 compatible. 'python' may not be configured by default, you can set 'python' to use python3:
-
-```alternatives --set python /usr/bin/python3```
-
-Older Linux versions (RHEL5) do not work unless there is a more recent version of Python on the system.
+For the advanced analyzer, send the entire ZIP file (via secure FTP or other means).
 
 ## Installing and usage
 
@@ -138,15 +119,7 @@ Windows and HP-UX are not (yet) supported although on HP-UX, it may work fine to
 
 ## Requirements
 
-- Oracle RDBMS 10g or higher, tested up to 19.x
-- Enterprise Linux 6, 7 or 8, Solaris 11, IBM AIX 7
-- Python 2 or 3
-- Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris) OR detectable via ORACLE_HOMES listed in the Oracle Inventory
-- SYS credentials (hence the 'oracle' user)
-- AWR or Statspack installed and configured
-- Retention should be at least 7 days (10080 minutes) for a reasonable period of workload data
-- AWR Snapshot Interval: maximum 1 hour (60 minutes)
-- Some free temp space for the generated files (typically a few hundred MB, but can be larger depending on snapshot intervals and other factors)
+See [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTIONS.md) for information on requirements.
 
 ## Known limitations and caveats
 
@@ -267,6 +240,15 @@ dbcollect cannot login as sysdba to the database instance. Maybe because it uses
 ```Requires Python 2 (2.6 or higher, EL6)```
 
 You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or another UNIX system with a Python version before 2.6. This is not supported.
+
+```/usr/bin/env: ‘python’: No such file or directory```
+
+You are probably running on Enterprise Linux 8 - which by default has python 3 installed, but 'python' is not set to run python3. Run ```alternatives --set python /usr/bin/python3``` so that 'python' starts python3. The same problem has been observed on Solaris/SPARC in some cases.
+
+```ERROR: Cannot import module 'argparse'. Please install python-argparse first:
+yum install python-argparse```
+
+On Enterprise Linux, python-argparse is not installed by default (but in most cases it is there as other packages require it). Install python-argparse (as root) and retry. If you cannot install argparse (maybe you have no root access), check out `dbcollect-wrapper` from the `scripts` directory.
 
 ### Generating the AWR reports takes a very long time
 

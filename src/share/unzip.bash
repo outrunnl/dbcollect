@@ -1,7 +1,7 @@
 #============================================================================
 # Title       : unzip.bash
 # Description : bash_completion file for unzip
-# Author      : Bart Sjerps <bart@outrun.nl>
+# Author      : Bart Sjerps <bart@dirty-cache.com>
 # License     : GPLv3+
 # ---------------------------------------------------------------------------
 # This program is free software: you can redistribute it and/or modify
