@@ -66,7 +66,7 @@ class Instance():
             raise OracleError('{0} not found'.format(self.sqlplus))
     def getsql(self, name):
         """Directly get an SQL script from the Python package"""
-        if sys.version_info.major == 2:
+        if sys.version_info[0] == 2:
             return get_data('sql',name)
         else:
             return get_data('sql',name).decode()
@@ -79,7 +79,7 @@ class Instance():
     def query(self, sql):
         """Run SQL*Plus query and return the output. Log errors if they appear"""
         header   = "WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n"
-        if sys.version_info.major == 2:
+        if sys.version_info[0] == 2:
             proc     = Popen(self.args, env=self.env, cwd=self.workdir, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         else:
             proc     = Popen(self.args, env=self.env, cwd=self.workdir, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
@@ -95,7 +95,7 @@ class Instance():
         The working directory is set to allow SQL*Plus to write spool files to current directory
         """
         with open('/dev/null','w') as devnull:
-            if sys.version_info.major == 2:
+            if sys.version_info[0] == 2:
                 proc = Popen(self.args + ('@' + self.script,), env=self.env, cwd=self.workdir, stdin=PIPE, stdout=devnull)
             else:
                 proc = Popen(self.args + ('@' + self.script,), env=self.env, cwd=self.workdir, stdin=PIPE, stdout=devnull, encoding='utf-8')
@@ -106,7 +106,7 @@ class Instance():
         """Get instance status"""
         # Check if ora_pmon_<SID> exists
         env    = dict(PATH='/usr/sbin:/usr/bin:/bin:/sbin')
-        if sys.version_info.major == 2:
+        if sys.version_info[0] == 2:
             proc   = Popen('ps -eo args'.split(), env=env, stdout=PIPE)
         else:
             proc   = Popen('ps -eo args'.split(), env=env, stdout=PIPE, encoding='utf-8')

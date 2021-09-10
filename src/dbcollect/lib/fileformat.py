@@ -30,7 +30,7 @@ class Datafile():
         self.info['format']       = None
         self.info['fields']       = None
     def write(self, s):
-        if sys.version_info.major == 2:
+        if sys.version_info[0] == 2:
             self.buf.write(s)
         else:
             self.buf.write(s.encode())

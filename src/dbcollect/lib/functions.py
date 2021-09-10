@@ -51,7 +51,7 @@ def execute(cmd):
     # Setting PATH for UNIX and Linux. On AIX we also need objrepos
     env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
     env['ODMDIR'] = '/etc/objrepos'
-    if sys.version_info.major == 2:
+    if sys.version_info[0] == 2:
         proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     else:
         proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
