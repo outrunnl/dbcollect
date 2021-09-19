@@ -78,7 +78,7 @@ def main():
     parser.add_argument("-D", "--debug",     action="store_true",        help="Debug (Show errors)")
     parser.add_argument(      "--update",    action="store_true",        help="Check for updates")
     parser.add_argument("-q", "--quiet",     action="store_true",        help="Suppress output")
-    parser.add_argument(      "--overwrite", action="store_true",        help="Overwrite previous zip file")
+    parser.add_argument("-o", "--overwrite", action="store_true",        help="Overwrite previous zip file")
     parser.add_argument(      "--output",    type=str, metavar='FILE',   help="output file, default dbcollect-<hostname>.zip")
     parser.add_argument("-u", "--user",      type=str, default='oracle', help="Run as user (default oracle)")
     parser.add_argument("-d", "--days",      type=int, default=10,       help="Number of days to collect AWR data (default 10, max 999)")

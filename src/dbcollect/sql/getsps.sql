@@ -28,11 +28,11 @@ FROM (SELECT snap_id
   , instance_number
   , dbid
   , startup_time
-  , snap_time                                                   endtime
-  , lag(snap_time,1) over (order by instance_number,snap_id)    begintime
-  , lag(snap_id,1) over (order by instance_number,snap_id)      prev_id
-  , (SELECT MAX(snap_time) FROM stats$snapshot)                 max_time
-  , lag(startup_time,1) over (order by instance_number,snap_id) last_startup_time
+  , lag(snap_time) over (PARTITION BY instance_number ORDER BY snap_id)    begintime
+  , snap_time                                                              endtime
+  , lag(snap_id) over (PARTITION BY instance_number ORDER BY snap_id)      prev_id
+  , lag(startup_time) over (PARTITION BY instance_number ORDER BY snap_id) last_startup_time
+  , (SELECT MAX(snap_time) FROM stats$snapshot)                            max_time
   FROM stats$snapshot)
 JOIN INFO USING (dbid)                                       -- ignore old data from other DBIDs
 WHERE startup_time = last_startup_time                       -- skip over db restarts

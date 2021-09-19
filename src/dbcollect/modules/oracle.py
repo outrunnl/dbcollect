@@ -76,9 +76,11 @@ class Instance():
         with open(os.path.join(self.workdir, 'errors.log'),'a') as f:
             print(data)
             f.write(data)
-    def query(self, sql):
+    def query(self, sql, sqlerror=True):
         """Run SQL*Plus query and return the output. Log errors if they appear"""
-        header   = "WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n"
+        header = "SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n"
+        if sqlerror:
+            header += "WHENEVER SQLERROR EXIT SQL.SQLCODE\n"
         if sys.version_info[0] == 2:
             proc     = Popen(self.args, env=self.env, cwd=self.workdir, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         else:
@@ -141,14 +143,14 @@ class Instance():
             logging.critical('Skipped %s (unknown status %s)', self.sid, status)
         if status in ('OPEN','STARTED','MOUNTED'):
             with open(os.path.join(self.workdir, 'dbinfo.txt'), 'w') as f:
-                data = self.query(sql)
+                data = self.query(sql, sqlerror=False)
                 f.write(data)
                 f.write('\n')
             if major >= 12:
                 # Get CDB/PDB info (Oracle 12 and higher)
                 with open(os.path.join(self.workdir, 'pdbinfo.txt'), 'w') as f:
                     sql  = self.getsql('pdbinfo.sql')
-                    data = self.query(sql)
+                    data = self.query(sql, sqlerror=False)
                     f.write(data)
                     f.write('\n')
             # Handle the LiveOptics capacity scripts
@@ -160,9 +162,9 @@ class Instance():
                 ver = '12c'
             now = datetime.now().strftime("%Y%m%d")
             sql = self.getsql('capacity_{0}.sql'.format(ver))
-            self.query(sql)
+            self.query(sql, sqlerror=False)
             sql = self.getsql('capacity_splunk_{0}.sql'.format(ver))
-            self.query(sql)
+            self.query(sql, sqlerror=False)
             return True
     def has_statspack(self):
         r = self.query("select count(table_name) from all_tables where table_name = 'STATS$SNAPSHOT';")
@@ -209,7 +211,7 @@ class Instance():
         self.total = len(lines)
         # Create the script
         with open(self.script,'w') as f:
-            f.write("WHENEVER SQLERROR EXIT SQL.SQLCODE\n")
+            f.write("-- Created by dbcollect to generate the required AWR or Statspack reports\n")
             f.write("set echo off head off feed off trims on lines 32767 pages 50000\n")
             f.write("alter session set nls_date_language=american;\n")
             for i, line in enumerate(lines):
