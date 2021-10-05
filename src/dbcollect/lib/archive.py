@@ -80,5 +80,5 @@ def buildstamp(zipname):
     archive = ZipFile(zipname)
     info = archive.getinfo('__main__.py')
     archive.close()
-    yy, mm, dd, hh, mm = info.date_time[0:5]
-    return '{0:04}-{1:02}-{2:02} {3:02}:{4:02}'.format(yy, mm, dd, hh, mm)
+    yy, m, dd, hh, mm = info.date_time[0:5]
+    return '{0:04}-{1:02}-{2:02} {3:02}:{4:02}'.format(yy, m, dd, hh, mm)
