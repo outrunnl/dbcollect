@@ -42,6 +42,9 @@ def switchuser(user, args):
     os.chdir(home)
     try:
         check_call(args)
+    except KeyboardInterrupt:
+        print("Aborted, exiting...")
+        exit(10)
     except CalledProcessError as e:
         sys.exit(e.returncode)
     except OSError as e:
