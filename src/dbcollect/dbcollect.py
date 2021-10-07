@@ -71,8 +71,6 @@ def meta():
     return json.dumps(info,indent=2, sort_keys=True)
 
 def main():
-    print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(versioninfo['version']))
-    sys.stdout.flush()
     parser = argparse.ArgumentParser(usage='dbcollect [options]')
     parser.add_argument("-V", "--version",   action="store_true",        help="Version and copyright info")
     parser.add_argument("-D", "--debug",     action="store_true",        help="Debug (Show errors)")
@@ -94,6 +92,12 @@ def main():
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
     parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus)")
     args = parser.parse_args()
+    if os.getuid() == 0:
+        cmdline = sys.argv[1:]
+        cmdline.insert(0, os.path.realpath(sys.argv[0]))
+        switchuser(args.user, cmdline)
+    print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(versioninfo['version']))
+    sys.stdout.flush()
     if args.version:
         printversion()
         return
@@ -110,7 +114,6 @@ def main():
     else:
         zippath = (os.path.join('/tmp', 'dbcollect-{0}.zip'.format(platform.uname()[1])))
     logpath = '/tmp/dbcollect.log'
-    switchuser(args.user)
     try:
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
     except Exception as e:

@@ -15,34 +15,39 @@ If 'oracle' is not found, switch to 'nobody' so dbcollect will still work
 safely on systems without Oracle.
 """
 
-import os
+import os, sys, errno
 import pwd, grp
+from subprocess import check_call, CalledProcessError
 
-# Handle oracle not existing ('nobody'?)
-
-def switchuser(user):
-    """Checks if the user is non-root"""
-    uid = os.getuid()
-    if uid == 0:
+def switchuser(user, args):
+    """Call self as a different user with the same parameters"""
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+        home = pwd.getpwnam(user).pw_dir
+    except KeyError as e:
+        print("User {0} not available, trying 'nobody'".format(user))
         try:
+            user = 'nobody'
             uid = pwd.getpwnam(user).pw_uid
-            home = pwd.getpwnam(user).pw_dir
+            home = '/tmp'
         except KeyError as e:
-            print("User {0} not available, trying 'nobody'".format(user))
-            try:
-                user = 'nobody'
-                uid = pwd.getpwnam(user).pw_uid
-                home = '/tmp'
-            except KeyError as e:
-                print("User nobody not available, giving up")
-                exit(20)
-        gid = pwd.getpwnam(user).pw_gid
-        os.setgid(gid)
-        groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
-        groups.append(gid)
-        os.setgroups(groups)
-        os.setuid(uid)
-        os.chdir(home)
+            print("User nobody not available, giving up")
+            exit(20)
+    gid = pwd.getpwnam(user).pw_gid
+    os.setgid(gid)
+    groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
+    groups.append(gid)
+    os.setgroups(groups)
+    os.setuid(uid)
+    os.chdir(home)
+    try:
+        check_call(args)
+    except CalledProcessError as e:
+        sys.exit(e.returncode)
+    except OSError as e:
+        if e.errno in [errno.EACCES]:
+            print('Access denied to {0}'.format(f))
+    sys.exit(0)
 
 def username():
     """Return the username for the current userid"""
