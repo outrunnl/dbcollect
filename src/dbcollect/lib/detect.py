@@ -20,8 +20,11 @@ def orahomes():
         r = re.match(r'inventory_loc=(.*)', orainst)
         if r:
             inventory = getfile(os.path.join(r.group(1), 'ContentsXML/inventory.xml'))
-            for dir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
-                dirs.append(dir)
+            if not inventory:
+                logging.error('inventory.xml not found or readable')
+            else:
+                for dir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
+                    dirs.append(dir)
     if not oratab:
         logging.error('oratab not found or readable')
     else:
