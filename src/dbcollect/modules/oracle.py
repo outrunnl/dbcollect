@@ -4,13 +4,14 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, re, tempfile, logging, time, errno
+import os, sys, re, tempfile, logging, time
 from pkgutil import get_data
 from datetime import datetime, timedelta
 from multiprocessing import Process, Lock, Queue, cpu_count, active_children, current_process
 from subprocess import Popen, PIPE
 from shutil import rmtree
 from lib.functions import getfile, listdir, makedir
+from lib.detect import get_instances
 from lib.log import exception_handler, DBCollectError
 from .awrstrip import awrstrip
 
@@ -260,7 +261,7 @@ def oracle_info(archive, args):
     reports_arch  = 0                # Reports already archived to ZIP
     prev          = 0                # Previous value
     # Detect all Oracle instances on the machine
-    instance_list = get_instances(tempdir, args)
+    instance_list = instances(tempdir, args)
     try:
         # Fill the jobs queue
         for instance in instance_list:
@@ -345,67 +346,20 @@ def oracle_info(archive, args):
         if os.path.isdir(tempdir):
             rmtree(tempdir)
 
-def get_instances(workdir, args):
-    """Get all ORACLE_SIDs either via oratab or oraInventory"""
-    orahomes = []
-    orainst = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
-    oratab  = getfile('/etc/oratab','/var/opt/oracle/oratab')
-    # get a list of ORACLE_HOMEs via inventory
-    if not orainst:
-        logging.error('oraInst.loc not found or readable')
-    else:
-        r = re.match(r'inventory_loc=(.*)', orainst)
-        if r:
-            inventory = getfile(os.path.join(r.group(1),'ContentsXML/inventory.xml'))
-            if not inventory:
-                logging.error('inventory.xml not found or readable')
-            else:
-                for home_name, oracle_home in re.findall("<HOME NAME=\"(\S+)\"\sLOC=\"(\S+)\"", inventory):
-                    if os.path.isdir(oracle_home):
-                        orahomes.append(oracle_home)
-    # add list of ORACLE_HOMEs from oratab
-    if not oratab:
-        logging.error('oratab not found or readable')
-    else:
-        for line in oratab.splitlines():
-            r = re.match('(\w+):(\S+):.*', line)
-            if r:
-                oracle_home = r.group(2)
-                if os.path.isdir(oracle_home):
-                    orahomes.append(oracle_home)
-    """Search oracle_home/dbs dirs for hc_*.dat files and get the instance names.
-    By looking for hc_<sid> files in each ORACLE_HOME/dbs dir we should find all running
-    Oracle instances (and possibly some false positives which will be filtered later)
-    We also exclude any ''--exclude'd instances. If --include is specified, we only process
-    those.
-    """
-    for oracle_home in set(orahomes):
-        dbsdir = os.path.join(oracle_home, 'dbs')
-        try:
-            for file in os.listdir(dbsdir):
-                path = os.path.join(dbsdir,file)
-                if os.path.isfile(path) and file.startswith('hc_'):
-                    sid = re.match('hc_(.*).dat', file).group(1)
-                    if sid.startswith('+') or sid.startswith('-'):
-                        # Skip ASM (+) and MGMT (-) instances
-                        continue
-                    logging.info('Found instance %s on %s', sid, oracle_home)
-                    if args.include:
-                        included = args.include.split(',')
-                        if not sid in included:
-                            logging.info('%s not included, skipping...', sid)
-                            continue
-                    if args.exclude:
-                        excluded = args.exclude.split(',')
-                        if sid in excluded:
-                            logging.info('%s is excluded, skipping...', sid)
-                            continue
-                    try:
-                        instance = Instance(workdir, oracle_home, sid)
-                        yield instance
-                    except Exception as e:
-                        # We ignore any instance that raises exceptions but log them
-                        logging.exception('Skipping %s: %s', sid, e)
-        except OSError as e:
-            # Happens if for example we can't read the dbs dir. Just ignore.
-            logging.debug('skip {0}'.format(dbsdir))
+def instances(workdir, args):
+    excluded = args.exclude.split(',') if args.exclude else []
+    included = args.include.split(',') if args.include else []
+    instinfo = get_instances()
+    for sid in instinfo:
+        if sid in excluded:
+            logging.info('%s is excluded, skipping...', sid)
+        elif included and not sid in included:
+            logging.info('%s not included, skipping...', sid)
+        else:
+            try:
+                oracle_home = instinfo[sid]['orahome']
+                instance = Instance(workdir, oracle_home, sid)
+                yield instance
+            except Exception as e:
+                # We ignore any instance that raises exceptions but log them
+                logging.exception('Skipping %s: %s', sid, e)
