@@ -131,6 +131,10 @@ When complete, a ZIP file will be created in the /tmp directory. This file conta
 Please send this ZIP file to the person who requested it.
 
 
+### Usage for Live Optics or SPLUNK based reporting
+
+The data collected by _dbcollect_ can be used for uploading to Dell LiveOptics (Oracle Database reporting) or the Dell internal SPLUNK Oracle reporting (Dell employees only). For this, unzip the ZIP file and upload the folder containing Oracle data: ```<hostname>/oracle/<instance>/...``` for each instance required.
+
 ### More info
 
 The dbcollect ZipApp package contains everything such as Python files and SQL scripts in a single file.
