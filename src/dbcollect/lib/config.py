@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2021, Bart Sjerps",
@@ -79,3 +79,7 @@ sun_cmds = [
     'dladm show-vnic',
     'zoneadm list -vc'
     ]
+
+if __name__ == '__main__':
+    # print version if called directly - for building releases
+    print(versioninfo['version'])

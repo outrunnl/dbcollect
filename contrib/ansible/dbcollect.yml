@@ -1,0 +1,94 @@
+################################################################################
+#
+#  Ansible Playbook to run https://github.com/outrunnl/dbcollect
+#  on a group of Oracle DB servers
+#
+#  Usage: ansible-playbook -i hosts dbcollect.yml [-e "var=value ..."]
+#
+#  Author: Bruno Flückiger <bruno@bsdhowto.ch>
+#  Co-Author: Niels Herren
+#  Date: 2021-11-03
+#  Version: 1.0
+#
+################################################################################
+
+---
+- name: "run dbcollect on db hosts"
+  hosts: all 
+  remote_user: root
+
+  vars:
+    ansible_python_interpreter: auto_silent
+    collect_path: "./collects"
+    dbcollect: "dbcollect"
+    downloader: "./download.py"
+    http_proxy: ""
+
+  tasks:
+    - name: "prepare local stuff"
+      block:
+        - name: "remove local collects dir"
+          file:
+            path: "{{ collect_path }}"
+            state: absent
+
+        - name: "create local collects dir"
+          file:
+            path: "{{ collect_path }}"
+            state: directory
+
+        - name: "remove existing downloader"
+          file:
+            path: "{{ downloader }}"
+            state: absent
+
+        - name: "download the downloader of dbcollect"
+          get_url:
+            url: "https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download"
+            dest: "{{ downloader }}"
+          environment:
+            http_proxy: "{{ http_proxy }}"
+            https_proxy: "{{ http_proxy }}"
+
+        - name: "get the latest version of dbcollect"
+          shell:
+            cmd: "python {{ downloader }}"
+            warn: false
+
+      delegate_to: localhost
+      run_once: yes
+
+    # Use copy: and shell: instead of script: for the next task
+    # dbcollect loses access to the temporary copy of itself on the host 
+    # after dropping privileges. script: only works if the remote user
+    # for ansible is the same as dbcollect will use to run (usually oracle)
+
+    - name: "copy dbcollect to host"
+      copy:
+        src: "./{{ dbcollect }}"
+        dest: "/bin/{{ dbcollect }}"
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: "execute dbcollect"
+      shell:
+        cmd: "{{ dbcollect }} --force-awr --overwrite --strip"
+        warn: false
+
+    - name: "remove dbcollect from host"
+      file:
+        path: "/bin/{{ dbcollect }}"
+        state: absent
+
+    - name: "remove old local zip file"
+      file:
+        path: "{{ collect_path }}/dbcollect-{{ ansible_fqdn }}.zip"
+        state: absent
+      delegate_to: localhost
+
+    - name: "fetch zip file from host"
+      fetch:
+        src: "/tmp/dbcollect-{{ ansible_fqdn }}.zip"
+        dest: "{{ collect_path }}/"
+        flat: yes
