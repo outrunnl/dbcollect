@@ -92,6 +92,9 @@ def main():
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
     parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus)")
     args = parser.parse_args()
+    if args.update:
+        update(versioninfo['version'])
+        return
     if os.getuid() == 0:
         cmdline = sys.argv[1:]
         cmdline.insert(0, os.path.realpath(sys.argv[0]))
@@ -100,9 +103,6 @@ def main():
     sys.stdout.flush()
     if args.version:
         printversion()
-        return
-    if args.update:
-        update(versioninfo['version'])
         return
     if args.quiet:
         sys.stdout = open('/dev/null','w')
