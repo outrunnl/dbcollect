@@ -44,8 +44,9 @@ def get_instances():
     # Build list of running instances
     out, err, rc = execute('ps -eo user,group,args')
     for user, group, cmd in re.findall(r'(\w+)\s+(\w+)\s+(.*)', out):
-        if cmd.startswith('ora_pmon_'): #if '_pmon_' in cmd:
-            _, _, sid = cmd.split('_')
+        r = re.match(r'ora_pmon_(\w+)', cmd)
+        if r:
+            sid = r.group(1)
             runlist[sid] = dict(user=user, group=group)
     # Build list of detected instances from hc_*.dat
     for home in orahomes():
@@ -53,8 +54,9 @@ def get_instances():
         dir = os.path.join(home, 'dbs')
         try:
             for f in os.listdir(dir):
-                if f.startswith('hc_'):
-                    sid  = re.match('hc_(.*).dat', f).group(1)
+                r = re.match('hc_(.*).dat', f)
+                if r:
+                    sid = r.group(1)
                     if sid[0] in ('+','-'):
                         continue
                     stat  = os.stat(os.path.join(dir, f))
