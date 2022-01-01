@@ -17,6 +17,7 @@ WITH INFO AS (SELECT dbid
   , interval '&days'   DAY(3) ndays
   , interval '&offset' DAY(3) offset
   , interval '1'       DAY    oneday
+  , (SELECT MAX(end_interval_time) FROM dba_hist_snapshot) max_time
   FROM v$database)
 SELECT dbid
   || ',' || instance_number
@@ -28,16 +29,16 @@ FROM (SELECT snap_id
   , instance_number
   , dbid
   , startup_time
-  , begin_interval_time                                                    begintime
-  , end_interval_time                                                      endtime
-  , lag(snap_id)      over (PARTITION BY instance_number ORDER BY snap_id) prev_id
-  , lag(startup_time) over (PARTITION BY instance_number ORDER BY snap_id) last_startup_time
-  , (SELECT MAX(end_interval_time) FROM dba_hist_snapshot)                 max_time
-  FROM dba_hist_snapshot)
+  , end_interval_time                                                           endtime
+  , lag(end_interval_time) over (PARTITION BY instance_number ORDER BY snap_id) begintime
+  , lag(snap_id)           over (PARTITION BY instance_number ORDER BY snap_id) prev_id
+  , lag(startup_time)      over (PARTITION BY instance_number ORDER BY snap_id) last_startup_time
+  FROM dba_hist_snapshot
+  WHERE snap_flag = 0)                                       -- only auto-generated snaps
 JOIN INFO USING (dbid)                                       -- ignore old data from other DBIDs
 WHERE startup_time = last_startup_time                       -- skip over db restarts
   AND endtime   >= trunc(max_time + oneday - offset - ndays) -- starting time
   AND begintime <  trunc(max_time + oneday - offset)         -- ending time
-  AND endtime   >  begintime + interval '10' MINUTE          -- ignore reports with less than 10 minute interval
+  -- AND endtime   >  begintime + interval '10' MINUTE       -- ignore reports with less than 10 minute interval
 ORDER BY snap_id, instance_number
 /

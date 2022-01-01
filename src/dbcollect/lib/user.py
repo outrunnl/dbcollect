@@ -49,7 +49,7 @@ def switchuser(user, args):
         sys.exit(e.returncode)
     except OSError as e:
         if e.errno in [errno.EACCES]:
-            print('Access denied to {0}'.format(f))
+            print('%s, %s' % (e, ' '.join(args)))
     sys.exit(0)
 
 def username():

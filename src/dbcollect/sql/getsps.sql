@@ -17,6 +17,7 @@ WITH INFO AS (SELECT dbid
   , interval '&days'   DAY(3) ndays
   , interval '&offset' DAY(3) offset
   , interval '1'       DAY    oneday
+  , (SELECT MAX(snap_time) FROM stats$snapshot) max_time
   FROM v$database)
 SELECT dbid
   || ',' || instance_number
@@ -28,11 +29,10 @@ FROM (SELECT snap_id
   , instance_number
   , dbid
   , startup_time
-  , lag(snap_time) over (PARTITION BY instance_number ORDER BY snap_id)    begintime
   , snap_time                                                              endtime
-  , lag(snap_id) over (PARTITION BY instance_number ORDER BY snap_id)      prev_id
+  , lag(snap_time)    over (PARTITION BY instance_number ORDER BY snap_id) begintime
+  , lag(snap_id)      over (PARTITION BY instance_number ORDER BY snap_id) prev_id
   , lag(startup_time) over (PARTITION BY instance_number ORDER BY snap_id) last_startup_time
-  , (SELECT MAX(snap_time) FROM stats$snapshot)                            max_time
   FROM stats$snapshot)
 JOIN INFO USING (dbid)                                       -- ignore old data from other DBIDs
 WHERE startup_time = last_startup_time                       -- skip over db restarts
