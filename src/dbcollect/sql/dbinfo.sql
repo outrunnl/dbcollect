@@ -33,6 +33,8 @@
 -- 1.3.0 - Added ASM files summary section, fix backup file report
 -- 1.3.1 - Added Compression summary
 -- 1.3.2 - Clean up some formatting, moved 11g sections to new file
+-- 1.3.3 - Added daily archivelog rate, changed some reports, separate flashback
+--         log summary
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -44,7 +46,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.2
+PROMPT DBINFO version 1.3.3
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,17 +176,47 @@ COMPUTE SUM LABEL "Total" OF SIZE_MB FILES ON REPORT
 
 COL SIZE_MB    FORMAT 99,999,999,990.99 HEAD 'Size'
 COL STATUS     FORMAT A10     HEAD 'Status'
-COL COMPRESSED FORMAT A10     HEAD 'Compress'
 COL FILES      FORMAT 999,999 HEAD 'Files'
 
 SELECT DECODE(STATUS,'A','Active','D','Deleted','X','Expired','U','Unavailable', STATUS) STATUS
-, COMPRESSED
 , sum(blocks * block_size)/1048576 SIZE_MB
 , count(*) FILES
 FROM V$ARCHIVED_LOG
 WHERE STATUS in ('A','X')
-GROUP BY COMPRESSED, STATUS
+GROUP BY STATUS
 ORDER BY STATUS
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT DAILY ARCHIVELOG SUMMARY
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF FILES SIZE_MB ON REPORT
+
+COL DS        FORMAT A12       HEADING 'Date'
+COL WEEKDAY   FORMAT A4        HEADING 'Day'
+COL FILES     FORMAT 9990      HEADING 'Logs'
+COL SIZE_MB   FORMAT 999999.99 HEADING 'Size (MB)'
+COL AVG7      LIKE SIZE_MB     HEADING 'Week avg'
+
+SELECT to_char(datestamp,'YYYY-MM-DD') ds
+, to_char(datestamp,'Dy') weekday
+, files
+, size_mb
+, AVG(size_mb) OVER (ORDER BY rn DESC rows BETWEEN 6 preceding AND current row) avg7
+FROM (SELECT datestamp
+  , COUNT(*) files
+  , SUM(bytes/1048576) SIZE_MB
+  , ROW_NUMBER() OVER (ORDER BY datestamp DESC) rn
+  FROM (SELECT TRUNC(completion_time) datestamp, (blocks * block_size) BYTES FROM v$archived_log)
+  GROUP BY datestamp
+)
+WHERE rn BETWEEN 2 AND 100
+ORDER BY datestamp
 /
 
 CLEAR COMPUTES COLUMNS
@@ -197,47 +229,27 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB FILES ON REPORT
 
-COL SIZE_MB     FORMAT 99,999,999,990.99 HEAD 'Size'
-COL BACKUPTYPE  FORMAT A12    HEAD 'Backup type'
-COL INCREMENTAL FORMAT A12    HEAD 'Incremental'
-COL FILE_TYPE   FORMAT A15    HEAD 'File type'
-COL OBSOLETE    FORMAT A10    HEAD 'Obsolete'
-COL COMPRESSED  FORMAT A10    HEAD 'Compressed'
-COL STATUS      FORMAT A10    HEAD 'Status'
-COL FILES       FORMAT 999990 HEAD 'Files'
+COL FILE_TYPE    FORMAT A15    HEAD 'File type'
+COL OBSOLETE     FORMAT A8     HEAD 'Obsolete'
+COL BACKUPTYPE   FORMAT A12    HEAD 'Backup type'
+COL BS_INCR_TYPE FORMAT A12    HEAD 'Level'
+COL COMPRESSED   FORMAT A10    HEAD 'Compressed'
+COL STATUS       FORMAT A12    HEAD 'Status'
+COL SIZE_MB      FORMAT 99,999,999,990.99 HEAD 'Size'
+COL FILES        FORMAT 999990 HEAD 'Files'
 
 SELECT file_type
-, BACKUP_TYPE  BACKUPTYPE
-, BS_INCR_TYPE INCREMENTAL
+, obsolete
+, backup_type  BACKUPTYPE
+, bs_incr_type LVL
 , COMPRESSED
-, OBSOLETE
 , STATUS
 , SUM(BYTES)/1048576 SIZE_MB
 , COUNT(*)           FILES
-FROM (
-    SELECT file_type
-    , backup_type
-    , bs_incr_type
-    , compressed
-    , obsolete
-    , status
-    , bytes
-    FROM V$BACKUP_FILES
-    UNION ALL
-    SELECT 'FLASHBACK_LOG'
-    , TYPE
-    , ''
-    , 'NO'
-    , ''
-    , ''
-    , bytes
-    FROM v$flashback_database_logfile
-)
-WHERE 1=1
-AND file_type NOT IN ('DATAFILE')
-AND status IS NOT NULL
+FROM V$BACKUP_FILES
+WHERE file_type NOT IN ('DATAFILE')
 GROUP BY FILE_TYPE, BACKUP_TYPE, BS_INCR_TYPE, COMPRESSED, OBSOLETE, STATUS
-ORDER BY 1, 2
+ORDER BY OBSOLETE DESC, FILE_TYPE
 /
 
 CLEAR COMPUTES COLUMNS
@@ -249,7 +261,7 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 COL STATUS      FORMAT A10               HEAD 'Status'
 COL SIZE_MB     FORMAT 99,999,999,990.99 HEAD 'Size'
-COL FILENAME    FORMAT A200              HEAD 'Filename'
+COL FILENAME    FORMAT A160              HEAD 'Filename'
 
 SELECT status
 , bytes/1048576 SIZE_MB
@@ -258,6 +270,23 @@ FROM V$BLOCK_CHANGE_TRACKING
 /
 
 CLEAR COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT FLASHBACK LOGS
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL TYPE     FORMAT A10
+COL SIZE_MB  FORMAT 99,999,999,990.99 HEAD 'Size'
+COL FILENAME FORMAT A80
+
+SELECT type
+, bytes/1048576 SIZE_MB
+, name          FILENAME
+FROM V$FLASHBACK_DATABASE_LOGFILE
+/
+
+CLEAR COMPUTES COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -501,10 +530,15 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Non-null/non-default init parameters
 
 COL PARAMETER   FORMAT A40  HEAD 'Parameter'
+COL MODIFIED    FORMAT A10  HEAD 'Modified'
 COL VALUE       FORMAT A160 HEAD 'Value'
 
-SELECT name parameter, value FROM v$parameter
-WHERE isdefault = 'FALSE' AND value IS NOT NULL
+SELECT name parameter
+, DECODE(ismodified,'FALSE','','SYSTEM_MOD','SYSTEM','MODIFIED','SESSION',ismodified) MODIFIED
+, value
+FROM v$parameter
+WHERE value IS NOT NULL
+AND (isdefault = 'FALSE' OR ISMODIFIED != 'FALSE')
 ORDER BY name
 /
 
