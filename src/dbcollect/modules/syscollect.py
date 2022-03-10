@@ -94,6 +94,8 @@ def linux_info(archive, args):
             if sarfile.startswith('sa'):
                 if sarfile.startswith('sar'):
                     continue
+                if sarfile.endswith('.xz'):
+                    continue
                 archive.store(path)
 
 def aix_info(archive, args):
