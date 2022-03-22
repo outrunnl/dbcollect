@@ -314,7 +314,7 @@ WITH DF AS (SELECT tablespace_name
   GROUP BY tablespace_name
 ), TS AS ( SELECT tablespace_name
   , DECODE(contents,'PERMANENT',DECODE(extent_management,'LOCAL',DECODE(allocation_type,'UNIFORM','LM-UNI','LM-SYS'),'DM'),'TEMPORARY','TEMP',contents) ts_type
-  , SUBSTR(replace(replace(compress_for,'QUERY', 'Q'),'ARCHIVE','A'),1,6) COMPR
+  , NULL COMPR     -- COMPRESS_FOR NOT AVAILABLE IN 10G
   , NULL ENCRYPTED -- ENCRYPTION NOT AVAILABLE IN 10G
   FROM dba_tablespaces
 )
