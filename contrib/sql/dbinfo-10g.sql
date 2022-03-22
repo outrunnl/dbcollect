@@ -275,18 +275,10 @@ CLEAR COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT FLASHBACK LOGS
+PROMPT FLASHBACK LOGS -- NOT AVAILABLE IN ORACLE 10
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-COL TYPE     FORMAT A10
-COL SIZE_MB  FORMAT 99,999,999,990.99 HEAD 'Size'
-COL FILENAME FORMAT A80
 
-SELECT type
-, bytes/1048576 SIZE_MB
-, name          FILENAME
-FROM V$FLASHBACK_DATABASE_LOGFILE
-/
 
 CLEAR COMPUTES COLUMNS
 
@@ -323,14 +315,14 @@ WITH DF AS (SELECT tablespace_name
 ), TS AS ( SELECT tablespace_name
   , DECODE(contents,'PERMANENT',DECODE(extent_management,'LOCAL',DECODE(allocation_type,'UNIFORM','LM-UNI','LM-SYS'),'DM'),'TEMPORARY','TEMP',contents) ts_type
   , SUBSTR(replace(replace(compress_for,'QUERY', 'Q'),'ARCHIVE','A'),1,6) COMPR
-  , ENCRYPTED
+  , NULL ENCRYPTED -- ENCRYPTION NOT AVAILABLE IN 10G
   FROM dba_tablespaces
 )
 SELECT DF.tablespace_name ts_name
 , files
 , ts_type
 , compr
-, encrypted encr
+, NULL encr
 , objects
 , allocated - free_mb used_mb
 , free_mb
@@ -345,7 +337,7 @@ SELECT TF.tablespace_name
 , count(*)             files
 , 'TEMP'               ts_type
 , NULL                 COMPR
-, 'NO'                 ENCR
+, NULL                 ENCR
 , 0                    objects
 , (sum(bytes)-bytes_free)/1024/1024 used_mb
 , bytes_free/1024/1024 free_mb
