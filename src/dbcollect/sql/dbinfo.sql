@@ -35,6 +35,7 @@
 -- 1.3.2 - Clean up some formatting, moved 11g sections to new file
 -- 1.3.3 - Added daily archivelog rate, changed some reports, separate flashback
 --         log summary
+-- 1.3.4 - Adjusted SIZE_MB for archivelog summary
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -46,7 +47,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.3
+PROMPT DBINFO version 1.3.4
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,11 +198,11 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF FILES SIZE_MB ON REPORT
 
-COL DS        FORMAT A12       HEADING 'Date'
-COL WEEKDAY   FORMAT A4        HEADING 'Day'
-COL FILES     FORMAT 9990      HEADING 'Logs'
-COL SIZE_MB   FORMAT 999999.99 HEADING 'Size (MB)'
-COL AVG7      LIKE SIZE_MB     HEADING 'Week avg'
+COL DS        FORMAT A12               HEADING 'Date'
+COL WEEKDAY   FORMAT A4                HEADING 'Day'
+COL FILES     FORMAT 9990              HEADING 'Logs'
+COL SIZE_MB   FORMAT 99,999,999,990.99 HEAD 'Size'
+COL AVG7      LIKE SIZE_MB             HEADING 'Week avg'
 
 SELECT to_char(datestamp,'YYYY-MM-DD') ds
 , to_char(datestamp,'Dy') weekday
