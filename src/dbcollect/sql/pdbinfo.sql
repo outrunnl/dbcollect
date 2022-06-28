@@ -13,7 +13,7 @@ ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT PDBINFO version 1.2.2
+PROMPT PDBINFO version 1.2.3
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -24,12 +24,15 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 COL METRIC      FORMAT A20        HEAD 'Metric'
 COL VALUE       FORMAT A80        HEAD 'Value'
 
-SELECT           'CDB' metric,         CDB value             FROM V$DATABASE
-UNION ALL SELECT 'con_id',             to_char(CON_ID)       FROM V$DATABASE
-UNION ALL SELECT 'con_dbid',           to_char(CON_DBID)     FROM V$DATABASE
-UNION ALL SELECT 'force_full_caching', FORCE_FULL_DB_CACHING FROM V$DATABASE
+SELECT 'report date' metric,           to_char(sysdate) value FROM dual
+UNION ALL SELECT 'CDB',                CDB                    FROM V$DATABASE
+UNION ALL SELECT 'hostname',           host_name              FROM V$INSTANCE
+UNION ALL SELECT 'dbname',             name                   FROM V$DATABASE
+UNION ALL SELECT 'dbid',               to_char(dbid)          FROM V$DATABASE
+-- UNION ALL SELECT 'force_full_caching', FORCE_FULL_DB_CACHING  FROM V$DATABASE
 /
 
+CLEAR COMPUTES COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

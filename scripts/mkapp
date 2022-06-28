@@ -35,3 +35,4 @@ done ; shift $(expr $OPTIND - 1)
 makeapp  $outdir/$progname
 ls -ld   $outdir/$progname
 unzip -l $outdir/$progname
+ls -l    $outdir/$progname
