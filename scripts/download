@@ -7,9 +7,10 @@ Usage:
 curl https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download | python
 
 To keep things simple, there is only very basic exception handling.
-Move the downloaded dbcollect to /usr/local/bin or $HOME/bin after downloading.
+Move the downloaded dbcollect to /usr/local/bin or $HOME/bin after downloading if
+it didn't happen automatically.
 
-Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2022 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
@@ -20,13 +21,19 @@ except ModuleNotFoundError:
     from urllib.request import urlopen, Request, HTTPError
 
 apiurl = 'https://api.github.com/repos/outrunnl/dbcollect/releases/latest'
-target = 'dbcollect'
 
 def retrieve(url):
     """Retrieve the raw data from a url"""
     request  = Request(url)
     response = urlopen(request)
     return response.read()
+
+def save(data, path):
+    print("-> Saving binary as {0}".format(path))
+    with open(path,'wb') as f:
+        f.write(data)
+    print("-> Setting permissions to mode 755")
+    os.chmod(path, 0o755)
 
 def main():
     print("Github dbcollect downloader - download the latest dbcollect release")
@@ -49,13 +56,11 @@ def main():
     print("-> md5 hash: {0}".format(hash.hexdigest()))
 
     # Save binary
-    print("-> Saving binary as {0}".format(target))
-    with open(target,'wb') as f:
-        f.write(binary)
-
-    # Set permissions
-    print("-> Setting permissions to mode 775")
-    os.chmod(target, 0o755)
+    try:
+        save(binary, '/usr/local/bin/dbcollect')
+    except:
+        print("-> Saving binary as /usr/local/bin/dbcollect failed, retry current dir (move this to your $PATH)")
+        save(binary, 'dbcollect')
 
 try:
     main()
