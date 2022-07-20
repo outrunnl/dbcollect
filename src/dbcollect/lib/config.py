@@ -3,7 +3,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2021, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.9.3"
+    'version': "1.9.4"
 }
 
 linux_cmds = [
@@ -24,6 +24,7 @@ linux_cmds = [
     ]
 
 linux_files = [
+    '/proc/cmdline',
     '/proc/cpuinfo',
     '/proc/meminfo',
     '/proc/filesystems',
@@ -31,6 +32,7 @@ linux_files = [
     '/proc/devices',
     '/proc/mounts',
     '/proc/mdstat',
+    '/proc/modules',
     '/proc/misc',
     '/proc/uptime',
     '/etc/os-release',
