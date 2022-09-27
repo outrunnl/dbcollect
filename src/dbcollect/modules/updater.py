@@ -42,7 +42,7 @@ def update(current):
     if os.path.exists(_tmpfile):
         saferemove(_tmpfile)
     try:
-        with open(_tmpfile,'w') as f:
+        with open(_tmpfile,'wb') as f:
             logging.info('Writing %s (%s bytes)', _tmpfile, len(binary))
             f.write(binary)
         logging.info('Setting permissions on %s to 0755', _tmpfile)
