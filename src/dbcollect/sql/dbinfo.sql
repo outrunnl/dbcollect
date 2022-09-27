@@ -200,7 +200,7 @@ COMPUTE SUM LABEL "Total" OF FILES SIZE_MB ON REPORT
 
 COL DS        FORMAT A12               HEADING 'Date'
 COL WEEKDAY   FORMAT A4                HEADING 'Day'
-COL FILES     FORMAT 9990              HEADING 'Logs'
+COL FILES     FORMAT 999990            HEADING 'Logs'
 COL SIZE_MB   FORMAT 99,999,999,990.99 HEAD    'Size'
 COL AVG7      LIKE SIZE_MB             HEADING 'Week avg'
 
@@ -280,6 +280,9 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 COL TYPE     FORMAT A10
 COL SIZE_MB  FORMAT 99,999,999,990.99 HEAD 'Size'
 COL FILENAME FORMAT A80
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF FILENAME SIZE_MB ON REPORT
 
 SELECT type
 , bytes/1048576 SIZE_MB
