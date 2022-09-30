@@ -7,6 +7,7 @@
 -- Runs sections that only work on 11g and higher. Not yet complete.
 -- Revision history:
 -- 1.3.2 - Moved sections from dbinfo.sql, added block change tracking
+-- 1.3.5 - Formatting
 
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
 
@@ -41,7 +42,7 @@ COL ratio       FORMAT 990.99     head 'Ratio'
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
 
-SELECT coalesce(t.compress_for,'NONE') compression
+SELECT COALESCE(t.compress_for,'NONE') compression
 , SUM(tbl)                             tables
 , SUM(bytes)/1048576                   datasize
 , SUM(block_size*blocks)/1048576       allocated

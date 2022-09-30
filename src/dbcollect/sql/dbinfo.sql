@@ -36,6 +36,7 @@
 -- 1.3.3 - Added daily archivelog rate, changed some reports, separate flashback
 --         log summary
 -- 1.3.4 - Adjusted SIZE_MB for archivelog summary
+-- 1.3.5 - Minor formatting changes
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -47,7 +48,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.4
+PROMPT DBINFO version 1.3.5
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,7 +109,6 @@ UNION ALL SELECT 'ctrlfile_created', to_char(controlfile_created) FROM v$databas
 UNION ALL SELECT 'switchover',       switchover_status            FROM v$database
 UNION ALL SELECT 'dgbroker',         dataguard_broker             FROM v$database
 UNION ALL SELECT 'arch_compress',    archivelog_compression       FROM v$database
--- UNION ALL SELECT 'primary_u_name',   primary_db_unique_name       FROM v$database
 /
 
 CLEAR COLUMNS

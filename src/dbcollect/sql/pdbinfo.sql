@@ -6,6 +6,8 @@
 -- Requires: Oracle database >= 12.1
 -- This script collects pluggable database and container DB info
 -- ----------------------------------------------------------------------------
+-- Revision history:
+-- 1.3.5 - Adding PDB segment sizes, compress summary, ts objects
 
 SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
@@ -13,7 +15,7 @@ ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT PDBINFO version 1.2.3
+PROMPT PDBINFO version 1.3.5
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -29,7 +31,6 @@ UNION ALL SELECT 'CDB',                CDB                    FROM V$DATABASE
 UNION ALL SELECT 'hostname',           host_name              FROM V$INSTANCE
 UNION ALL SELECT 'dbname',             name                   FROM V$DATABASE
 UNION ALL SELECT 'dbid',               to_char(dbid)          FROM V$DATABASE
--- UNION ALL SELECT 'force_full_caching', FORCE_FULL_DB_CACHING  FROM V$DATABASE
 /
 
 CLEAR COMPUTES COLUMNS
@@ -54,6 +55,7 @@ SELECT name PDB_NAME
 , guid
 , open_mode
 FROM v$pdbs
+ORDER BY name
 /
 
 CLEAR COMPUTES COLUMNS
@@ -71,9 +73,7 @@ COL FILENAME  FORMAT A180              HEAD 'Filename'
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB ON REPORT
 
-SELECT P.NAME PDB_NAME
--- , FILETYPE
--- , F.con_id
+SELECT P.NAME   PDB_NAME
 , T.name        TS_NAME
 , bytes/1048576 SIZE_MB
 , filename
@@ -93,9 +93,9 @@ FROM (
     , D.block_size/1024
     , D.name
     FROM v$tempfile D) F
-LEFT OUTER JOIN v$pdbs P ON P.con_id = F.con_id
-LEFT OUTER JOIN v$tablespace T ON T.con_id = F.con_id AND F.ts# = T.ts#
-ORDER BY F.con_id, ts_name
+LEFT OUTER JOIN v$pdbs P USING (con_id)
+LEFT OUTER JOIN v$tablespace T USING (con_id, ts#)
+ORDER BY pdb_name NULLS FIRST, ts_name
 /
 
 CLEAR COMPUTES COLUMNS
@@ -111,6 +111,7 @@ COL DBFILES   FORMAT 9990              HEAD 'Files'
 COL TS_TYPE   FORMAT A8                HEAD 'Type'
 COL COMPR     FORMAT A6                HEAD 'Compr'
 COL ENCR      FORMAT A6                HEAD 'Encr'
+COL OBJECTS   FORMAT 999,990           HEAD 'Objects'
 COL USED_MB   FORMAT 99,999,999,990.99 HEAD 'Used'
 COL FREE_MB   LIKE USED_MB             HEAD 'Free'
 COL ALLOCATED LIKE USED_MB             HEAD 'Allocated'
@@ -125,33 +126,99 @@ SELECT TS.PDB_NAME
 , TS_TYPE
 , COMPR
 , ENCR
+, (SELECT count(*) FROM cdb_segments WHERE cdb_segments.tablespace_name = ts.ts_name) objects
 , ALLOCATED - FREE_MB USED_MB
-, ALLOCATED
 , FREE_MB
+, ALLOCATED
+, 100 * (ALLOCATED - FREE_MB) / nullif(ALLOCATED,0) PCT_USED
 FROM (
     SELECT P.name                 PDB_NAME
-    , CT.tablespace_name          TS_NAME
+    , tablespace_name             TS_NAME
     , DECODE(contents,'PERMANENT',DECODE(extent_management,'LOCAL',DECODE(allocation_type,'UNIFORM','LM-UNI','LM-SYS'),'DM'),'TEMPORARY','TEMP',contents) TS_TYPE
-    , compress_for COMPR
+    , compress_for                COMPR
     , DECODE(ENCRYPTED,'NO',NULL) ENCR
     , SUM(DF.BYTES/1048576)       ALLOCATED
     FROM cdb_tablespaces CT
-    LEFT OUTER JOIN v$pdbs P ON CT.con_id = p.con_id
-    JOIN cdb_data_files DF ON CT.TABLESPACE_NAME = DF.TABLESPACE_NAME AND CT.CON_ID = DF.CON_ID
-    GROUP BY p.name, CT.tablespace_name, COMPRESS_FOR, ENCRYPTED,contents, allocation_type, extent_management
+    LEFT OUTER JOIN v$pdbs P USING(con_id)
+    JOIN cdb_data_files DF USING(con_id, TABLESPACE_NAME)
+    GROUP BY p.name, tablespace_name, COMPRESS_FOR, ENCRYPTED,contents, allocation_type, extent_management
 ) TS,
 (
     SELECT COALESCE(P.name,'ROOT') PDB_NAME
     , FS.tablespace_name           TS_NAME
     , SUM(fs.bytes/1048576)        FREE_MB
     FROM cdb_free_space FS
-    LEFT OUTER JOIN v$pdbs P ON FS.con_id = p.con_id
-    GROUP BY p.name, FS.con_id, fs.tablespace_name
+    LEFT OUTER JOIN v$pdbs P USING (con_id)
+    GROUP BY p.name, fs.tablespace_name
 ) FS
 WHERE TS.PDB_NAME = FS.PDB_NAME
 AND   TS.TS_NAME = FS.TS_NAME
 GROUP BY TS.PDB_NAME, TS.TS_NAME, TS_TYPE, COMPR, ENCR, FS.FREE_MB, ALLOCATED
-ORDER BY 1,2
+ORDER BY PDB_NAME, TS_NAME, TS_TYPE
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT PDB SEGMENT SIZES
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL PDB_NAME    FORMAT A20               HEAD 'PDB'
+COL SEGTYPE     FORMAT A20               HEAD 'Segtype'
+COL OBJECTS     FORMAT 999,990           HEAD 'Objects'
+COL SIZE_MB     FORMAT 99,999,999,990.99 HEAD 'Size'
+
+BREAK ON REPORT
+COMPUTE SUM LABEL 'Total' OF OBJECTS SIZE_MB ON REPORT
+
+SELECT name          PDB_NAME
+, segment_type       SEGTYPE
+, count(*)           OBJECTS
+, sum(bytes)/1048576 SIZE_MB
+FROM cdb_segments
+JOIN v$pdbs USING (con_id)
+GROUP BY name, segment_type
+ORDER BY name, size_mb
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT TABLE COMPRESSION SUMMARY
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL PDB_NAME    FORMAT A20               HEAD 'PDB'
+COL COMPRESSION FORMAT A15               HEAD 'Compression'
+COL TABLES      FORMAT 999990            HEAD 'Tables'
+COL DATASIZE    FORMAT 99,999,999,990.99 HEAD 'Datasize'
+COL ALLOCATED   LIKE DATASIZE            HEAD 'Allocated'
+COL FREE        LIKE DATASIZE            HEAD 'Free'
+COL RATIO       FORMAT 990.99            HEAD 'Ratio'
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
+
+SELECT name                               pdb_name
+, coalesce(t.compress_for,'NONE')         compression
+, SUM(tbl)                                tables
+, SUM(bytes)/1048576                      datasize
+, SUM(ct.block_size*blocks)/1048576       allocated
+, SUM(ct.block_size*empty_blocks)/1048576 free
+, SUM(bytes)/sum(ct.block_size*blocks)    ratio
+FROM (
+  SELECT con_id, tablespace_name, num_rows, 1 tbl, 0 part, compress_for
+  , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM cdb_tables
+  UNION ALL
+  SELECT con_id, tablespace_name, num_rows, 0 tbl, 1 part, compress_for
+  , blocks, empty_blocks, avg_row_len*num_rows bytes, avg_space FROM cdb_tab_partitions
+) t
+JOIN cdb_tablespaces ct USING (con_id, tablespace_name)
+JOIN v$pdbs USING (con_id)
+WHERE blocks > 0
+GROUP BY name, t.compress_for
+ORDER BY name, t.compress_for NULLS FIRST
 /
 
 CLEAR COMPUTES COLUMNS
