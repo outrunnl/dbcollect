@@ -8,6 +8,7 @@ import os, re, logging, errno
 from subprocess import Popen, PIPE
 from datetime import datetime, timedelta
 from lib.functions import getfile, execute
+from lib.user import getuser
 
 def orahomes():
     """Find all existing ORACLE_HOMEs via oratab and/or inventory"""
@@ -73,8 +74,9 @@ def get_instances():
         if not running:
             downlist[sid] = None
         uid     = runlist[sid]['uid'] if running else None
+        user    = getuser(int(uid))
         ts      = mtime.strftime("%Y-%m-%d %H:%M")
-        logging.info('Instance detected: %s, %s, %s', sid, ts, orahome)
+        logging.info('Instance detected: %s, timestamp: %s, owner: %s, oracle_home: %s', sid, ts, user, orahome)
         if running and sid not in info:
             if not sid[0] in ('+','-'):
                 info[sid] = dict(orahome=orahome,uid=uid)
