@@ -42,12 +42,12 @@ def get_instances():
     info     = dict()
     detected = []
     # Build list of running instances
-    out, err, rc = execute('ps -eo user,group,args')
-    for user, group, cmd in re.findall(r'(\w+)\s+(\w+)\s+(.*)', out):
+    out, err, rc = execute('ps -eo uid,gid,args')
+    for uid, gid, cmd in re.findall(r'(\d+)\s+(\d+)\s+(.*)', out):
         r = re.match(r'ora_pmon_(\w+)', cmd)
         if r:
             sid = r.group(1)
-            runlist[sid] = dict(user=user, group=group)
+            runlist[sid] = dict(uid=uid, gid=gid)
     # Build list of detected instances from hc_*.dat
     for home in orahomes():
         logging.debug('ORACLE_HOME detected: %s', home)
@@ -72,12 +72,12 @@ def get_instances():
         running = sid in runlist
         if not running:
             downlist[sid] = None
-        user    = runlist[sid]['user'] if running else None
+        uid     = runlist[sid]['uid'] if running else None
         ts      = mtime.strftime("%Y-%m-%d %H:%M")
         logging.info('Instance detected: %s, %s, %s', sid, ts, orahome)
         if running and sid not in info:
             if not sid[0] in ('+','-'):
-                info[sid] = dict(orahome=orahome,user=user)
+                info[sid] = dict(orahome=orahome,uid=uid)
     logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
     logging.info('Running instances: %s', ', '.join(info.keys()))
     return info
