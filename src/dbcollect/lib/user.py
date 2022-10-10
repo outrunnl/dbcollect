@@ -15,9 +15,20 @@ If 'oracle' is not found, switch to 'nobody' so dbcollect will still work
 safely on systems without Oracle.
 """
 
-import os, sys, errno
+import os, sys, re, errno
 import pwd, grp
 from subprocess import check_call, CalledProcessError
+from lib.functions import execute
+
+def dbuser():
+    """"Find the first Oracle database owner"""
+    stdout, stderr, rc = execute('ps -eo uid,args')
+    for uid, cmd in re.findall(r'(\d+)\s+(.*)', stdout):
+        r = re.match(r'ora_pmon_(\w+)', cmd)
+        if r:
+            sid  = r.group(1)
+            user = pwd.getpwuid(int(uid)).pw_name
+            return user
 
 def switchuser(user, args):
     """Call self as a different user with the same parameters"""

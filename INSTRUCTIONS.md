@@ -35,7 +35,6 @@ mv dbcollect $HOME/bin/
 * Access to the 'oracle' special user ('root' not required)
 * Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris) OR detectable via ORACLE_HOMES listed in the Oracle Inventory
 * SYS credentials (hence the 'oracle' user requirement)
-* 
 
 ### Linux
 
@@ -104,8 +103,8 @@ dbcollect --force-awr
 # Overwrite previous ZIP file:
 dbcollect --overwrite
 
-# Write ZIP file to different location
-dbcollect --output my-dbcollect.zip
+# Write ZIP file with different filename
+dbcollect --filename my-dbcollect.zip
 
 # Non-standard Oracle user (only needed if running as root)
 dbcollect --user sap
@@ -122,7 +121,7 @@ dbcollect --strip
 # Exclude one or more problem databases
 dbcollect --exclude probdb1,probdb3
 
-# Limit amount of concurrent AWR collection tasks
+# Limit amount of concurrent AWR collection tasks (CPUs)
 dbcollect --tasks 2
 
 ```

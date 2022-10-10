@@ -39,7 +39,7 @@ Notes:
 
 1. This assumes the system has typical security settings where regular users don't have write access to OS files
 2. Using another user would require the administrator to enter SYS passwords for each database instance - which would not make the tool more secure, only harder to work with
-3. The output ZIP file can be created elsewhere using the ```--output``` option but aborts if the file already exists (cannot overwrite). The option to change the TEMP directory has been removed for safety reasons.
+3. The output ZIP file can be created with a different name, using the ```--filename``` option, but aborts if the file already exists (cannot overwrite). The option to change the TEMP (/tmp) directory has been removed for safety reasons.
 4. The database logon itself as well as accessing Oracle AWR reports and other tables generates some audit logging in the database
 
 

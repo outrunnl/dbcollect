@@ -16,12 +16,11 @@ except:
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
-from shutil import rmtree
 from lib.config import versioninfo
 from lib.log import logsetup, DBCollectError
 from lib.functions import saferemove, now, utcnow, timezone, md5hash
 from lib.archive import Archive, ZipCreateError, buildstamp
-from lib.user import switchuser, username, usergroup, usergroups
+from lib.user import switchuser, username, usergroup, usergroups, dbuser
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update
@@ -77,8 +76,8 @@ def main():
     parser.add_argument(      "--update",    action="store_true",        help="Check for updates")
     parser.add_argument("-q", "--quiet",     action="store_true",        help="Suppress output")
     parser.add_argument("-o", "--overwrite", action="store_true",        help="Overwrite previous zip file")
-    parser.add_argument(      "--output",    type=str, metavar='FILE',   help="output file, default dbcollect-<hostname>.zip")
-    parser.add_argument("-u", "--user",      type=str, default='oracle', help="Run as user (default oracle)")
+    parser.add_argument(      "--filename",  type=str,                   help="output filename, default dbcollect-<hostname>.zip")
+    parser.add_argument("-u", "--user",      type=str,                   help="Switch to user (if run as root)")
     parser.add_argument("-d", "--days",      type=int, default=10,       help="Number of days to collect AWR data (default 10, max 999)")
     parser.add_argument(      "--offset",    type=int, default=0,        help="Number of days to shift AWR collect period, default 0, max 999")
     parser.add_argument(      "--force-awr", action="store_true",        help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
@@ -98,7 +97,13 @@ def main():
     if os.getuid() == 0:
         cmdline = sys.argv[1:]
         cmdline.insert(0, os.path.realpath(sys.argv[0]))
-        switchuser(args.user, cmdline)
+        if args.user:
+            switchuser(args.user, cmdline)
+        else:
+            user = dbuser()
+            switchuser(user, cmdline)
+        return
+
     print('dbcollect {0} - collect Oracle AWR/Statspack, database and system info'.format(versioninfo['version']))
     sys.stdout.flush()
     if args.version:
@@ -106,11 +111,13 @@ def main():
         return
     if args.quiet:
         sys.stdout = open('/dev/null','w')
-    if args.output:
-        if args.output.startswith('/'):
-            zippath = os.path.splitext(args.output)[0] + '.zip'
-        else:
-            zippath = os.path.join(os.getcwd(),os.path.splitext(args.output)[0] + '.zip')
+    if args.filename:
+        if not args.filename.replace('.zip','').isalnum():
+            print("Invalid filename: {0}".format(args.filename))
+            exit(15)
+        if not args.filename.endswith('.zip'):
+            args.filename += '.zip'
+        zippath = os.path.join('/tmp', args.filename)
     else:
         zippath = (os.path.join('/tmp', 'dbcollect-{0}.zip'.format(platform.uname()[1])))
     logpath = '/tmp/dbcollect.log'
