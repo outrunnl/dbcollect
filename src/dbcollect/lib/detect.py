@@ -42,6 +42,7 @@ def get_instances():
     downlist = dict()
     info     = dict()
     detected = []
+    logging.info('Detecting Oracle instances')
     # Build list of running instances
     out, err, rc = execute('ps -eo uid,gid,args')
     for uid, gid, cmd in re.findall(r'(\d+)\s+(\d+)\s+(.*)', out):
@@ -61,25 +62,32 @@ def get_instances():
                     if sid[0] in ('+','-'):
                         continue
                     stat  = os.stat(os.path.join(dir, f))
+                    owner = getuser(stat.st_uid)
                     mtime = datetime(1970, 1, 1) + timedelta(seconds=int(stat.st_mtime))
-                    detected.append((mtime, sid, home))
+                    detected.append((mtime, sid, home, owner))
         except OSError as e:
             # Happens if for example we can't read the dbs dir. Just ignore.
             logging.debug('{0}: {1}'.format(dir, os.strerror(e.errno)))
     # Sort by date, most recent first
     detected.sort(key=lambda x: x[0],reverse=True)
     # build lists of running and stopped instances
-    for mtime, sid, orahome in detected:
-        running = sid in runlist
-        if not running:
-            downlist[sid] = None
-        uid     = runlist[sid]['uid'] if running else None
-        user    = getuser(int(uid))
+    for mtime, sid, orahome, owner in detected:
+        if sid[0] in ('+','-'):
+            # Skip ASM and MGMT instances
+            continue
         ts      = mtime.strftime("%Y-%m-%d %H:%M")
-        logging.info('Instance detected: %s, timestamp: %s, owner: %s, oracle_home: %s', sid, ts, user, orahome)
-        if running and sid not in info:
-            if not sid[0] in ('+','-'):
+        if sid in runlist:
+            status = 'UP'
+            uid     = runlist[sid]['uid']
+            user    = getuser(int(uid))
+            if sid not in info:
                 info[sid] = dict(orahome=orahome,uid=uid)
+        else:
+            status        = 'DOWN'
+            user          = owner
+            downlist[sid] = None
+        logging.info('Instance: %s (%s), timestamp: %s, owner: %s, oracle_home: %s', sid, status, ts, user, orahome)
+
     logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
     logging.info('Running instances: %s', ', '.join(info.keys()))
     return info
