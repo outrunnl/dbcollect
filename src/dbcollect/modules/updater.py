@@ -34,7 +34,7 @@ def update(current):
     downloadurl = info['assets'][0]['browser_download_url']
     logging.info('Current version: %s', current)
     logging.info('Release version: %s', version)
-    if version <= current:
+    if version == current:
         logging.info("Already up to date")
         return
     logging.info("Downloading from %s", downloadurl)

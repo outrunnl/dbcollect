@@ -32,6 +32,8 @@ def dbuser():
 
 def switchuser(user, args):
     """Call self as a different user with the same parameters"""
+    if user is None:
+        user = 'oracle'
     try:
         uid = pwd.getpwnam(user).pw_uid
         home = pwd.getpwnam(user).pw_dir
