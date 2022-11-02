@@ -52,7 +52,10 @@ def switchuser(user, args):
     groups.append(gid)
     os.setgroups(groups)
     os.setuid(uid)
-    os.chdir(home)
+    try:
+        os.chdir(home)
+    except OSError:
+        os.chdir('/tmp')
     try:
         check_call(args)
     except KeyboardInterrupt:
