@@ -184,7 +184,8 @@ class Instance():
         if not self.status() == 'OPEN':
             logging.warning('%s: Not open, skipping reports', self.sid)
             return
-        sql = 'define days   = {0}\ndefine offset = {1}\n'.format(args.days, args.offset)
+        local = 'Y' if args.local else 'N'
+        sql = 'define days   = {0}\ndefine offset = {1}\ndefine local = {2}\n'.format(args.days, args.offset, local)
         if self.check_awr():
             # If we find AWR usage, use AWR
             sql += self.getsql('getawrs.sql')

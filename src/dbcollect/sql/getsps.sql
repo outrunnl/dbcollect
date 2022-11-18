@@ -5,8 +5,13 @@
 -- License     : GPLv3+
 -- Parameters  : days = amount of days for which to collect data
 --               offset = days to timeshift back. 0 = until and including today
+--               local = Y: generate SPs for this instance only
 -- Output      : Statspack snapshot parameters in CSV format
 -- ----------------------------------------------------------------------------
+
+-- define days   = 10
+-- define offset = 0
+-- define local  = Y|N
 
 SET tab off feedback off verify off heading off lines 1000 pages 0 trims on
 ALTER SESSION SET nls_timestamp_format='YYYYMMDD_HH24MI';
@@ -17,7 +22,9 @@ WITH INFO AS (SELECT dbid
   , interval '&days'   DAY(3) ndays
   , interval '&offset' DAY(3) offset
   , interval '1'       DAY    oneday
+  , '&local'                  local
   , (SELECT MAX(snap_time) FROM stats$snapshot) max_time
+  , (SELECT instance_number FROM v$instance)    local_inst
   FROM v$database)
 SELECT dbid
   || ',' || instance_number

@@ -83,6 +83,7 @@ def main():
     parser.add_argument(      "--force-awr", action="store_true",        help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
     parser.add_argument(      "--ignore",    action="store_true",        help="Ignore AWR reports for databases that have no previous usage")
     parser.add_argument(      "--strip",     action="store_true",        help="Strip SQL sections from AWR reports")
+    parser.add_argument(      "--local",     action="store_true",        help="Generate AWRs for local instance only")
     parser.add_argument(      "--no-awr",    action="store_true",        help="Skip AWR reports")
     parser.add_argument(      "--no-sar",    action="store_true",        help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true",        help="Skip Oracle collection")
