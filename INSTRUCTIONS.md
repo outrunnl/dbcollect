@@ -145,6 +145,7 @@ dbcollect --exclude probdb1,probdb3
 dbcollect --tasks 2
 
 # Speed up AWR generation (higher CPU consumption)
+# (Limited to number of instances and CPUs)
 dbcollect --tasks 64
 
 
