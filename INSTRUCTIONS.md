@@ -4,7 +4,6 @@
 
 _dbcollect_ is a tool written in Python and distributed as a Python "ZipApp" package. The only thing you need to do to install it, is put it somewhere in the PATH and make it executable.
 
-
 ## Easy way
 
 Assuming the prerequisites are met, the easiest way to install the latest version of _dbcollect_ is to run the downloader command on your host and move it to $PATH:
@@ -30,11 +29,11 @@ mv dbcollect $HOME/bin/
 * Python-argparse (is usually included in the Python distribution except for very old versions)
 * Enterprise Linux 6, 7 or 8, Solaris 11, IBM AIX 7
 * Some free space in /tmp
-* Oracle RDBMS 10g or higher (optional)
+* Oracle RDBMS 11g or higher (optional)
 * Diagnostics pack license OR statspack configured on the database(s)
-* Access to the 'oracle' special user ('root' not required)
-* Database instances up and running and listed in /etc/oratab or /var/opt/oracle/oratab (Solaris) OR detectable via ORACLE_HOMES listed in the Oracle Inventory
-* SYS credentials (hence the 'oracle' user requirement)
+* Access to the 'oracle' special user or dba privileges ('root' not required)
+* Database instances up and running (opened read/write required for AWR/Statspack)
+* SYS credentials (hence the 'oracle' or dba user requirement)
 
 ### Linux
 
@@ -69,7 +68,7 @@ You can download or inspect the installer first if needed. If you prefer to manu
 
 [latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest)
 
-Place _dbcollect_ in /usr/local/bin or $HOME/bin and make it executable:
+Place _dbcollect_ in /usr/local/bin (root) or $HOME/bin (oracle or dba user) and make it executable:
 
 `chmod 755 /usr/local/bin/dbcollect`
 
@@ -84,9 +83,24 @@ dbcollect --update
 # Move it manually to the required location.
 ```
 
-### Running
+# Usage
 
-In the majority of cases, simply run _dbcollect_ and it will run with default options. More options listed below.
+## Basic operation
+
+In the majority of cases, simply run _dbcollect_ and it will run with default options. About 10 days of AWR reports will be created for each detected running Oracle instance (depending on AWR retention). SAR data is usually picked up for 30/31 days (1 month) where available.
+
+## Diagnostics Pack license
+
+Creating AWR reports requires Oracle Diagnostic Pack license. _dbcollect_ tries to detect prior usage of AWR and if this is detected, AWR reports are generated. If prior AWR usage is **not** detected, _dbcollect_ will abort with an error. If you have Diagnostic Pack license but not created AWR reports, you can force _dbcollect_ to generate AWR reports using the `--force-awr` flag (see below).
+
+## Oracle RAC
+
+By default, _dbcollect_ picks up AWR reports from **ALL** RAC instances. This means if you run _dbcollect_ on multiple RAC nodes, most of the AWR reports will be created multiple times. To avoid this, use the `--local` option (see below). This will significantly reduce the time it takes to run _dbcollect_ and the size of the generated ZIP file.
+
+Only use this if you run _dbcollect_ on **all** RAC nodes.
+
+## Command line options
+
 ```
 # Run with default options (run as root or oracle user)
 dbcollect
@@ -97,14 +111,20 @@ dbcollect -h
 # Version info
 dbcollect -V
 
+# Quiet (only print error messages)
+dbcollect --quiet
+
 # Force using AWR even if license is not detected:
 dbcollect --force-awr
 
-# Overwrite previous ZIP file:
+# Pick up local AWRS only (Oracle RAC)
+dbcollect --local
+
+# Overwrite previous dbcollect ZIP file:
 dbcollect --overwrite
 
-# Write ZIP file with different filename
-dbcollect --filename my-dbcollect.zip
+# Write ZIP file with different filename (will go to /tmp)
+dbcollect --filename mydbcollect.zip
 
 # Non-standard Oracle user (only needed if running as root)
 dbcollect --user sap
@@ -124,11 +144,14 @@ dbcollect --exclude probdb1,probdb3
 # Limit amount of concurrent AWR collection tasks (CPUs)
 dbcollect --tasks 2
 
+# Speed up AWR generation (higher CPU consumption)
+dbcollect --tasks 64
+
+
 ```
 When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
 Please send this ZIP file to the person who requested it.
-
 
 ### Usage for Live Optics or SPLUNK based reporting
 
