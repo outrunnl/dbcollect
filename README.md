@@ -144,6 +144,21 @@ For example, listing the files in the package:
 
 ## Q&A
 
+Q: Why can't we just send some AWR reports?
+
+A: AWR reports are great but have a few problems and limitations for our purpose:
+
+* AWR only provides performance and limited configuration metrics. There is no database size/config information such as sizes of tablespaces, redo logs, temp files, segments, ASM disks/diskgroups, archive/flashback/bct files
+* No OS configuration or hardware information (such as CPU type & model)
+* No disk/network configuration
+* No UNIX SAR/sysstat performance data
+* No compression, backup, archiving details
+* AWRs are sometimes generated using non-English locale (cannot be parsed)
+* AWRs are sometimes generated in txt format instead of html (hard to parse, error-prone)
+* AWRs are sometimes provided as RAC versions (completely different layout, hard to parse)
+* Usually only a few AWRs are provided, sometimes with a very large interval (many hours or even days) which is not detailed enough to do accurate sizings or performance analysis
+* No way to know if there are other instances on the same system for which we need to know details
+
 Q: Is dbcollect safe to run?
 
 A: dbcollect is designed to run as non-root user but it has to be the oracle user or a user with sysdba privileges. The SQL scripts only contain SELECT statements so they cannot modify database data. The Python tools cannot delete/overwrite any file except in `/tmp` or the output ZIP file otherwise specified in the arguments. External commands are not executed as root and are verified to only gather system info, not modify anything. CPU consumption is limited by default to 25%. These restrictions should make one confident that dbcollect is safe to run on production systems.
