@@ -37,6 +37,7 @@
 --         log summary
 -- 1.3.4 - Adjusted SIZE_MB for archivelog summary
 -- 1.3.5 - Minor formatting changes
+-- 1.3.6 - Add backup reports
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
