@@ -23,7 +23,10 @@ class Archive():
         self.logpath = logpath
         if os.path.exists(self.path) and not overwrite:
             raise ZipCreateError("ZIP file already exists")
-        self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
+        try:
+            self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
+        except OSError as e:
+            raise ZipCreateError("Cannot create zipfile")
         comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
         self.zip.comment = comment.encode('utf-8')
     def __del__(self):

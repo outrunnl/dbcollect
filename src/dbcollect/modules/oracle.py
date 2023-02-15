@@ -252,7 +252,7 @@ def worker(shared):
 def oracle_info(archive, args):
     """Collect Oracle config and workload data"""
     logging.info('Collecting Oracle info')
-    tempdir  = tempfile.mkdtemp(prefix = os.path.join('/tmp', 'dbcollect'))
+    tempdir  = tempfile.mkdtemp(prefix = os.path.join(args.tempdir, 'dbcollect'))
     # Default use maximum of 25% of available cpus
     maxtasks = args.tasks if args.tasks else cpu_count()/4
     workers  = []                    # Array holding the worker processes

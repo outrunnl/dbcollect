@@ -77,6 +77,7 @@ def main():
     parser.add_argument("-q", "--quiet",     action="store_true",        help="Suppress output")
     parser.add_argument("-o", "--overwrite", action="store_true",        help="Overwrite previous zip file")
     parser.add_argument(      "--filename",  type=str,                   help="output filename, default dbcollect-<hostname>.zip")
+    parser.add_argument(      "--tempdir",   type=str, default='/tmp',   help="TEMP directory, default /tmp")
     parser.add_argument("-u", "--user",      type=str,                   help="Switch to user (if run as root)")
     parser.add_argument("-d", "--days",      type=int, default=10,       help="Number of days to collect AWR data (default 10, max 999)")
     parser.add_argument(      "--offset",    type=int, default=0,        help="Number of days to shift AWR collect period, default 0, max 999")
@@ -113,9 +114,9 @@ def main():
     if args.quiet:
         sys.stdout = open('/dev/null','w')
     if args.filename:
-        if not args.filename.replace('.zip','').isalnum():
-            print("Invalid filename: {0}".format(args.filename))
-            exit(15)
+        #if not args.filename.replace('.zip','').isalnum():
+        #    print("Invalid filename: {0}".format(args.filename))
+        #    exit(15)
         if not args.filename.endswith('.zip'):
             args.filename += '.zip'
         zippath = os.path.join('/tmp', args.filename)
@@ -140,14 +141,14 @@ def main():
         logging.info('Zip file {0} is created succesfully.'.format(zippath))
         logging.info("Finished")
     except ZipCreateError as e:
-        logging.exception("{0}: {1}".format(e, zippath))
+        logging.error("{0}: {1}".format(e, zippath))
         logging.info("Aborting")
         exit(20)
     except KeyboardInterrupt:
         logging.fatal("Aborted, exiting...")
         exit(10)
     except IOError as e:
-        logging.exception("{0}: {1}".format(e.filename, os.strerror(e.errno)))
+        logging.error("{0}: {1}".format(e.filename, os.strerror(e.errno)))
         logging.info("Aborting")
         exit(20)
     except DBCollectError as e:
