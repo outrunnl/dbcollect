@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
-    'copyright': "Copyright 2021, Bart Sjerps",
+    'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
     'version': "1.10.6"
 }

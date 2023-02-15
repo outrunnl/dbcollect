@@ -20,7 +20,7 @@ Parsing errors can be caused by small linesize in SQL*Plus causing html tags
 to be broken. To fix, use a very large linesize:
 SET LINESIZE 32767
 
-Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 

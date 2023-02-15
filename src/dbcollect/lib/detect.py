@@ -1,6 +1,6 @@
 """
 detect.py - Detect Oracle instances
-Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
