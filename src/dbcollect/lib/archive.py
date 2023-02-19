@@ -42,14 +42,7 @@ class Archive():
         except Exception as e:
             logging.warning("Removing logfile failed: %s", e)
         self.zip.close()
-    def checkfreespace(self):
-        """Get FS free space. Note this is Python2 only"""
-        stat = os.statvfs(self.path)
-        free = stat.f_bsize * stat.f_bfree
-        if free < 100 * 2 ** 20:
-            raise ZipCreateError('Free space below 100 MiB')
     def store(self, path, tag=None, ignore=False):
-        self.checkfreespace()
         if tag:
             fulltag = os.path.join(self.prefix, tag)
         else:
@@ -67,7 +60,6 @@ class Archive():
             if not ignore:
                 logging.error("IO Error retrieving %s: %s", e.filename, os.strerror(e.errno))
     def move(self, path, tag=None):
-        self.checkfreespace()
         self.store(path, tag)
         saferemove(path)
     def writestr(self, tag, data):
