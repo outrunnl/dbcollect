@@ -10,6 +10,8 @@ set -e
 export gitdir=$(git rev-parse --show-toplevel) || exit 10
 export progname=$(basename $gitdir)
 
+die() { echo "$(basename $0) error: $@" >&2 ; exit 20 ; }
+
 makeapp() {
   echo "Creating $1"
   python3 -m zipapp \
