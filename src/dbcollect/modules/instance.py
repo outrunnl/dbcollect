@@ -13,6 +13,7 @@ def loadscript(name):
         return get_data('sql', name + '.sql').decode()
 
 class Job():
+    """AWR/Statspack job definition"""
     def __init__(self, sid, dbid, reptype, instnum, beginsnap, endsnap, begintime, endtime):
         self.sid       = sid
         self.dbid      = dbid
@@ -46,6 +47,11 @@ class Instance():
         self.version = int(status[1])
 
     def sqlplus(self, quiet=False):
+        """
+        Create a Popen() SQL*Plus session
+        if quiet=True, redirect stdout to /dev/null.
+        Note: SQL*Plus never writes to stderr.
+        """
         env  = dict(ORACLE_HOME=self.orahome, ORACLE_SID=self.sid)
         path = os.path.join(self.orahome, 'bin/sqlplus')
         cmd  = (path, '-S', '-L', '/', 'as', 'sysdba')
@@ -89,7 +95,7 @@ class Instance():
         return out
 
     def get_jobs(self, args):
-        """Get the AWR or Statspack parameters and create jobs"""
+        """Get the AWR or Statspack parameters and create jobs, return number of jobs"""
         if args.no_awr:
             return 0
         if not self.status == 'OPEN':

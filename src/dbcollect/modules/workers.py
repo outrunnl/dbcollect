@@ -73,7 +73,7 @@ def worker(shared):
     Worker process that handles SQL*Plus subprocesses
     Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
     """
-    # Default use maximum of 25% of available cpus
+    # Default use maximum of 50% of available cpus
     maxtasks = shared.args.tasks if shared.args.tasks else cpu_count()//2
     instance = shared.instance
     sessions = [Session(shared.tempdir, instance) for x in range(maxtasks)]
