@@ -3,9 +3,10 @@ import os, sys, logging
 from pkgutil import get_data
 from subprocess import Popen, PIPE
 
-from lib.errors import ReportingError
+from lib.errors import ReportingError, SQLPlusError
 
 def loadscript(name):
+    """Directly get an SQL script from the Python package"""
     if sys.version_info[0] == 2:
         return get_data('sql', name + '.sql')
     else:
@@ -33,6 +34,7 @@ class Job():
         return query.format(filename=self.filename, dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
 
 class Instance():
+    """Oracle Instance with SQL*Plus, scripts and other methods"""
     def __init__(self, tempdir, sid, orahome):
         self.tempdir   = tempdir
         self.sid       = sid
@@ -51,31 +53,43 @@ class Instance():
             stdout = open('/dev/null')
         else:
             stdout = PIPE
-        if sys.version_info[0] == 2:
-            proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE)
-        else:
-            proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE, encoding='utf-8')
+        try:
+            if sys.version_info[0] == 2:
+                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE)
+            else:
+                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE, encoding='utf-8')
+        except OSError as e:
+            raise SQLPlusError('Failed to run SQLPlus ({0}): {1}'.format(path, os.strerror(e.errno)))
         return proc
 
     def query(self, sql, header=None):
+        """Run SQL*Plus query and return the output. Log errors if they appear"""
         proc = self.sqlplus()
         proc.stdin.write("WHENEVER SQLERROR EXIT SQL.SQLCODE\n")
         proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
         if header:
             proc.stdin.write(header)
         out, _ = proc.communicate(sql)
+        if proc.returncode:
+            logging.debug('SQL*Plus output:\n{0}'.format(out))
+            raise SQLPlusError('SQLPlus query exited with returncode {0}, see error log'.format(proc.returncode))
         return out.strip()
 
     def script(self, name, header=None, **kwargs):
+        """Load a script, run it and return the output"""
         query = loadscript(name)
         proc  = self.sqlplus()
         proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
         if header:
             proc.stdin.write(header)
         out, _ = proc.communicate(query)
+        if proc.returncode:
+            logging.debug('SQL*Plus output:\n{0}'.format(out))
+            raise SQLPlusError('SQLPlus query exited with returncode {0}, see error log'.format(proc.returncode))
         return out
 
     def get_jobs(self, args):
+        """Get the AWR or Statspack parameters and create jobs"""
         if args.no_awr:
             return 0
         if not self.status == 'OPEN':
@@ -113,6 +127,7 @@ class Instance():
         return len(self.jobs)
 
     def savescript(self, filename, *args):
+        """Run script(s) and save it as 'filename' in the temp/reports dir"""
         path = os.path.join(self.tempdir, 'reports', filename)
         data = ''
         for name in args:
@@ -121,6 +136,7 @@ class Instance():
             f.write(data)
 
     def info(self, args):
+        """Generate all dbinfo and other reports"""
         if self.status == 'STARTED':
             self.savescript('dbinfo.txt', 'instance')
         elif self.status == 'MOUNTED':

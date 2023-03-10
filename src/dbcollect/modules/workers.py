@@ -8,6 +8,7 @@ from lib.log import exception_handler
 from lib.errors import *
 
 class Shared():
+    """Container class for messages and sharing data between processes"""
     def __init__(self, args, instance, tempdir):
         self.args     = args
         self.instance = instance
@@ -16,6 +17,7 @@ class Shared():
         self.done     = Event()
 
 class Tempdir():
+    """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
     def __init__(self, args):
         self.tempdir = tempfile.mkdtemp(prefix = os.path.join(args.tempdir, 'dbcollect_'))
         os.mkdir(os.path.join(self.tempdir, 'reports'))
@@ -26,27 +28,37 @@ class Tempdir():
 
 @exception_handler
 def producer(shared):
-    args   = shared.args
-    sid    = shared.instance.sid
-    shared.instance.info(args)
-    for job in shared.instance.jobs:
-        shared.jobs.put(job, timeout=10)
+    """Producer - Runs the dbinfo scripts, then submits jobs to the job queue"""
+    try:
+        args   = shared.args
+        sid    = shared.instance.sid
+        shared.instance.info(args)
+        for job in shared.instance.jobs:
+            shared.jobs.put(job, timeout=10)
+    except Exception as e:
+        logging.exception(e)
+    # Set the done flag even if failed
     shared.done.set()
-    logging.info('Producer done')
+    logging.debug('Producer done')
 
 class Session():
+    """SQL*Plus worker session"""
     def __init__(self, tempdir, instance):
         self.proc   = instance.sqlplus(quiet=True)
-        self.status = os.path.join(tempdir, "sqlplus_{0}".format(self.proc.pid))
-        self.proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
+        self.status = os.path.join(tempdir, "sqlplus_lock_{0}".format(self.proc.pid))
+        self.proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
+        self.proc.stdin.write("alter session set nls_date_language=american;\n")
 
     def __del__(self):
         self.proc.communicate('exit;\n')
 
     def submit(self, c):
+        # create a lockfile
         with open(self.status, 'wb') as f:
             pass
+        # Send query to SQL*Plus
         self.proc.stdin.write(c)
+        # Tell SQL*Plus to remove lockfile once task is done
         self.proc.stdin.write("HOST rm -f {status}\n".format(status=self.status))
 
     @property
@@ -55,11 +67,14 @@ class Session():
             return False
         return True
 
-
 @exception_handler
 def worker(shared):
+    """
+    Worker process that handles SQL*Plus subprocesses
+    Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
+    """
     # Default use maximum of 25% of available cpus
-    maxtasks = shared.args.tasks if shared.args.tasks else cpu_count()/4
+    maxtasks = shared.args.tasks if shared.args.tasks else cpu_count()//2
     instance = shared.instance
     sessions = [Session(shared.tempdir, instance) for x in range(maxtasks)]
 
@@ -68,10 +83,12 @@ def worker(shared):
     while True:
         time.sleep(0.1)
         if shared.jobs.empty():
+            # Break the loop if job producer is done AND queue is empty
+            # Otherwise, continue loop
             if shared.done.is_set():
                 break
             continue
-
+        # Find an available session in which we can submit the job
         for n in range(maxtasks):
             if not sessions[n].ready:
                 continue
@@ -81,4 +98,4 @@ def worker(shared):
             except Empty:
                 raise TimeoutError('Worker timeout')
             break
-    logging.info('Worker done')
+    logging.debug('Worker done')

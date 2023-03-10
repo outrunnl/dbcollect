@@ -8,6 +8,9 @@ class ZipCreateError(CustomException):
 class ReportingError(CustomException):
     pass
 
+class SQLPlusError(CustomException):
+    pass
+
 class TimeoutError(CustomException):
     pass
 
