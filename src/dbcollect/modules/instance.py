@@ -1,3 +1,8 @@
+"""
+instance.py - Manage Oracle database instances for DBCollect
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
 import os, sys, logging
 from pkgutil import get_data

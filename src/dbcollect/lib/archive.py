@@ -1,6 +1,8 @@
-__author__    = "Bart Sjerps <bart@dirty-cache.com>"
-__copyright__ = "Copyright 2023, Bart Sjerps"
-__license__   = "GPLv3+"
+"""
+archive.py - Manage DBCollect ZIP archives
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
 import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED

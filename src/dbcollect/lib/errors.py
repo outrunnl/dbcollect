@@ -1,3 +1,8 @@
+"""
+errors.py - Exception subclasses for DBCollect
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
 class CustomException(Exception):
     pass

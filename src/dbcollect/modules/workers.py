@@ -1,6 +1,12 @@
+"""
+workers.py - Multiprocessing classes for DBCollect
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
+
 import os, sys, time, tempfile, logging
 
-from multiprocessing import Process, Lock, Event, Queue, cpu_count, active_children, current_process
+from multiprocessing import Process, Event, Queue, cpu_count
 from multiprocessing.queues import Empty, Full
 from shutil import rmtree
 

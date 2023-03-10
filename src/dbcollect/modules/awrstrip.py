@@ -1,6 +1,8 @@
 #!/usr/bin/env python
-"""\
-Strip SQL text from html formatted Oracle AWR reports
+"""
+awrstrip.py - Strip SQL text from html formatted Oracle AWR reports
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
 
 The SQL sections are replaced with a 'removed' message.
 The files must be valid html files and have .html as extension,
@@ -11,23 +13,7 @@ Sections to be removed:
 * ADDM report
 """
 
-_epilog = """\
-Requirements: python 2 or 3, argparse, lxml (optional)
-lxml is much faster, xml.ElementTree used as fallback if lxml is not installed.
-Note that the xml parser re-orders the element attributes upon save.
-
-Parsing errors can be caused by small linesize in SQL*Plus causing html tags
-to be broken. To fix, use a very large linesize:
-SET LINESIZE 32767
-
-Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
-License: GPLv3+
-"""
-
-import os
-import sys
-import re
-import logging
+import os, sys, re, logging
 
 try:
     from lxml import etree

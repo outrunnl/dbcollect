@@ -1,3 +1,8 @@
+"""
+oracle.py - Oracle functions for DBCollect
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
 import os, sys, re, tempfile, logging, time
 from datetime import timedelta
