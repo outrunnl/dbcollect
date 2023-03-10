@@ -8,5 +8,6 @@
 set term off escape off
 define begin_snap={beginsnap}
 define end_snap={endsnap}
-define report_name={sid}_{inst}_statspack_{beginsnap}_{endsnap}_{timestamp}.txt
+define report_name={filename}
 @?/rdbms/admin/spreport
+HOST mv {filename} awr/{filename}
