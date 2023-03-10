@@ -86,8 +86,9 @@ def get_instances():
             status        = 'DOWN'
             user          = owner
             downlist[sid] = None
-        logging.info('Instance: %s (%s), timestamp: %s, owner: %s, oracle_home: %s', sid, status, ts, user, orahome)
+        logging.info('ORACLE_HOME: %s, owner: %s, timestamp: %s, Instance: %s  (%s)', orahome, user, ts, sid, status)
 
     logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
     logging.info('Running instances: %s', ', '.join(info.keys()))
-    return info
+    for sid, inst in info.items():
+        yield sid, inst['orahome']
