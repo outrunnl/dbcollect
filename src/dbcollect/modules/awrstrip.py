@@ -67,12 +67,12 @@ def awrstrip(path, out=None, inplace=False):
             summary = element.get('summary')
             if summary:
                 if re.search(r"top sql|sql statements", summary, re.I):
-                    logging.debug('removing table "%s"', summary.replace('\n',''))
+                    #logging.debug('removing table "%s"', summary.replace('\n',''))
                     blacklist.append(element)
         elif element.tag == 'pre':
             # Look for a separate <pre> section starting with ADDM
             if element.text and element.text.strip().startswith('ADDM'):
-                logging.debug('removing section "ADDM Report"')
+                #logging.debug('removing section "ADDM Report"')
                 blacklist.append(element)
     changed = False
     for elem in blacklist:
@@ -87,29 +87,3 @@ def awrstrip(path, out=None, inplace=False):
             tree.write(out, encoding="utf-8")
         except IOError as err:
             logging.error('IO Error writing to %s: %s', out, os.strerror(err.errno))
-
-if __name__=='__main__':
-    import argparse
-    parser = argparse.ArgumentParser(description=__doc__, epilog=_epilog,
-            formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("-n", "--dryrun",  action="store_true", help="Do not overwrite files")
-    parser.add_argument("-D", "--debug",   action="store_true", help="Show actions")
-    parser.add_argument("-i", "--inplace", action="store_true", help="Replace file")
-    parser.add_argument(      "--dir",     type=str, default='/tmp', help="Save directory")
-    parser.add_argument("-q", "--quiet",   action="store_true", help="Quiet")
-    parser.add_argument("FILE", nargs='*', help='files or directories to be processed')
-    args = parser.parse_args()
-
-    if args.debug:
-        logging.basicConfig(level='DEBUG', format='%(levelname)s: %(message)s')
-    elif args.quiet:
-        logging.basicConfig(level='ERROR', format='%(levelname)s: %(message)s')
-    else:
-        logging.basicConfig(level='INFO', format='%(levelname)s: %(message)s')
-    for path in args.FILE:
-        if os.path.isfile(path):
-            if args.dir:
-                awrstrip(path, out=os.path.join(args.dir, os.path.basename(path)), inplace=args.inplace)
-        elif os.path.isdir(path):
-            for file in [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.html')]:
-                awrstrip(file, '/tmp/out.html')

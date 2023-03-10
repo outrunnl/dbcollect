@@ -5,10 +5,7 @@ __license__   = "GPLv3+"
 import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED
 from lib.functions import saferemove
-
-class ZipCreateError(Exception):
-    """Exception class for dealing with ZIP archives"""
-    pass
+from lib.errors import ZipCreateError
 
 class Archive():
     """A wrapper around zipfile
@@ -58,7 +55,6 @@ class Archive():
             logging.debug("Skipping %s (nonexisting)", path)
             return
         try:
-            logging.debug('retrieving file {0}'.format(path))
             self.zip.write(path, fulltag)
         except OSError as e:
             if not ignore:
