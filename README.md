@@ -10,7 +10,7 @@ _dbcollect_ is a metadata collection tool for Oracle databases, providing worklo
 
 * Dell LiveOptics
 * Dell's internal Splunk-based Workload Analyzer for Oracle (used by Oracle specialists at Dell)
-* The advanced DB workload analyzer tool I have developed (more info TBD)
+* DBLytics (The advanced DB workload analyzer tool I have developed - more info TBD)
 
 It is written in Python, and collects various OS configuration files and
 the output of some system commands, as well as AWR or Statspack reports for each
@@ -19,7 +19,7 @@ database instance, and other database information.
 The results are collected in a ZIP file named (default):
 `/tmp/dbcollect-<hostname>.zip`
 
-For LiveOptics and Dell's Workload Analyzer, the per-database directories in the ZIP file contain all files you need to upload to the reporting tools.
+For LiveOptics and Dell's Workload Analyzer, the per-database directories in the ZIP file contain all files you need to upload to the reporting tools (but use the `--splunk` option to generate the additional capacity reports).
 
 For the advanced analyzer, send the entire ZIP file (via secure FTP or other means).
 
@@ -58,13 +58,10 @@ has been specified. The decision flow is as follows:
 1. Check if 'AWR Reports' is a feature that has been used before. If so, use AWR reports
 2. If AWR usage is not detected but the ```--force-awr``` flag has been specified, use AWR reports
 3. If AWR usage is not detected and no ```--force-awr``` flag is specified, check if STATSPACK is available. If so, use Statspack
+4. If AWR usage is not detected, no ```--force-awr``` has been specified and no statspack reports are available, but ```--ignore``` is specified, ignore and continue to the next
+5. If AWR usage is not detected, no ```--force-awr``` has been specified and no statspack reports are available, abort with an error
 
-If we get to this point:
-
-*  Abort with an error, or
-*  Give up for this instance and issue a warning, continue with the next instance (if `--ignore` is specified)
-
-So if you ARE licensed but _dbcollect_ complains, you can run dbcollect with the --force-awr option.
+So if you ARE licensed for Diagnostics Pack but _dbcollect_ complains, you can run dbcollect with the --force-awr option.
 DBcollect will only warn about the AWR detection and just generate the reports anyway.
 
 **Use the `--force-awr` flag ONLY if you are sure you are correctly licensed!
@@ -113,7 +110,7 @@ If you want to collect reports from a longer time ago (say, 20 days ago up to 10
 
 ### Non-Linux (UNIX) systems
 
-DBCollect now supports AIX and Solaris systems. You need to have Python installed.
+DBCollect now supports AIX and Solaris systems. You need to have Python installed (at least version 2.6).
 
 Windows and HP-UX are not (yet) supported although on HP-UX, it may work fine to collect Oracle information (not SAR and system info). Let me know if you want to help with testing.
 
@@ -161,19 +158,21 @@ A: AWR reports are great but have a few problems and limitations for our purpose
 
 Q: Is dbcollect safe to run?
 
-A: dbcollect is designed to run as non-root user but it has to be the oracle user or a user with sysdba privileges. The SQL scripts only contain SELECT statements so they cannot modify database data. The Python tools cannot delete/overwrite any file except in `/tmp` or the output ZIP file otherwise specified in the arguments. External commands are not executed as root and are verified to only gather system info, not modify anything. CPU consumption is limited by default to 25%. These restrictions should make one confident that dbcollect is safe to run on production systems.
+A: dbcollect is designed to run as non-root user but it has to be the oracle user or a user with sysdba privileges. The SQL scripts only contain SELECT statements so they cannot modify database data. The Python tools cannot delete/overwrite any file except in `/tmp` or the output ZIP file otherwise specified in the arguments. External commands are not executed as root and are verified to only gather system info, not modify anything. CPU consumption is limited by default to 50%. These restrictions should make one confident that dbcollect is safe to run on production systems.
 
 Q: Why is dbcollect written in Python 2? This is no longer supported!
 
-A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6. Update: dbcollect now works on both Python 2 and Python 3.
+A: Python 3 is not available by default on many older systems, i.e. Linux (RHEL/OEL/CentOS), Solaris. On EL6 I even had to backport support for Python 2.6.
+Update: dbcollect now works on both Python 2 and Python 3.
 
 Q: How long will it take to run _dbcollect_ ?
 
-A: This mostly depends on how many AWR/Statspack reports need to be generated. Collecting the OS information usually only takes a few seconds. For normal environments, an AWR report (HTML) takes a about 1-2 seconds, Statspack even less. For a single instance environment, 10 day collect period, 1 hour interval, the amount of reports is about 240 so _dbcollect_ will run for under 10 minutes. There are some known Oracle issues with AWR generation resulting in much longer times. The latest version of _dbcollect_ predicts the remaining time so you have an idea.
+A: This mostly depends on how many AWR/Statspack reports need to be generated and how many CPUs are available. Collecting the OS information usually only takes a few seconds. For normal environments, an AWR report (HTML) takes a about 1-2 seconds, Statspack even less. For a single instance environment, 10 day collect period, 1 hour interval, the amount of reports is about 240 so _dbcollect_ will run for under 10 minutes. There are some known Oracle issues with AWR generation resulting in much longer times. The latest version of _dbcollect_ predicts the remaining time so you have an idea.
+As of version 1.11, _dbcollect_ runs AWR reports in parallel on each instance, making it much faster.
 
 Q: Does dbcollect gather confidential data?
 
-A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. For AWR, dbcollect can remove sections containing SQL statements to prevent collecting pieces of potentially confidential data. The values of bind parameters are not visible. See the ```--strip``` option.
+A: dbcollect only retrieves system configuration files, SAR/AWR/Statspack etc. In AWR and Statspack however, a number of SQL queries (statements) can be visible. For AWR, dbcollect can remove sections containing SQL statements to prevent collecting pieces of potentially confidential data. The values of bind parameters are not visible. See the ```--strip``` option. Passwords or user credentials are never collected.
 
 Q: dbcollect appears to be a binary package. How do I know what it is doing?
 
@@ -270,6 +269,8 @@ On Enterprise Linux, python-argparse is not installed by default (but in most ca
 
 This is especially the case if you run _dbcollect_ on Oracle RAC. There are a number of known issues that cause it to be very slow. I have observed up to 20 seconds per AWR report (usually about 0.5 seconds) making _dbcollect_ run for over an hour or more for a typical 10-day, 1-hour interval, single database cluster.
 Check Support notes for fixes and workarounds: 2404906.1, 2565465.1, 2318124.1, 29932310.8, 2148489.1, 29470291.8. Or be very patient.
+
+Update: As of version 1.11, _dbcollect_ runs multiple AWR reports in parallel for each instance, making it much faster, by default 50% of CPUs. To use all available CPUs, use ```--tasks 0``` (note that CPU load will likely go to 100%, be careful)
 
 ## License
 

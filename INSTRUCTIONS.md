@@ -28,7 +28,7 @@ mv dbcollect $HOME/bin/
 * Python 2.6 or higher
 * Python-argparse (is usually included in the Python distribution except for very old versions)
 * Enterprise Linux 6, 7 or 8, Solaris 11, IBM AIX 7
-* Some free space in /tmp
+* Some free space in /tmp (or elsewhere, use --tempdir)
 * Oracle RDBMS 11g or higher (optional)
 * Diagnostics pack license OR statspack configured on the database(s)
 * Access to the 'oracle' special user or dba privileges ('root' not required)
@@ -126,6 +126,9 @@ dbcollect --overwrite
 # Write ZIP file with different filename (will go to /tmp)
 dbcollect --filename mydbcollect.zip
 
+# Write ZIP file with different path/filename
+dbcollect --filename /home/oracle/mydbcollect.zip
+
 # Non-standard Oracle user (only needed if running as root)
 dbcollect --user sap
 
@@ -141,12 +144,15 @@ dbcollect --strip
 # Exclude one or more problem databases
 dbcollect --exclude probdb1,probdb3
 
+# Only include a subset of databases
+dbcollect --include probdb1,probdb3
+
 # Limit amount of concurrent AWR collection tasks (CPUs)
 dbcollect --tasks 2
 
 # Speed up AWR generation (higher CPU consumption)
-# (Limited to number of instances and CPUs)
-dbcollect --tasks 64
+# (sets tasks to number of CPUs)
+dbcollect --tasks 0
 
 
 ```
