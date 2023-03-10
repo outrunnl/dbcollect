@@ -94,7 +94,7 @@ def main():
     parser.add_argument(      "--splunk",    action="store_true",        help="Generate Dell SPLUNK/LiveOptics reports")
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
-    parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus)")
+    parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus, 0=max)")
     args = parser.parse_args()
 
     if args.update:

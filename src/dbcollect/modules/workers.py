@@ -22,6 +22,19 @@ class Shared():
         self.jobs     = Queue(10)
         self.done     = Event()
 
+    @property
+    def tasks(self):
+        if self.args.tasks:
+            # Default use maximum of 50% of available cpus
+            tasks = self.args.tasks
+            if tasks == 0:
+                return cpu_count()
+            tasks = min(1, tasks)
+            tasks = max(tasks, cpu_count())
+            return tasks
+        else:
+            return cpu_count()//2
+
 class Tempdir():
     """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
     def __init__(self, args):
@@ -79,10 +92,9 @@ def worker(shared):
     Worker process that handles SQL*Plus subprocesses
     Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
     """
-    # Default use maximum of 50% of available cpus
-    maxtasks = shared.args.tasks if shared.args.tasks else cpu_count()//2
+
     instance = shared.instance
-    sessions = [Session(shared.tempdir, instance) for x in range(maxtasks)]
+    sessions = [Session(shared.tempdir, instance) for x in range(shared.tasks)]
 
     logging.info('Started {0} SQLPlus sessions for instance {1}'.format(len(sessions), instance.sid))
 
@@ -95,7 +107,7 @@ def worker(shared):
                 break
             continue
         # Find an available session in which we can submit the job
-        for n in range(maxtasks):
+        for n in range(shared.tasks):
             if not sessions[n].ready:
                 continue
             try:
