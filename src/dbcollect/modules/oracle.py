@@ -7,6 +7,7 @@ License: GPLv3+
 import os, sys, re, tempfile, logging, time
 from datetime import timedelta
 
+from lib.errors import *
 from lib.detect import get_instances
 from .awrstrip import awrstrip
 from .instance import Instance
@@ -30,11 +31,10 @@ def oracle_info(archive, args):
             logging.info('%s not included, skipping...', sid)
         else:
             instance    = Instance(tempdir, sid, orahome)
-            total_jobs += instance.get_jobs(args)
-            logging.info('{0}: {1} reports'.format(sid, total_jobs))
+            num_jobs    = instance.get_jobs(args)
+            total_jobs += num_jobs
+            logging.info('{0}: {1} reports'.format(sid, num_jobs))
             instances.append(instance)
-
-    logging.info('Retrieving {0} reports total'.format(total_jobs))
 
     msg = 'No reports'
     starttime = time.time()
@@ -42,10 +42,10 @@ def oracle_info(archive, args):
         shared = Shared(args, instance, tempdir)
         repdir = os.path.join(tempdir, 'reports')
         awrdir = os.path.join(tempdir, 'awr')
-        proc_p = Process(target=producer, name='Producer', args=(shared,))
-        proc_w = Process(target=worker, name='Worker', args=(shared,))
-        proc_p.start()
-        proc_w.start()
+        generator = Process(target=job_generator, name='Generator', args=(shared,))
+        processor = Process(target=job_processor, name='Processor', args=(shared,))
+        processor.start()
+        generator.start()
         while True:
             time.sleep(0.1)
 
@@ -55,7 +55,7 @@ def oracle_info(archive, args):
                 os.unlink(path)
 
             filelist = os.listdir(awrdir)
-            if not filelist and not proc_w.is_alive():
+            if not filelist and not processor.is_alive():
                 break
             for filename in filelist:
                 path = os.path.join(awrdir, filename)
@@ -81,8 +81,14 @@ def oracle_info(archive, args):
                     sys.stdout.write('\033[2K{0}\033[G'.format(msg))
                     sys.stdout.flush()
 
-        proc_p.join()
-        proc_w.join()
+        generator.join()
+        processor.join()
+        sys.stdout.write('\033[2K')
+        sys.stdout.flush()
 
-    sys.stdout.write('\033[2K')
+        if generator.exitcode:
+            raise CustomException('Job generator failed, rc={0}'.format(proc_p.exitcode))
+        if processor.exitcode:
+            raise CustomException('Job processor failed, rc={0}'.format(proc_w.exitcode))
+
     logging.info(msg)

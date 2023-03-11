@@ -113,10 +113,10 @@ class Instance():
             logging.info('{0}: AWR usage detected, generating reports '.format(self.sid))
         elif args.force_awr:
             reptype = 'awr'
-            logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force-awr)".format(self.instance.sid))
+            logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force-awr)".format(self.sid))
         elif spusage>0:
             reptype = 'sp'
-            logging.info('{0}: No awr, Statspack detected'.format(self.instance.sid))
+            logging.info('{0}: No awr, Statspack detected'.format(self.sid))
         elif args.ignore:
             logging.warning("Skipping {0}: No prior AWR usage or Statspack detected (--ignore)".format(self.sid))
             return 0
