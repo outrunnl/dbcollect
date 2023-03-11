@@ -45,21 +45,6 @@ class Tempdir():
     def __del__(self):
         rmtree(self.tempdir)
 
-@exception_handler
-def producer(shared):
-    """Producer - Runs the dbinfo scripts, then submits jobs to the job queue"""
-    try:
-        args   = shared.args
-        sid    = shared.instance.sid
-        shared.instance.info(args)
-        for job in shared.instance.jobs:
-            shared.jobs.put(job, timeout=10)
-    except Exception as e:
-        logging.exception(e)
-    # Set the done flag even if failed
-    shared.done.set()
-    logging.debug('Producer done')
-
 class Session():
     """SQL*Plus worker session"""
     def __init__(self, tempdir, instance):
@@ -87,7 +72,27 @@ class Session():
         return True
 
 @exception_handler
-def worker(shared):
+def job_generator(shared):
+    """Producer - Runs the dbinfo scripts, then submits jobs to the job queue"""
+    try:
+        args   = shared.args
+        sid    = shared.instance.sid
+        shared.instance.info(args)
+        for job in shared.instance.jobs:
+            shared.jobs.put(job, timeout=60)
+        logging.debug('Generator done')
+    except Full:
+        logging.error('Generator timeout (queue full)')
+        sys.exit(11)
+    except Exception as e:
+        logging.exception(e)
+        sys.exit(20)
+    finally:
+        # Set the done flag even if failed
+        shared.done.set()
+
+@exception_handler
+def job_processor(shared):
     """
     Worker process that handles SQL*Plus subprocesses
     Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
@@ -114,6 +119,6 @@ def worker(shared):
                 job = shared.jobs.get(timeout=60)
                 sessions[n].submit(job.query)
             except Empty:
-                raise TimeoutError('Worker timeout')
+                raise TimeoutError('Job processor timeout')
             break
-    logging.debug('Worker done')
+    logging.debug('Job processor done')
