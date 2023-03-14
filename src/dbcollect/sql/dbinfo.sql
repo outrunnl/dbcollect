@@ -38,6 +38,7 @@
 -- 1.3.4 - Adjusted SIZE_MB for archivelog summary
 -- 1.3.5 - Minor formatting changes
 -- 1.3.6 - Add backup reports
+-- 1.3.7 - fix temp tablespace reports
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -382,25 +383,25 @@ SELECT DF.tablespace_name ts_name
 , allocated - free_mb used_mb
 , free_mb
 , allocated
-, 100 * (allocated - free_mb) / nullif(allocated,0) PCT_USED
+, 100 * (allocated - free_mb) / NULLIF(allocated,0) PCT_USED
 FROM   DF, FS, TS
 WHERE  fs.tablespace_name = DF.tablespace_name
 AND    fs.tablespace_name = TS.tablespace_name
 GROUP BY DF.tablespace_name,ts_type,compr,encrypted,free_mb,allocated,files,objects
 UNION ALL
-SELECT TF.tablespace_name
+SELECT tablespace_name
 , count(*)             files
 , 'TEMP'               ts_type
 , NULL                 COMPR
-, 'NO'                 ENCR
-, 0                    objects
-, (sum(bytes)-bytes_free)/1024/1024 used_mb
-, bytes_free/1024/1024 free_mb
-, sum(bytes/1024/1024) allocated
-, 100*(sum(bytes)-bytes_free)/sum(bytes) pct_used
+, NULL                 ENCR
+, NULL                 objects
+, sum(bytes-bytes_free)/1048576 used_mb
+, sum(bytes_free)/1048576       free_mb
+, sum(bytes)/1048576            allocated
+, 100* sum(bytes-bytes_free)/sum(bytes) pct_used
 FROM dba_temp_files TF
-LEFT JOIN v$temp_space_header H ON TF.tablespace_name = H.tablespace_name
-GROUP BY tf.tablespace_name, bytes,bytes_free
+LEFT JOIN v$temp_space_header H USING(tablespace_name,file_id)
+GROUP BY tablespace_name
 ORDER BY 1
 /
 
