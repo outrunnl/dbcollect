@@ -68,6 +68,8 @@ def linux_info(archive, args):
         info[cmd] = out.strip()
 
     for file in os.listdir('/sys/class/dmi/id'):
+        if file in ('modalias','uevent'):
+            continue
         path = os.path.join('/sys/class/dmi/id', file)
         if os.path.isfile(path):
             try:
