@@ -5,7 +5,9 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, logging, pkgutil, platform, logging, datetime
+import os, sys, json, logging, platform
+from datetime import datetime
+
 sys.dont_write_bytecode = True
 try:
     import argparse
@@ -36,7 +38,7 @@ def selfinfo():
         info['builddate'] = buildstamp(zipname)
     except NameError as e:
         st = os.stat(__file__).st_mtime
-        dt = datetime.datetime.fromtimestamp(st)
+        dt = datetime.fromtimestamp(st)
         info['zipname']   = None
         info['ziphash']   = None
         info['builddate'] = dt.strftime('%Y-%m-%d %H:%M')
@@ -89,10 +91,12 @@ def main():
     parser.add_argument(      "--no-sar",    action="store_true",        help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true",        help="Skip Oracle collection")
     parser.add_argument(      "--no-sys",    action="store_true",        help="Skip OS collection")
+    parser.add_argument(      "--splunk",    action="store_true",        help="Generate Dell SPLUNK/LiveOptics reports")
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
-    parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus)")
+    parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus, 0=max)")
     args = parser.parse_args()
+
     if args.update:
         update(versioninfo['version'])
         return
@@ -114,9 +118,6 @@ def main():
     if args.quiet:
         sys.stdout = open('/dev/null','w')
     if args.filename:
-        #if not args.filename.replace('.zip','').isalnum():
-        #    print("Invalid filename: {0}".format(args.filename))
-        #    exit(15)
         if not args.filename.endswith('.zip'):
             args.filename += '.zip'
         zippath = os.path.join('/tmp', args.filename)
@@ -131,6 +132,7 @@ def main():
     try:
         archive = Archive(zippath, logpath, versioninfo['version'], args.overwrite)
         logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
+        logging.info('Python version {0}'.format(platform.python_version()))
         logging.info('Current user is {0}'.format(username()))
         logging.info('Zip file is {0}'.format(zippath))
         archive.writestr('meta.json', meta())

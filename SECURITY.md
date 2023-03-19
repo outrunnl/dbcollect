@@ -18,7 +18,7 @@ As _dbcollect_ is intended to run on production database servers, it must be saf
 ## Author
 
 _dbcollect_ is written by Bart Sjerps as a private Open Source project and in no way funded or guided by his employer.
-The project is hosted on Github.com, and contributions (improvement on code, problem reports, documentation) are welcome. It is licensed under GNU Public License version 3 - which means everyone can use dbcollect as they wish, under the GPL v3 conditions.
+The project is hosted on Github.com, and contributions (improvement on code, problem reports, documentation) are welcome. It is licensed under GNU Public License version 3 - which means everyone can use (or modify) dbcollect as they wish, under the GPL v3 conditions.
 
 ## Safety
 
@@ -28,6 +28,7 @@ As dbcollect typically runs on production database systems, it has been designed
 * The user under which dbcollect runs should be the Oracle (database) "SYS" owner (usually the user 'oracle'). The reason for this is that dbcollect needs to execute SQL scripts with "sysdba" privileges without having to enter passwords for every database instance. As this user itself has full access to database data and Oracle binaries, additional steps have been taken to restrict access (see below)<sup>2</sup>
 * Most file write operations are forced to only happen in the temporary directory ('/tmp') <sup>3</sup>
 * All Oracle database operations are performed using Oracle SQL*Plus and can only perform database 'SELECT' statements. No items like views, procedures, functions, directories are created in the database. No data can be directly modified. <sup>4</sup>
+* Some database audit events will be generated as _dbcollect_ makes SQL*Plus connections
 * OS level commands are limited to those that do not require 'root' access and cannot modify configurations, but only collect configuration parameters.
 * The _dbcollect_ Python code is frequently verified with 'pylint' to detect and remediate potential bugs and issues.
 * _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 25% of available CPUs unless changed with the --tasks parameter.
@@ -39,7 +40,7 @@ Notes:
 
 1. This assumes the system has typical security settings where regular users don't have write access to OS files
 2. Using another user would require the administrator to enter SYS passwords for each database instance - which would not make the tool more secure, only harder to work with
-3. The output ZIP file can be created with a different name, using the ```--filename``` option, but aborts if the file already exists (cannot overwrite). The option to change the TEMP (/tmp) directory has been removed for safety reasons.
+3. The output ZIP file can be created with a different name, using the ```--filename``` option, but aborts if the file already exists (cannot overwrite). The temporary directory can be changed with ```--tempdir``` but tempfiles are created in a subfolder and cannot overwrite existing files
 4. The database logon itself as well as accessing Oracle AWR reports and other tables generates some audit logging in the database
 
 
@@ -78,7 +79,7 @@ The purpose of this tool is to make it as easy as possible to grab Oracle data. 
 1. Classic /etc/oratab or /var/opt/oracle/oratab parsing. This often fails to detect instances on RAC with newer Oracle versions as it lists the database/service name instead of the instance.
 2. Using the Oracle inventory (inventory.xml) to find all possible ```ORACLE_HOMEs``` and look for ```hc_<sid>.dat``` files (running instances will always create such a file).
 3. For both oratab and inventory reported instances, the Unix process list is checked to see if the instance is actually running before attempting to connect
-4. Multiple entries with the same instance - but sometimes different ORACLE_HOME can be detected. Each one is tried and instances with a running process but connection failure will be reported as warning before attempting the next.
+4. Multiple entries with the same instance - but sometimes different ORACLE_HOME can be detected. The one with the most recent ```hc_<sid>.dat``` will be used.
 
 ## SQL query text
 

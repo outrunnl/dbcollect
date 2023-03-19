@@ -1,14 +1,13 @@
-__author__    = "Bart Sjerps <bart@dirty-cache.com>"
-__copyright__ = "Copyright 2023, Bart Sjerps"
-__license__   = "GPLv3+"
+"""
+archive.py - Manage DBCollect ZIP archives
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
 import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED
 from lib.functions import saferemove
-
-class ZipCreateError(Exception):
-    """Exception class for dealing with ZIP archives"""
-    pass
+from lib.errors import ZipCreateError
 
 class Archive():
     """A wrapper around zipfile
@@ -42,14 +41,7 @@ class Archive():
         except Exception as e:
             logging.warning("Removing logfile failed: %s", e)
         self.zip.close()
-    def checkfreespace(self):
-        """Get FS free space. Note this is Python2 only"""
-        stat = os.statvfs(self.path)
-        free = stat.f_bsize * stat.f_bfree
-        if free < 100 * 2 ** 20:
-            raise ZipCreateError('Free space below 100 MiB')
     def store(self, path, tag=None, ignore=False):
-        self.checkfreespace()
         if tag:
             fulltag = os.path.join(self.prefix, tag)
         else:
@@ -58,7 +50,6 @@ class Archive():
             logging.debug("Skipping %s (nonexisting)", path)
             return
         try:
-            logging.debug('retrieving file {0}'.format(path))
             self.zip.write(path, fulltag)
         except OSError as e:
             if not ignore:
@@ -67,7 +58,6 @@ class Archive():
             if not ignore:
                 logging.error("IO Error retrieving %s: %s", e.filename, os.strerror(e.errno))
     def move(self, path, tag=None):
-        self.checkfreespace()
         self.store(path, tag)
         saferemove(path)
     def writestr(self, tag, data):

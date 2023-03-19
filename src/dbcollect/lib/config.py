@@ -3,13 +3,12 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.10.8"
+    'version': "1.11.1"
 }
 
 linux_cmds = [
     'lscpu',
     'lsscsi',
-    'sestatus',
     'lsmod',
     'dmesg',
     'ps -ef',
@@ -19,8 +18,10 @@ linux_cmds = [
     'ip -o addr show',
     'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
     'sysctl -a',
-    'numactl -hardware',
+    'numactl --hardware',
     'numactl --show',
+    'lspci',
+    'lsblk -bp',
     ]
 
 linux_files = [
@@ -41,12 +42,6 @@ linux_files = [
     '/etc/motd',
     '/etc/multipath.conf',
     '/etc/oratab',
-    '/sys/class/dmi/id/sys_vendor',
-    '/sys/class/dmi/id/product_name',
-    '/sys/class/dmi/id/product_uuid',
-    '/sys/class/dmi/id/board_name',
-    '/sys/class/dmi/id/board_vendor',
-    '/sys/class/dmi/id/chassis_vendor'
     ]
 
 aix_cmds = [

@@ -1,9 +1,8 @@
-__author__    = "Bart Sjerps <bart@dirty-cache.com>"
-__copyright__ = "Copyright 2023, Bart Sjerps"
-__license__   = "GPLv3+"
-
 """
-Logging setup for dbcollect
+log.py - Manage DBCollect logging
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+
 logsetup sets up dual logging via separate handlers, one is the dbcollect logfile
 which logs at DEBUG level (most everything)
 the other is the consolehandler which logs at INFO or ERROR if --quiet is requested.

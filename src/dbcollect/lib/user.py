@@ -1,8 +1,8 @@
-__author__    = "Bart Sjerps <bart@dirty-cache.com>"
-__copyright__ = "Copyright 2020, Bart Sjerps"
-__license__   = "GPLv3+"
-
 """
+user.py - Manage DBCollect ZIP archives
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+
 Switch user if the current user is root
 This serves 2 purposes:
 1) Safety against bugs

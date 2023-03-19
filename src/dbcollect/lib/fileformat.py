@@ -4,11 +4,31 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import sys, os, io, platform, logging
+import sys, os, io, platform, logging, json
 from collections import OrderedDict
 from lib.config import versioninfo
 from lib.functions import now, utcnow, stat2time, execute
 from lib.user import getuser, getgroup
+
+class JSONFile():
+    """Container for a JSON file"""
+    def __init__(self, description):
+        self.info = OrderedDict(application='dbcollect')
+        self.info['version']      = versioninfo['version']
+        self.info['hostname']     = platform.uname()[1]  # Hostname
+        self.info['machine']      = platform.machine()   # x86_64 | sun4v | 00F6035A4C00 (AIX) | AMD64 etc...
+        self.info['system']       = platform.system()    # Linux  | SunOS | SunOS | AIX | Windows
+        self.info['processor']    = platform.processor() # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
+        self.info['hostname']     = platform.uname()[1]  # Hostname
+        self.info['timestamp']    = now()
+        self.info['timestamputc'] = utcnow()
+        self.info['description']  = description
+
+    def set(self, name, val):
+        self.info[name] = val
+
+    def dump(self):
+        return json.dumps(self.info, indent=2, sort_keys=True)
 
 class Datafile():
     """Container for a file stored in the dbcollect archive.

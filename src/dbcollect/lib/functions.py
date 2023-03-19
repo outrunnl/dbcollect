@@ -1,6 +1,8 @@
-__author__    = "Bart Sjerps <bart@dirty-cache.com>"
-__copyright__ = "Copyright 2023, Bart Sjerps"
-__license__   = "GPLv3+"
+"""
+functions.py - Some functions for DBCollect
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
 import os, sys, logging, pkgutil, datetime, time, hashlib, errno
 from subprocess import call, Popen, PIPE
