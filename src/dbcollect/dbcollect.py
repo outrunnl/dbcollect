@@ -19,9 +19,11 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
 from lib.config import versioninfo
-from lib.log import logsetup, DBCollectError
-from lib.functions import saferemove, now, utcnow, timezone, md5hash
-from lib.archive import Archive, ZipCreateError, buildstamp
+from lib.buildinfo import buildinfo
+from lib.log import logsetup
+from lib.errors import DBCollectError, ZipCreateError
+from lib.functions import timezone
+from lib.archive import Archive
 from lib.user import switchuser, username, usergroup, usergroups, dbuser
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
@@ -34,14 +36,9 @@ def selfinfo():
         if not os.access(zipname,os.R_OK):
             raise DBCollectError('User {0} has no read access to {1}'.format(username(), zipname))
         info['zipname']   = zipname
-        info['ziphash']   = md5hash(zipname)
-        info['builddate'] = buildstamp(zipname)
-    except NameError as e:
-        st = os.stat(__file__).st_mtime
-        dt = datetime.fromtimestamp(st)
-        info['zipname']   = None
-        info['ziphash']   = None
-        info['builddate'] = dt.strftime('%Y-%m-%d %H:%M')
+        info.update(buildinfo)
+    except (NameError, AttributeError) as e:
+        raise DBCollectError('dbcollect must run from package, see https://github.com/outrunnl/dbcollect/releases/latest')
     return info
 
 def printversion():
@@ -51,6 +48,7 @@ def printversion():
     print ('License:   {0}'.format(versioninfo['license']))
     print ('Version:   {0}'.format(versioninfo['version']))
     print ('Builddate: {0}'.format(info['builddate']))
+    print ('Buildhash: {0}'.format(info['buildhash']))
 
 def meta():
     info = dict()
@@ -61,8 +59,8 @@ def meta():
     info['processor']     = platform.processor()      # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
     info['hostname']      = platform.uname()[1]       # Hostname
     info['python']        = platform.python_version()
-    info['timestamp']     = now()                     # Current time, local timezone
-    info['timestamputc']  = utcnow()                  # Current time, UTC
+    info['timestamp']     = datetime.now().strftime("%Y-%m-%d %H:%M")    # Current time, local timezone
+    info['timestamputc']  = datetime.utcnow().strftime("%Y-%m-%d %H:%M") # Current time, UTC
     info['timezone']      = timezone()                # The system's configured timezone
     info['cmdline']       = ' '.join(sys.argv)        # Command by which we are called
     info['username']      = username()                # Username (after switching from root)

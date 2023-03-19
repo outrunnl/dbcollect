@@ -5,9 +5,10 @@ License: GPLv3+
 """
 
 import sys, os, io, platform, logging, json
+from datetime import datetime
 from collections import OrderedDict
 from lib.config import versioninfo
-from lib.functions import now, utcnow, stat2time, execute
+from lib.functions import stat2time, execute
 from lib.user import getuser, getgroup
 
 class JSONFile():
@@ -20,8 +21,8 @@ class JSONFile():
         self.info['system']       = platform.system()    # Linux  | SunOS | SunOS | AIX | Windows
         self.info['processor']    = platform.processor() # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
         self.info['hostname']     = platform.uname()[1]  # Hostname
-        self.info['timestamp']    = now()
-        self.info['timestamputc'] = utcnow()
+        self.info['timestamp']    = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.info['timestamputc'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
         self.info['description']  = description
 
     def set(self, name, val):
@@ -44,8 +45,8 @@ class Datafile():
         self.info['system']       = platform.system()    # Linux  | SunOS | SunOS | AIX | Windows
         self.info['processor']    = platform.processor() # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
         self.info['hostname']     = platform.uname()[1]  # Hostname
-        self.info['timestamp']    = now()
-        self.info['timestamputc'] = utcnow()
+        self.info['timestamp']    = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.info['timestamputc'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
         self.info['mediatype']    = None
         self.info['format']       = None
         self.info['fields']       = None

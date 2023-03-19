@@ -4,7 +4,7 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, logging, pkgutil, datetime, time, hashlib, errno
+import os, sys, logging, pkgutil, datetime, time, errno
 from subprocess import call, Popen, PIPE
 
 def listdir(dir):
@@ -63,24 +63,6 @@ def execute(cmd):
 def filedate(path):
     """Return mtime for a file"""
     return os.stat(path).st_mtime
-
-def md5hash(path):
-    """Return MD5 hash (string) for a file"""
-    hash = hashlib.md5()
-    if path and os.path.isfile(path):
-        with open(path,'rb') as f:
-            buf = f.read(8192)
-            while len(buf):
-                hash.update(buf)
-                buf = f.read(8192)
-        return hash.hexdigest()
-    return None
-
-def utcnow():
-    return datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
-
-def now():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 def timezone():
     return time.strftime("%Z", time.gmtime())

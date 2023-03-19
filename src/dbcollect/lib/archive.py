@@ -65,13 +65,3 @@ class Archive():
             self.zip.writestr(os.path.join(self.prefix, tag.lstrip('/')), data)
         except Exception as e:
             logging.warning("Writing data to zip file failed: %s", e)
-
-def buildstamp(zipname):
-    """Gets the build timestamp for a zipapp archive.
-    __main__.py must exist.
-    """
-    archive = ZipFile(zipname)
-    info = archive.getinfo('__main__.py')
-    archive.close()
-    yy, m, dd, hh, mm = info.date_time[0:5]
-    return '{0:04}-{1:02}-{2:02} {3:02}:{4:02}'.format(yy, m, dd, hh, mm)

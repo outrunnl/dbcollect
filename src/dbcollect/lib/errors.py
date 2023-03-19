@@ -21,3 +21,6 @@ class TimeoutError(CustomException):
 
 class InstanceDown(CustomException):
     pass
+
+class DBCollectError(CustomException):
+    pass
