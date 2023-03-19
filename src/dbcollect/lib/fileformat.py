@@ -8,7 +8,7 @@ import sys, os, io, platform, logging, json
 from datetime import datetime
 from collections import OrderedDict
 from lib.config import versioninfo
-from lib.functions import stat2time, execute
+from lib.functions import execute
 from lib.user import getuser, getgroup
 
 class JSONFile():
@@ -102,8 +102,8 @@ class Datafile():
             self.info['mode']  = oct(statinfo.st_mode)
             self.info['user']  = getuser(statinfo.st_uid)
             self.info['group'] = getgroup(statinfo.st_gid)
-            self.info['atime'] = stat2time(statinfo.st_atime)
-            self.info['mtime'] = stat2time(statinfo.st_mtime)
+            self.info['atime'] = datetime.fromtimestamp(int(statinfo.st_atime))
+            self.info['mtime'] = datetime.fromtimestamp(int(statinfo.st_mtime))
             self.info['status'] = 'OK'
         except IOError as e:
             self.info['status'] = os.strerror(e.errno)

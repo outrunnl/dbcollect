@@ -13,16 +13,6 @@ def listdir(dir):
         return []
     return sorted(os.listdir(dir))
 
-def makedir(dir):
-    """Call mkdir but ignore if dir already exists"""
-    try:
-        os.mkdir(dir)
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            pass
-        else:
-            raise
-
 def getfile(*args):
     """try each file from paths until readable, try next if not exists or no access"""
     for path in args:
@@ -60,14 +50,5 @@ def execute(cmd):
     stdout, stderr = proc.communicate()
     return (stdout, stderr, proc.returncode)
 
-def filedate(path):
-    """Return mtime for a file"""
-    return os.stat(path).st_mtime
-
 def timezone():
     return time.strftime("%Z", time.gmtime())
-
-def stat2time(mtime):
-    """Converts stat() timestamps to datetime. Truncate subseconds"""
-    epoch = datetime.datetime(1970, 1, 1)
-    return epoch + datetime.timedelta(seconds=int(mtime))
