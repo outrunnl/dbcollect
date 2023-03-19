@@ -10,7 +10,6 @@ except ImportError:
 
 import os, sys, json, logging
 from shutil import move
-from lib.functions import saferemove
 
 _apiurl  = 'https://api.github.com/repos/outrunnl/dbcollect/releases/latest'
 _tmpfile = '/tmp/dbcollect'
@@ -40,7 +39,7 @@ def update(current):
     logging.info("Downloading from %s", downloadurl)
     binary = retrieve(downloadurl)
     if os.path.exists(_tmpfile):
-        saferemove(_tmpfile)
+        os.unlink(_tmpfile)
     try:
         with open(_tmpfile,'wb') as f:
             logging.info('Writing %s (%s bytes)', _tmpfile, len(binary))
