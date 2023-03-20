@@ -1,7 +1,8 @@
 #!/bin/bash
 
 dir=$(git rev-parse --show-toplevel)
-version=$(python $dir/src/dbcollect/lib/config.py)
+cd $dir/src/dbcollect
+version=$(python -c 'from lib.config import versioninfo; print(versioninfo["version"])')
 
 git tag -a -mversion v${version}
 git push --tags
