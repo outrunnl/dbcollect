@@ -45,7 +45,7 @@ def sar_info(archive, args):
 
 def linux_info(archive, args):
     """System/SAR info for Linux"""
-    hostinfo = JSONFile('hostinfo')
+    hostinfo = JSONFile()
     info = {}
     for cmd in ('sestatus','uptime'):
         out, err, rc = execute(cmd)
@@ -71,7 +71,7 @@ def linux_info(archive, args):
 
     # TODO:
     # powerpath / scaleio? -> Need root?
-    diskinfo = JSONFile('diskinfo')
+    diskinfo = JSONFile()
     disklist = []
     out, err, rc = execute('lsblk -dno name')
     for dev in out.rstrip().splitlines():
@@ -93,10 +93,10 @@ def linux_info(archive, args):
             info['udevadm_cmd'] = { 'command': cmd, 'stdout': out, 'stderr': err, 'rc': rc }
         info['symlinks'] = out.split()
         disklist.append(info)
-    diskinfo.set('disks', disklist)
+    diskinfo.set('diskinfo', {'disklist': disklist })
     archive.writestr('diskinfo.json', diskinfo.dump())
 
-    nicinfo = JSONFile('interfaces')
+    nicinfo = JSONFile()
     niclist = []
     for dev in listdir('/sys/class/net'):
         if dev == 'lo':
@@ -116,7 +116,7 @@ def linux_info(archive, args):
             except:
                 info[var] = None
         niclist.append(info)
-    nicinfo.set('interfaces', niclist)
+    nicinfo.set('nicinfo', {'niclist': niclist} )
     archive.writestr('nicinfo.json', nicinfo.dump())
 
     for tag, cmd in linux_config['commands'].items():
