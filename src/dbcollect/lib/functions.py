@@ -4,8 +4,8 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, logging, pkgutil, datetime, time, errno
-from subprocess import call, Popen, PIPE
+import os, sys, errno
+from subprocess import Popen, PIPE
 
 def listdir(dir):
     """Return all files/dirs in dir, or empty list if not exists"""
@@ -23,13 +23,6 @@ def getfile(*args):
             if e.errno in [errno.ENOENT, errno.EACCES]:
                 continue
             raise
-
-def saferemove(path):
-    """Delete a file only if it exists in /tmp"""
-    if path.startswith('/tmp'):
-        os.unlink(path)
-    else:
-        raise ValueError('Trying to remove file outside /tmp')
 
 def execute(cmd):
     """
@@ -49,6 +42,3 @@ def execute(cmd):
         proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
     stdout, stderr = proc.communicate()
     return (stdout, stderr, proc.returncode)
-
-def timezone():
-    return time.strftime("%Z", time.gmtime())

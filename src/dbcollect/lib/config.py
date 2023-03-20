@@ -6,77 +6,83 @@ versioninfo = {
     'version': "1.11.1"
 }
 
-linux_cmds = [
-    'lscpu',
-    'lsscsi',
-    'lsmod',
-    'dmesg',
-    'ps -ef',
-    'ps faux',
-    'df -PT',
-    'ip -o link show',
-    'ip -o addr show',
-    'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
-    'sysctl -a',
-    'numactl --hardware',
-    'numactl --show',
-    'lspci',
-    'lsblk -bp',
-    ]
+settings = {
+    'logpath': "/tmp/dbcollect.log"
+}
 
-linux_files = [
-    '/proc/cmdline',
-    '/proc/cpuinfo',
-    '/proc/meminfo',
-    '/proc/filesystems',
-    '/proc/partitions',
-    '/proc/devices',
-    '/proc/mounts',
-    '/proc/mdstat',
-    '/proc/modules',
-    '/proc/misc',
-    '/proc/uptime',
-    '/etc/os-release',
-    '/etc/system-release',
-    '/etc/issue',
-    '/etc/motd',
-    '/etc/multipath.conf',
-    '/etc/oratab',
-    ]
+linux_config = {
+    'commands': {
+        'lscpu': 'lscpu',
+        'lsscsi': 'lsscsi',
+        'lsmod': 'lsmod',
+        'dmesg': 'dmesg',
+        'ps_ef': 'ps -ef',
+        'ps_faux': 'ps faux',
+        'df_PT': 'df -PT',
+        'ip_links': 'ip -o link show',
+        'ip_addrs': 'ip -o addr show',
+        'sysctl': 'sysctl -a',
+        'numactl_hw': 'numactl --hardware',
+        'numactl_show': 'numactl --show',
+        'lspci': 'lspci',
+        'lsblk_bp': 'lsblk -bp',
+        'lsblk_long': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname',
+        'rpm_packages': 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
+    },
+    'files': [
+        '/proc/cmdline',
+        '/proc/cpuinfo',
+        '/proc/meminfo',
+        '/proc/filesystems',
+        '/proc/partitions',
+        '/proc/devices',
+        '/proc/mounts',
+        '/proc/mdstat',
+        '/proc/modules',
+        '/proc/misc',
+        '/proc/uptime',
+        '/etc/os-release',
+        '/etc/system-release',
+        '/etc/issue',
+        '/etc/motd',
+        '/etc/multipath.conf',
+        '/etc/oratab',
+    ],
+}
 
-aix_cmds = [
-    'prtconf',
-    'ps -ef',
-    'lparstat -i',
-    'svmon -G -O summary=basic,unit=KB',
-    'df -Pk',
-    'lsfs -c',
-    'lsdev -c adapter -F name,status,description'
-    ]
+aix_config = {
+    'commands': {
+        'prtconf': 'prtconf',
+        'ps_ef': 'ps -ef',
+        'lparstat': 'lparstat -i',
+        'svmon': 'svmon -G -O summary=basic,unit=KB',
+        'df_pk': 'df -Pk',
+        'lsfs': 'lsfs -c',
+        'lsdev_adapters': 'lsdev -c adapter -F name,status,description'
+    },
+}
 
-sun_cmds = [
-    'prtconf',
-    'prtdiag',
-    'psrinfo',
-    'psrinfo -t',
-    'psrinfo -v 0',
-    'psrinfo -pv 0',
-    'iostat -Enr',
-    'ps -ef',
-    'df -k',
-    'df -n',
-    'zpool list -o name,size,free,allocated -H',
-    'zpool status',
-    'zfs list',
-    'ifconfig -a',
-    'dladm show-phys',
-    'dladm show-link',
-    'dladm show-part',
-    'dladm show-vlan',
-    'dladm show-vnic',
-    'zoneadm list -vc'
-    ]
-
-if __name__ == '__main__':
-    # print version if called directly - for building releases
-    print(versioninfo['version'])
+sunos_config = {
+    'commands': {
+        'prtconf': 'prtconf',
+        'prtdiag': 'prtdiag',
+        'psrinfo': 'psrinfo',
+        'psrinfo_t': 'psrinfo -t',
+        'psrinfo_v0': 'psrinfo -v 0',
+        'psrinfo_pv0': 'psrinfo -pv 0',
+        'iostat': 'iostat -Enr',
+        'ps_ef': 'ps -ef',
+        'df_k': 'df -k',
+        'df_n': 'df -n',
+        'zpool_list': 'zpool list -o name,size,free,allocated -H',
+        'zpool_status': 'zpool status',
+        'zfs_list': 'zfs list',
+        'ifconfig': 'ifconfig -a',
+        'dladm_phys': 'dladm show-phys',
+        'dladm_link': 'dladm show-link',
+        'dladm_part': 'dladm show-part',
+        'dladm_vlan': 'dladm show-vlan',
+        'dladm_vnic': 'dladm show-vnic',
+        'zoneadm_list': 'zoneadm list -vc'
+    },
+}

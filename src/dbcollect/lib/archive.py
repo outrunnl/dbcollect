@@ -6,41 +6,31 @@ License: GPLv3+
 
 import os, logging, errno
 from zipfile import ZipFile, ZIP_DEFLATED
-from lib.functions import saferemove
+
+from lib.config import versioninfo
 from lib.errors import ZipCreateError
 
 class Archive():
-    """A wrapper around zipfile
+    """
+    A wrapper around zipfile
     Makes sure it always contains the comment which shows the magic string for dbcollect
-    On close it picks up the syscollect logfile
     Files and strings are prefixed with the hostname to avoid making a mess un unzip
     """
     zip = None
-    def __init__(self, path, logpath, version, overwrite=False):
+    def __init__(self, path, overwrite=False):
         self.prefix  = os.uname()[1]
         self.path    = path
-        self.logpath = logpath
         if os.path.exists(self.path) and not overwrite:
             raise ZipCreateError("ZIP file already exists")
         try:
             self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
         except OSError as e:
             raise ZipCreateError("Cannot create zipfile")
-        comment = 'dbcollect version={0} hostname={1}'.format(version, self.prefix)
+        comment = 'dbcollect version={0} hostname={1}'.format(versioninfo['version'], self.prefix)
         self.zip.comment = comment.encode('utf-8')
     def __del__(self):
-        if not self.zip:
-            return
-        try:
-            if os.path.isfile(self.logpath):
-                self.zip.write(self.logpath,os.path.join(self.prefix, 'dbcollect.log'))
-        except OSError as e:
-            logging.error("Storing logfile failed: %s", e)
-        try:
-            saferemove(self.logpath)
-        except Exception as e:
-            logging.warning("Removing logfile failed: %s", e)
-        self.zip.close()
+        if self.zip:
+            self.zip.close()
     def store(self, path, tag=None, ignore=False):
         if tag:
             fulltag = os.path.join(self.prefix, tag)
@@ -57,9 +47,6 @@ class Archive():
         except IOError as e:
             if not ignore:
                 logging.error("IO Error retrieving %s: %s", e.filename, os.strerror(e.errno))
-    def move(self, path, tag=None):
-        self.store(path, tag)
-        saferemove(path)
     def writestr(self, tag, data):
         try:
             self.zip.writestr(os.path.join(self.prefix, tag.lstrip('/')), data)

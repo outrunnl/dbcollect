@@ -5,8 +5,8 @@ License: GPLv3+
 """
 
 import os, sys, json, re, platform, logging
-from lib.config import linux_cmds, linux_files, aix_cmds, sun_cmds
-from lib.fileformat import Datafile, JSONFile
+from lib.config import linux_config, aix_config, sunos_config
+from lib.fileformat import JSONFile
 from lib.functions import execute, listdir
 
 # Check to continue even if platform is unknown?
@@ -14,46 +14,34 @@ def host_info(archive, args):
     """Get OS and run the corresponding OS/SAR module"""
     system = platform.system()
     logging.info('Collecting OS info ({0})'.format(system))
-    if system == 'Linux':   linux_info(archive, args)
-    elif system == 'AIX':   aix_info(archive, args)
-    elif system == 'SunOS': sun_info(archive, args)
+    if system == 'Linux':
+        linux_info(archive, args)
+    elif system == 'AIX':
+        aix_info(archive, args)
+    elif system == 'SunOS':
+        sun_info(archive, args)
     else:
         logging.error("Unknown platform - {0}".format(system))
 
-
-def zipexec(archive, cmd, prefix=None, tag=None):
-    """Execute cmd and store output in archive using tag and header
-    Store empty file if execute failed
-    """
-    df = Datafile()
-    data = df.execute(cmd)
-    if not tag:
-        if cmd.startswith('lsblk -bp'):   tag = 'lsblk_bp'
-        elif cmd.startswith('lsblk -P'):  tag = 'lsblk'
-        elif cmd.startswith('rpm -qa'):   tag = 'rpm_qa_queryformat'
-        elif cmd.startswith('svmon'):     tag = 'svmon_g_o'
-        elif cmd.startswith('lsdev -c'):  tag = 'lsdev_c_adapter'
-        elif cmd.startswith('zpool'):     tag = '_'.join(cmd.split()[:2])
-        else:
-            tag = re.sub(r'[^0-9a-zA-Z_ ]', '', '_'.join(cmd.split()))
-    if not prefix:
-        prefix = 'cmd'
-    archive.writestr(prefix + '/' + tag, data)
-
-def zipfile(archive, path):
-    df = Datafile()
-    data = df.file(path)
-    if data:
-        archive.writestr(path, data)
-
-def linux_lsblk(archive):
-    out, err, rc = execute('lsblk -V')
-    version = out.split()[-1]
-    if version.startswith('2.1'):
-        cmd = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched'
-    else:
-        cmd = 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname'
-    zipexec(archive, cmd)
+def sar_info(archive, args):
+    """Get UNIX SAR reports"""
+    if args.no_sar:
+        return
+    logging.info('Collecting UNIX SAR reports')
+    sarpath = '/var/adm/sa'
+    for sarfile in listdir(sarpath):
+        path = os.path.join(sarpath, sarfile)
+        if sarfile.startswith('sar'):
+            continue
+        elif sarfile.startswith('sa'):
+            df_cpu   = JSONFile(cmd='sar -uf {0}'.format(path))
+            df_block = JSONFile(cmd='sar -bf {0}'.format(path))
+            df_disk  = JSONFile(cmd='sar -df {0}'.format(path))
+            df_swap  = JSONFile(cmd='sar -rf {0}'.format(path))
+            archive.writestr('sar/{0}_{1}'.format(sarfile, 'cpu'), df_cpu.richtext())
+            archive.writestr('sar/{0}_{1}'.format(sarfile, 'block'), df_block.richtext())
+            archive.writestr('sar/{0}_{1}'.format(sarfile, 'disk'), df_disk.richtext())
+            archive.writestr('sar/{0}_{1}'.format(sarfile, 'swap'), df_swap.richtext())
 
 def linux_info(archive, args):
     """System/SAR info for Linux"""
@@ -131,15 +119,24 @@ def linux_info(archive, args):
     nicinfo.set('interfaces', niclist)
     archive.writestr('nicinfo.json', nicinfo.dump())
 
-    for cmd in linux_cmds:
-        zipexec(archive, cmd)
-    linux_lsblk(archive)
-    for file in linux_files:
-        zipfile(archive, file)
-    for f in listdir('/etc/udev/rules.d/'):
-        path = os.path.join('/etc/udev/rules.d/', f)
-        if os.path.isfile(path) and f.endswith('.rules'):
-            zipfile(archive, path)
+    for tag, cmd in linux_config['commands'].items():
+        if tag == 'lsblk_long':
+            out, err, rc = execute('lsblk -V')
+            version = out.split()[-1]
+            if version.startswith('2.1'):
+                cmd = cmd.replace(',wwn,hctl,pkname','')
+        df = JSONFile(cmd=cmd)
+        archive.writestr('cmd/{0}'.format(tag), df.richtext())
+
+    for file in linux_config['files']:
+        df = JSONFile(path=file)
+        archive.writestr(file, df.richtext())
+
+    for file in listdir('/etc/udev/rules.d/'):
+        path = os.path.join('/etc/udev/rules.d/', file)
+        if os.path.isfile(path) and file.endswith('.rules'):
+            df = JSONFile(path=path)
+            archive.writestr(path, df.richtext())
 
     if not args.no_sar:
         logging.info('Collecting Linux SAR files')
@@ -152,59 +149,52 @@ def linux_info(archive, args):
                     continue
                 archive.store(path)
 
+
 def aix_info(archive, args):
     """System/SAR info for AIX (pSeries)"""
     logging.info('Collecting AIX System info')
-    for cmd in aix_cmds:
-        zipexec(archive, cmd)
+    for tag, cmd in aix_config['commands'].items():
+        df = JSONFile(cmd=cmd)
+        archive.writestr('cmd/{0}'.format(tag), df.richtext())
+
     disks, err, rc = execute('lsdev -Cc disk -Fname')
     nics, err, rc = execute('ifconfig -l')
     vgs, err, rc =  execute('lsvg')
+
     logging.info('Collecting AIX Disk info')
     for disk in disks.splitlines():
-        prefix = 'disk/{0}'.format(disk)
-        zipexec(archive, 'getconf DISK_SIZE /dev/{0}'.format(disk), prefix=prefix, tag='disksize')
-        zipexec(archive, 'lscfg -vpl %s' % disk, prefix=prefix, tag='lscfg')
-        zipexec(archive, 'lspath -l %s -F parent,status' % disk, prefix=prefix, tag='lspath')
-        zipexec(archive, 'lsattr -El %s' % disk, prefix=prefix, tag='lsattr')
+        df_size = JSONFile(cmd='getconf DISK_SIZE /dev/{0}'.format(disk))
+        df_cfg  = JSONFile(cmd='lscfg -vpl {0}'.format(disk))
+        df_path = JSONFile(cmd='lspath -l {0} -F parent,status'.format(disk))
+        df_attr = JSONFile(cmd='lsattr -El {0}'.format(disk))
+        archive.writestr('disk/{0}_disksize', df_size.richtext())
+        archive.writestr('disk/{0}_lscfg', df_cfg.richtext())
+        archive.writestr('disk/{0}_lspath', df_path.richtext())
+        archive.writestr('disk/{0}_lsattr', df_attr.richtext())
+
     logging.info('Collecting AIX Network info')
     for nic in nics.split():
-        if nic.startswith('lo'): continue
-        prefix = 'nic/{0}'.format(nic)
-        zipexec(archive, 'lsattr -E -l %s -F description,value' % nic, prefix=prefix, tag='lsattr')
-        zipexec(archive, 'entstat -d %s' % nic, prefix=prefix, tag='entstat')
+        if nic.startswith('lo'):
+            continue
+        df_attr = JSONFile(cmd='lsattr -E -l {0} -F description,value'.format(nic))
+        df_stat = JSONFile(cmd='entstat -d {0}'.format(nic))
+        archive.writestr('nic/{0}_lsattr', df_attr.richtext())
+        archive.writestr('nic/{0}_entstat', df_stat.richtext())
+
     logging.info('Collecting AIX LVM info')
     for vg in vgs.splitlines():
-        prefix = 'lvm/{0}'.format(vg)
-        zipexec(archive, 'lsvg -l %s' % vg, prefix=prefix, tag='lvs')
-        zipexec(archive, 'lsvg -p %s' % vg, prefix=prefix, tag='pvs')
-    if not args.no_sar:
-        logging.info('Collecting UNIX SAR reports')
-        for sarfile in listdir('/var/adm/sa'):
-            path = os.path.join('/var/adm/sa', sarfile)
-            if sarfile.startswith('sa'):
-                if sarfile.startswith('sar'):
-                    continue
-                prefix = 'sar/{0}'.format(sarfile)
-                zipexec(archive, 'sar -uf %s' % path, prefix=prefix, tag='cpu')
-                zipexec(archive, 'sar -bf %s' % path, prefix=prefix, tag='block')
-                zipexec(archive, 'sar -df %s' % path, prefix=prefix, tag='disk')
-                zipexec(archive, 'sar -rf %s' % path, prefix=prefix, tag='swap')
+        df_lvs =  JSONFile(cmd='lsvg -l {0}'.format(vg))
+        df_pvs =  JSONFile(cmd='lsvg -p {0}'.format(vg))
+        archive.writestr('lvm/{0}_lvs', df_lvs.richtext())
+        archive.writestr('lvm/{0}_pvs', df_pvs.richtext())
+
+    sar_info(archive, args)
 
 def sun_info(archive, args):
     """System/SAR info for Sun Solaris (SPARC or Intel)"""
     logging.info('Collecting Solaris System info')
-    for cmd in sun_cmds:
-        zipexec(archive, cmd)
-    if not args.no_sar:
-        logging.info('Collecting UNIX SAR reports')
-        for sarfile in listdir('/var/adm/sa'):
-            path = os.path.join('/var/adm/sa', sarfile)
-            if sarfile.startswith('sa'):
-                if sarfile.startswith('sar'):
-                    continue
-                prefix = 'sar/{0}'.format(sarfile)
-                zipexec(archive, 'sar -uf %s' % path, prefix=prefix, tag='cpu')
-                zipexec(archive, 'sar -bf %s' % path, prefix=prefix, tag='buffer')
-                zipexec(archive, 'sar -df %s' % path, prefix=prefix, tag='disk')
-                zipexec(archive, 'sar -rf %s' % path, prefix=prefix, tag='swap')
+    for tag, cmd in sunos_config['commands'].items():
+        df = JSONFile(cmd=cmd)
+        archive.writestr('cmd/{0}'.format(tag), df.richtext())
+
+    sar_info(archive, args)

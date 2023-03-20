@@ -5,7 +5,7 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, logging, platform
+import os, sys, json, logging, platform, time
 from datetime import datetime
 
 sys.dont_write_bytecode = True
@@ -18,11 +18,10 @@ except:
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
-from lib.config import versioninfo
+from lib.config import versioninfo, settings
 from lib.buildinfo import buildinfo
 from lib.log import logsetup
 from lib.errors import DBCollectError, ZipCreateError
-from lib.functions import timezone
 from lib.archive import Archive
 from lib.user import switchuser, username, usergroup, usergroups, dbuser
 from modules.oracle import oracle_info
@@ -31,14 +30,11 @@ from modules.updater import update
 
 def selfinfo():
     info = dict()
-    try:
-        zipname = os.path.realpath(__loader__.archive)
-        if not os.access(zipname,os.R_OK):
-            raise DBCollectError('User {0} has no read access to {1}'.format(username(), zipname))
-        info['zipname']   = zipname
-        info.update(buildinfo)
-    except (NameError, AttributeError) as e:
-        raise DBCollectError('dbcollect must run from package, see https://github.com/outrunnl/dbcollect/releases/latest')
+    zipname = os.path.realpath(__loader__.archive)
+    if not os.access(zipname,os.R_OK):
+        raise DBCollectError('User {0} has no read access to {1}'.format(username(), zipname))
+    info['zipname']   = zipname
+    info.update(buildinfo)
     return info
 
 def printversion():
@@ -61,7 +57,7 @@ def meta():
     info['python']        = platform.python_version()
     info['timestamp']     = datetime.now().strftime("%Y-%m-%d %H:%M")    # Current time, local timezone
     info['timestamputc']  = datetime.utcnow().strftime("%Y-%m-%d %H:%M") # Current time, UTC
-    info['timezone']      = timezone()                # The system's configured timezone
+    info['timezone']      = time.strftime("%Z", time.gmtime())           # The system's configured timezone
     info['cmdline']       = ' '.join(sys.argv)        # Command by which we are called
     info['username']      = username()                # Username (after switching from root)
     info['usergroup']     = usergroup()               # Primary group
@@ -92,7 +88,7 @@ def main():
     parser.add_argument(      "--splunk",    action="store_true",        help="Generate Dell SPLUNK/LiveOptics reports")
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
-    parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 25%% of cpus, 0=max)")
+    parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
     args = parser.parse_args()
 
     if args.update:
@@ -121,14 +117,14 @@ def main():
         zippath = os.path.join('/tmp', args.filename)
     else:
         zippath = (os.path.join('/tmp', 'dbcollect-{0}.zip'.format(platform.uname()[1])))
-    logpath = '/tmp/dbcollect.log'
+    logpath = settings['logpath']
     try:
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
     except Exception as e:
         logging.fatal("Cannot create logfile: {0}".format(e))
         exit(15)
     try:
-        archive = Archive(zippath, logpath, versioninfo['version'], args.overwrite)
+        archive = Archive(zippath, args.overwrite)
         logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
         logging.info('Python version {0}'.format(platform.python_version()))
         logging.info('Current user is {0}'.format(username()))
@@ -164,6 +160,9 @@ def main():
             with open(logpath) as logfile:
                 print("\nLogfile {0}:".format(logpath))
                 print(logfile.read())
+        archive.store(logpath, 'dbcollect.log')
+        os.unlink(logpath)
 
 if __name__ == "__main__":
-    main()
+    print('dbcollect must run from a ZipApp package, use https://github.com/outrunnl/dbcollect/releases/latest')
+    sys.exit(10)

@@ -33,7 +33,7 @@ class Shared():
             tasks = max(tasks, cpu_count())
             return tasks
         else:
-            return cpu_count()//2
+            return max(1, cpu_count()//2)
 
 class Tempdir():
     """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
