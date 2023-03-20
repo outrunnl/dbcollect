@@ -60,6 +60,9 @@ aix_config = {
         'lsfs': 'lsfs -c',
         'lsdev_adapters': 'lsdev -c adapter -F name,status,description'
     },
+    'files': [
+        '/var/opt/oracle/oratab',
+    ],
 }
 
 sunos_config = {
@@ -85,4 +88,8 @@ sunos_config = {
         'dladm_vnic': 'dladm show-vnic',
         'zoneadm_list': 'zoneadm list -vc'
     },
+    'files': [
+        '/etc/release',
+        '/var/opt/oracle/oratab',
+    ],
 }

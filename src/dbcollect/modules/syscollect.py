@@ -153,9 +153,14 @@ def linux_info(archive, args):
 def aix_info(archive, args):
     """System/SAR info for AIX (pSeries)"""
     logging.info('Collecting AIX System info')
+
     for tag, cmd in aix_config['commands'].items():
         df = JSONFile(cmd=cmd)
         archive.writestr('cmd/{0}'.format(tag), df.richtext())
+
+    for file in aix_config['files']:
+        df = JSONFile(path=file)
+        archive.writestr(file, df.richtext())
 
     disks, err, rc = execute('lsdev -Cc disk -Fname')
     nics, err, rc = execute('ifconfig -l')
@@ -196,5 +201,9 @@ def sun_info(archive, args):
     for tag, cmd in sunos_config['commands'].items():
         df = JSONFile(cmd=cmd)
         archive.writestr('cmd/{0}'.format(tag), df.richtext())
+
+    for file in sunos_config['files']:
+        df = JSONFile(path=file)
+        archive.writestr(file, df.richtext())
 
     sar_info(archive, args)
