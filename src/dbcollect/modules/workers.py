@@ -24,7 +24,7 @@ class Shared():
 
     @property
     def tasks(self):
-        if self.args.tasks:
+        if self.args.tasks is not None:
             # Default use maximum of 50% of available cpus
             tasks = self.args.tasks
             if tasks == 0:
