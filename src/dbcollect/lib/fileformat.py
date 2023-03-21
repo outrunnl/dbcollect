@@ -14,6 +14,7 @@ from lib.user import getuser, getgroup
 class JSONFile():
     """Container for a JSON file"""
     def __init__(self, cmd=None, path=None, **kwargs):
+        self.buf = io.BytesIO()
         self.info = OrderedDict()
         self.info['application']  = 'dbcollect'
         self.info['version']      = versioninfo['version']
@@ -34,6 +35,12 @@ class JSONFile():
 
     def set(self, name, val):
         self.info[name] = val
+
+    def write(self, s):
+        if sys.version_info[0] == 2:
+            self.buf.write(s)
+        else:
+            self.buf.write(s.encode())
 
     def execute(self, cmd):
         """
@@ -89,14 +96,14 @@ class JSONFile():
 
     def richtext(self):
         """Return the data as dbcollect RICH text"""
-        buf = io.BytesIO()
-        buf.write('# ---\n')
+
+        self.write('# ---\n')
         for k, v in self.info.items():
-            buf.write('# {0}: {1}\n'.format(k, v))
+            self.write('# {0}: {1}\n'.format(k, v))
         if self.errors:
-            buf.write('# error: {0}'.join(self.errors.splitlines()))
-        buf.write('# ---\n')
+            self.write('# error: {0}'.join(self.errors.splitlines()))
+        self.write('# ---\n')
         if self.data:
-            buf.write(self.data)
-        buf.seek(0)
-        return buf.read()
+            self.write(self.data)
+        self.buf.seek(0)
+        return self.buf.read()
