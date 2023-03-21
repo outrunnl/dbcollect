@@ -11,15 +11,19 @@ from datetime import datetime
 sys.dont_write_bytecode = True
 try:
     import argparse
-except:
+except ModuleNotFoundError:
     print("ERROR: Cannot import module 'argparse'. Please install python-argparse first:\nyum install python-argparse")
-    exit(10)
+    sys.exit(10)
+
+try:
+    from lib.buildinfo import buildinfo
+except ModuleNotFoundError:
+    pass
 
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
 from lib.config import versioninfo, settings
-from lib.buildinfo import buildinfo
 from lib.log import logsetup
 from lib.errors import DBCollectError, ZipCreateError
 from lib.archive import Archive
