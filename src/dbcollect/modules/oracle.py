@@ -87,8 +87,8 @@ def oracle_info(archive, args):
         sys.stdout.flush()
 
         if generator.exitcode:
-            raise CustomException('Job generator failed, rc={0}'.format(proc_p.exitcode))
+            raise CustomException('Job generator failed, rc={0}'.format(generator.exitcode))
         if processor.exitcode:
-            raise CustomException('Job processor failed, rc={0}'.format(proc_w.exitcode))
+            raise CustomException('Job processor failed, rc={0}'.format(processor.exitcode))
 
     logging.info(msg)

@@ -79,7 +79,7 @@ def job_generator(shared):
         sid    = shared.instance.sid
         shared.instance.info(args)
         for job in shared.instance.jobs:
-            shared.jobs.put(job, timeout=60)
+            shared.jobs.put(job, timeout=300)
         logging.debug('Generator done')
     except Full:
         logging.error('Generator timeout (queue full)')
