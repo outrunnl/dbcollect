@@ -164,8 +164,11 @@ def main():
             with open(logpath) as logfile:
                 print("\nLogfile {0}:".format(logpath))
                 print(logfile.read())
-        archive.store(logpath, 'dbcollect.log')
-        os.unlink(logpath)
+        try:
+            archive.store(logpath, 'dbcollect.log')
+            os.unlink(logpath)
+        except UnboundLocalError:
+            pass
 
 if __name__ == "__main__":
     print('dbcollect must run from a ZipApp package, use https://github.com/outrunnl/dbcollect/releases/latest')
