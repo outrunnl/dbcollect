@@ -19,7 +19,7 @@ database instance, and other database information.
 The results are collected in a ZIP file named (default):
 `/tmp/dbcollect-<hostname>.zip`
 
-For LiveOptics and Dell's Workload Analyzer, the per-database directories in the ZIP file contain all files you need to upload to the reporting tools (but use the `--splunk` option to generate the additional capacity reports).
+For LiveOptics and Dell's Workload Analyzer, the per-database directories in the ZIP file contain all files you need to upload to the reporting tools.
 
 For the advanced analyzer, send the entire ZIP file (via secure FTP or other means).
 
@@ -64,8 +64,7 @@ has been specified. The decision flow is as follows:
 So if you ARE licensed for Diagnostics Pack but _dbcollect_ complains, you can run dbcollect with the --force-awr option.
 DBcollect will only warn about the AWR detection and just generate the reports anyway.
 
-**Use the `--force-awr` flag ONLY if you are sure you are correctly licensed!
-**
+** Use the `--force-awr` flag ONLY if you are sure you are correctly licensed! **
 
 If you are NOT licensed for diagnostics pack then you can use Statspack instead (see section below)
 
@@ -73,19 +72,18 @@ More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.co
 
 ### Oracle running as other user than 'oracle'
 
-DBCollect by default switches to user 'oracle' if you run it as root. If you do NOT run as root, run it as the user that Oracle database runs as.
-If you run as root and the database user is NOT 'oracle', use the -u/--user option:
+DBCollect by default switches to the first user it detects that runs a regular database instance, like `ora_pmon_<sid>`. Usually this is the 'oracle' user. If you do NOT run as root, run it as the user that Oracle database runs as, or a user with `dba` privileges (connect as sysdba).
+
+If you run as root and want to specify a particular user, use the -u/--user option:
 
 `dbcollect --user dbuser`
 
 Many systems have a split user configuration for Oracle clusterware (i.e. a `grid` user). This is fine as _dbcollect_ only needs the database user credentials.
 
-Having more than one `oracle` user for running databases is currently not supported. Let me know if you need this.
-A workaround for systems with multiple Oracle users:
+Having more than one `oracle` user for running databases should work as long as they share the `dba` privileges (i.e., they can all connect to all instances as sysdba).
 
-```ps -eo user,args | awk '$2 ~ /ora_pmon_/ {print $1}' | xargs -I% dbcollect --user % --output /tmp/dbcollect-% <other options>```
+Running instances with different users not sharing dba privileges is not supported (contact me for a workaround).
 
-This will create multiple zip files (one for each active user).
 
 ### Statspack
 
@@ -124,7 +122,7 @@ See [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTION
 - Very long names for files, tablespaces, disk groups etc may be truncated/wrapped
 - Very large sized elements or very large amounts of objects may result in `####` notation and no longer be useful. Limits have been increased to insane values so this should not be a problem
 - Newer Oracle versions (20c and up) may cause unreliable numbers, not yet tested
-- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient. See [Troubleshooting](#Troubleshooting).
+- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient. See [Troubleshooting](#Troubleshooting). 
 
 ## Safety
 

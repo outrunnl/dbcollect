@@ -31,9 +31,8 @@ As dbcollect typically runs on production database systems, it has been designed
 * Some database audit events will be generated as _dbcollect_ makes SQL*Plus connections
 * OS level commands are limited to those that do not require 'root' access and cannot modify configurations, but only collect configuration parameters.
 * The _dbcollect_ Python code is frequently verified with 'pylint' to detect and remediate potential bugs and issues.
-* _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 25% of available CPUs unless changed with the --tasks parameter.
+* _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 50% of available CPUs unless changed with the --tasks parameter.
 * As '/tmp' on most Unix/Linux systems is a separate file system and the only place where files are written, the system cannot become unstable due to filling up other file systems to 100% capacity.
-* The file system of the path where the output ZIP file is located is monitored - so _dbcollect_ will abort with an error if file system free space falls below 100MiB.
 * The only function in the tool that accesses external (internet) sites is the ```--update``` function which is contained in one simple Python module (```updater.py```) and is only used for updating _dbcollect_ itself, and is restricted to hard-coded URLs on the dbcollect repository on ```github.com```.
 
 Notes:
@@ -50,7 +49,6 @@ Notes:
 * The output ZIP file is stored on the local system and not sent automatically to any external location. This needs to be done by the system administrator.
 * The ZIP file contains regular text, html and other open file formats (such as Linux SAR) which are completely transparent. Administrators can inspect the ZIP file to verify its contents before sending it
 * [Github releases](https://docs.github.com/en/github/administering-a-repository/about-releases) is the current mechanism to securely distribute the _dbcollect_ package. Git/github tools are available to users to verify all code change history. Nobody except the author has access to the repository for publishing code changes and new releases.
-* A GPG signed RPM package is also available upon request
 * The _dbcollect_ package is a [Python zipapp](https://docs.python.org/3/library/zipapp.html#the-python-zip-application-archive-format) package. This is not a binary format but just a ZIP file containing the Python (and other) files that can be executed directly. You can unzip the _dbcollect_ package using standard unzip: ```unzip dbcollect``` to inspect the Python code.
 * All SQL*Plus scripts are located in the package's ```sql``` directory for further inspection.
 
