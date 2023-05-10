@@ -18,9 +18,11 @@ cat << EOF > "$gitdir"/src/dbcollect/lib/buildinfo.py
 buildinfo = {
     'builddate': '$(date +"%Y-%m-%d %H:%M")',
     'branch': '$(git branch --show-current)',
+    'tag': '$(git describe --abbrev=0)',
     'describe': '$(git describe --dirty)',
     'packager': '$packager <$email>',
-    'buildhash': '$(git rev-parse --verify HEAD)'
+    'buildhash': '$(git rev-parse --verify HEAD)',
+    'shorthash': '$(git rev-parse --short HEAD)'
 }
 EOF
 
