@@ -15,11 +15,6 @@ except ModuleNotFoundError:
     print("ERROR: Cannot import module 'argparse'. Please install python-argparse first:\nyum install python-argparse")
     sys.exit(10)
 
-try:
-    from lib.buildinfo import buildinfo
-except ModuleNotFoundError:
-    pass
-
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     sys.exit("Requires Python 2 (2.6 or higher, EL6)")
 
@@ -28,46 +23,18 @@ from lib.log import logsetup
 from lib.errors import DBCollectError, ZipCreateError
 from lib.archive import Archive
 from lib.user import switchuser, username, usergroup, usergroups, dbuser
+from lib.jsonfile import JSONFile, buildinfo
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update
 
-def selfinfo():
-    info = dict()
-    zipname = os.path.realpath(__loader__.archive)
-    if not os.access(zipname,os.R_OK):
-        raise DBCollectError('User {0} has no read access to {1}'.format(username(), zipname))
-    info['zipname']   = zipname
-    info.update(buildinfo)
-    return info
-
 def printversion():
-    info = selfinfo()
     print ('Author:    {0}'.format(versioninfo['author']))
     print ('Copyright: {0}'.format(versioninfo['copyright']))
     print ('License:   {0}'.format(versioninfo['license']))
     print ('Version:   {0}'.format(versioninfo['version']))
-    print ('Builddate: {0}'.format(info['builddate']))
-    print ('Buildhash: {0}'.format(info['buildhash']))
-
-def meta():
-    info = dict()
-    info['application']   = 'dbcollect'
-    info['version']       = versioninfo['version']
-    info['machine']       = platform.machine()        # x86_64 | sun4v | 00F6035A4C00 (AIX) | AMD64 etc...
-    info['system']        = platform.system()         # Linux  | SunOS | SunOS | AIX | Windows
-    info['processor']     = platform.processor()      # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
-    info['hostname']      = platform.uname()[1]       # Hostname
-    info['python']        = platform.python_version()
-    info['timestamp']     = datetime.now().strftime("%Y-%m-%d %H:%M")    # Current time, local timezone
-    info['timestamputc']  = datetime.utcnow().strftime("%Y-%m-%d %H:%M") # Current time, UTC
-    info['timezone']      = time.strftime("%Z", time.gmtime())           # The system's configured timezone
-    info['cmdline']       = ' '.join(sys.argv)        # Command by which we are called
-    info['username']      = username()                # Username (after switching from root)
-    info['usergroup']     = usergroup()               # Primary group
-    info['usergroups']    = ','.join(usergroups())    # List of groups we are a member of
-    info.update(selfinfo())                           # Add author/version/copyright info
-    return json.dumps(info,indent=2, sort_keys=True)
+    print ('Builddate: {0}'.format(buildinfo['builddate']))
+    print ('Buildhash: {0}'.format(buildinfo['buildhash']))
 
 def main():
     parser = argparse.ArgumentParser(usage='dbcollect [options]')
@@ -89,7 +56,7 @@ def main():
     parser.add_argument(      "--no-sar",    action="store_true",        help="Skip SAR reports")
     parser.add_argument(      "--no-ora",    action="store_true",        help="Skip Oracle collection")
     parser.add_argument(      "--no-sys",    action="store_true",        help="Skip OS collection")
-    parser.add_argument(      "--splunk",    action="store_true",        help="Generate Dell SPLUNK/LiveOptics reports")
+    parser.add_argument(      "--no-splunk", action="store_true",        help="Skip the Dell SPLUNK/LiveOptics reports")
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
     parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
@@ -133,7 +100,9 @@ def main():
         logging.info('Python version {0}'.format(platform.python_version()))
         logging.info('Current user is {0}'.format(username()))
         logging.info('Zip file is {0}'.format(zippath))
-        archive.writestr('meta.json', meta())
+        metainfo = JSONFile()
+        metainfo.meta()
+        archive.writestr('meta.json', metainfo.dump())
         if not args.no_sys:
             host_info(archive, args)
         if not args.no_ora:
