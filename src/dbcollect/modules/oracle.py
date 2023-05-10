@@ -24,13 +24,17 @@ def oracle_info(archive, args):
 
     excluded = args.exclude.split(',') if args.exclude else []
     included = args.include.split(',') if args.include else []
-    for sid, orahome in get_instances():
+    inst_info = get_instances()
+
+    for sid in inst_info:
         if sid in excluded:
             logging.info('%s is excluded, skipping...', sid)
         elif included and not sid in included:
             logging.info('%s not included, skipping...', sid)
+        elif inst_info[sid]['running'] == False:
+            logging.debug('%s not running, skipping...', sid)
         else:
-            instance    = Instance(tempdir, sid, orahome)
+            instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])
             num_jobs    = instance.get_jobs(args)
             total_jobs += num_jobs
             logging.info('{0}: {1} reports'.format(sid, num_jobs))

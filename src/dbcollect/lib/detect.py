@@ -34,13 +34,14 @@ def orahomes():
     return [x for x in list(set(dirs)) if os.path.isdir(x)]
 
 def get_instances():
-    """Get all detected instances by searching ORACLE_HOME/dbs for files named hc_<sid>.dat
+    """
+    Get all detected instances by searching ORACLE_HOME/dbs for files named hc_<sid>.dat
     If more hc_*.dat files are detected, the one with the latest mtime will be used.
     Check if the instance is running by looking for ora_pmon_<sid> processes.
     """
+    instances = dict()
     runlist  = dict()
     downlist = dict()
-    info     = dict()
     detected = []
     logging.info('Detecting Oracle instances')
     # Build list of running instances
@@ -63,32 +64,41 @@ def get_instances():
                         continue
                     stat  = os.stat(os.path.join(dir, f))
                     owner = getuser(stat.st_uid)
-                    mtime = datetime(1970, 1, 1) + timedelta(seconds=int(stat.st_mtime))
+                    mtime = datetime.fromtimestamp(stat.st_mtime)
                     detected.append((mtime, sid, home, owner))
         except OSError as e:
             # Happens if for example we can't read the dbs dir. Just ignore.
             logging.debug('{0}: {1}'.format(dir, os.strerror(e.errno)))
+
     # Sort by date, most recent first
     detected.sort(key=lambda x: x[0],reverse=True)
+
     # build lists of running and stopped instances
     for mtime, sid, orahome, owner in detected:
         if sid[0] in ('+','-'):
             # Skip ASM and MGMT instances
             continue
+        instances[sid] = {}
         ts      = mtime.strftime("%Y-%m-%d %H:%M")
         if sid in runlist:
+            running = True
             status = 'UP'
             uid     = runlist[sid]['uid']
             user    = getuser(int(uid))
-            if sid not in info:
-                info[sid] = dict(orahome=orahome,uid=uid)
+            if sid not in instances:
+                instances[sid] = dict(orahome=orahome,uid=uid)
         else:
+            running       = False
             status        = 'DOWN'
             user          = owner
             downlist[sid] = None
+        instances[sid]['oracle_home'] = orahome
+        instances[sid]['running']     = running
+        instances[sid]['user']        = user
+        instances[sid]['mtime']       = ts
+
         logging.info('ORACLE_HOME: %s, owner: %s, timestamp: %s, Instance: %s  (%s)', orahome, user, ts, sid, status)
 
     logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
-    logging.info('Running instances: %s', ', '.join(info.keys()))
-    for sid, inst in info.items():
-        yield sid, inst['orahome']
+    logging.info('Running instances: %s', ', '.join(runlist.keys()))
+    return instances
