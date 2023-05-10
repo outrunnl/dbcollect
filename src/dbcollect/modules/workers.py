@@ -10,6 +10,7 @@ from multiprocessing import Process, Event, Queue, cpu_count
 from multiprocessing.queues import Empty, Full
 from shutil import rmtree
 
+from lib.config import settings
 from lib.log import exception_handler
 from lib.errors import *
 
@@ -79,7 +80,7 @@ def job_generator(shared):
         sid    = shared.instance.sid
         shared.instance.info(args)
         for job in shared.instance.jobs:
-            shared.jobs.put(job, timeout=300)
+            shared.jobs.put(job, timeout=settings['timeout'])
         logging.debug('Generator done')
     except Full:
         logging.error('Generator timeout (queue full)')
@@ -100,25 +101,27 @@ def job_processor(shared):
 
     instance = shared.instance
     sessions = [Session(shared.tempdir, instance) for x in range(shared.tasks)]
+    ping     = time.time()
 
     logging.info('Started {0} SQLPlus sessions for instance {1}'.format(len(sessions), instance.sid))
 
     while True:
         time.sleep(0.1)
+        if (time.time() - ping) > settings['timeout']:
+            raise TimeoutError('Job processor timeout')
         if shared.jobs.empty():
             # Break the loop if job producer is done AND queue is empty
-            # Otherwise, continue loop
             if shared.done.is_set():
                 break
             continue
+
         # Find an available session in which we can submit the job
-        for n in range(shared.tasks):
-            if not sessions[n].ready:
+        for session in sessions:
+            if not session.ready:
                 continue
-            try:
-                job = shared.jobs.get(timeout=60)
-                sessions[n].submit(job.query)
-            except Empty:
-                raise TimeoutError('Job processor timeout')
+            job = shared.jobs.get(timeout=60)
+            session.submit(job.query)
+            ping = time.time()
             break
+
     logging.debug('Job processor done')
