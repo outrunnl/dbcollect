@@ -263,6 +263,12 @@ yum install python-argparse
 
 On Enterprise Linux, python-argparse is not installed by default (but in most cases it is there as other packages require it). Install python-argparse (as root) and retry. If you cannot install argparse (maybe you have no root access), check out `dbcollect-wrapper` from the `scripts` directory.
 
+```ERROR    : Exception in job_processor: Job processor timeout```
+
+This happens when a query issued to SQL*Plus takes longer than the timeout period (default 10 minutes). It is usually a sign that the database workload is very high or maybe the instance is hanging (such as when the archive log destination is full).
+
+You can increase the timeout using ```--timeout <t>``` where t is timeout in minutes.
+
 ### Generating the AWR reports takes a very long time
 
 This is especially the case if you run _dbcollect_ on Oracle RAC. There are a number of known issues that cause it to be very slow. I have observed up to 20 seconds per AWR report (usually about 0.5 seconds) making _dbcollect_ run for over an hour or more for a typical 10-day, 1-hour interval, single database cluster.
