@@ -80,7 +80,7 @@ def job_generator(shared):
         sid    = shared.instance.sid
         shared.instance.info(args)
         for job in shared.instance.jobs:
-            shared.jobs.put(job, timeout=settings['timeout'])
+            shared.jobs.put(job, timeout=args.timeout*60)
         logging.debug('Generator done')
     except Full:
         logging.error('Generator timeout (queue full)')
@@ -107,7 +107,7 @@ def job_processor(shared):
 
     while True:
         time.sleep(0.1)
-        if (time.time() - ping) > settings['timeout']:
+        if (time.time() - ping) > shared.args.timeout*60:
             raise TimeoutError('Job processor timeout')
         if shared.jobs.empty():
             # Break the loop if job producer is done AND queue is empty

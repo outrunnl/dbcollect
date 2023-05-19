@@ -60,6 +60,7 @@ def main():
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
     parser.add_argument(      "--tasks",     type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
+    parser.add_argument(      "--timeout",   type=int, default=10,       help="Timeout (minutes) for SQL statements (default 10)")
     args = parser.parse_args()
 
     if args.update:
