@@ -9,6 +9,7 @@
 -- 1.3.2 - Moved sections from dbinfo.sql, added block change tracking
 -- 1.3.5 - Formatting
 
+SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
 
 PROMPT

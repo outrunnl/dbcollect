@@ -160,7 +160,7 @@ class Instance():
             self.savescript('dbinfo.txt', 'dbinfo','dbinfo_11')
         if self.version >= 12:
             self.savescript('pdbinfo.txt', 'pdbinfo')
-        if not args.no_splunk:
+        if args.splunk:
             header = "set colsep ' '\nset timing off\nalter session set nls_date_format='YYYY-MM-DD';\n"
             if self.version < 11:
                 ext = '10g'
