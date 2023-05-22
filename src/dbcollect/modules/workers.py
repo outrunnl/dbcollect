@@ -30,8 +30,8 @@ class Shared():
             tasks = self.args.tasks
             if tasks == 0:
                 return cpu_count()
-            tasks = min(1, tasks)
-            tasks = max(tasks, cpu_count())
+            tasks = max(1, self.args.tasks)
+            tasks = min(tasks, cpu_count())
             return tasks
         else:
             return max(1, cpu_count()//2)
@@ -59,8 +59,8 @@ class Session():
 
     def submit(self, c):
         # create a lockfile
-        with open(self.status, 'wb') as f:
-            pass
+        with open(self.status, 'w') as f:
+            f.write(c)
         # Send query to SQL*Plus
         self.proc.stdin.write(c)
         # Tell SQL*Plus to remove lockfile once task is done

@@ -8,7 +8,7 @@ import os, re, logging, errno
 from subprocess import Popen, PIPE
 from datetime import datetime, timedelta
 from lib.functions import getfile, execute
-from lib.user import getuser
+from lib.user import getuser, getgroup
 
 def orahomes():
     """Find all existing ORACLE_HOMEs via oratab and/or inventory"""
@@ -25,13 +25,55 @@ def orahomes():
                 logging.error('inventory.xml not found or readable')
             else:
                 for dir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
+                    logging.debug('ORACLE_HOME (inventory): %s', dir)
                     dirs.append(dir)
     if not oratab:
         logging.error('oratab not found or readable')
     else:
         for dir in re.findall(r'^\w+:(\S+):[y|Y|n|N]', oratab, re.M):
+            logging.debug('ORACLE_HOME (oratab): %s', dir)
             dirs.append(dir)
+    # return only unique dirs that exist
     return [x for x in list(set(dirs)) if os.path.isdir(x)]
+
+def running_instances():
+    # Build list of running instances
+    runlist = dict()
+    out, err, rc = execute('ps -eo uid,gid,args')
+    for uid, gid, cmd in re.findall(r'(\d+)\s+(\d+)\s+(.*)', out):
+        r = re.match(r'ora_pmon_(\w+)', cmd)
+        if r:
+            sid = r.group(1)
+            runlist[sid] = dict(uid=uid, gid=gid)
+            logging.debug('Running: {} ({}/{})'.format(sid, getuser(int(uid)), getgroup(int(gid))))
+    return runlist
+
+def hc_files():
+    # Build list of detected instances from hc_*.dat
+    hclist = []
+    for orahome in orahomes():
+        dbsdir = os.path.join(orahome, 'dbs')
+        if not os.path.isdir(dbsdir):
+            logging.debug('Skipping %s (no /dbs directory)', orahome)
+            continue
+        try:
+            for file in os.listdir(dbsdir):
+                path = os.path.join(dbsdir, file)
+                r = re.match('hc_(.*).dat', file)
+                if not r:
+                    continue
+                sid   = r.group(1)
+                stat  = os.stat(path)
+                owner = getuser(stat.st_uid)
+                mtime = datetime.fromtimestamp(stat.st_mtime)
+                hclist.append((mtime, sid, orahome, owner))
+                logging.debug('%s, %s, %s', path, mtime.strftime("%Y-%m-%d %H:%M"), owner)
+        except OSError as e:
+            # Happens if for example we can't read the dbs dir. Just ignore.
+            logging.debug('{0}: {1}'.format(dir, os.strerror(e.errno)))
+    # Sort by date, most recent first
+    hclist.sort(key=lambda x: x[0],reverse=True)
+    return hclist
 
 def get_instances():
     """
@@ -40,44 +82,17 @@ def get_instances():
     Check if the instance is running by looking for ora_pmon_<sid> processes.
     """
     instances = dict()
-    runlist   = dict()
     downlist  = dict()
-    detected  = []
+    runlist   = running_instances()
+    detected  = hc_files()
     logging.info('Detecting Oracle instances')
-    # Build list of running instances
-    out, err, rc = execute('ps -eo uid,gid,args')
-    for uid, gid, cmd in re.findall(r'(\d+)\s+(\d+)\s+(.*)', out):
-        r = re.match(r'ora_pmon_(\w+)', cmd)
-        if r:
-            sid = r.group(1)
-            runlist[sid] = dict(uid=uid, gid=gid)
-    # Build list of detected instances from hc_*.dat
-    for home in orahomes():
-        logging.debug('ORACLE_HOME detected: %s', home)
-        dir = os.path.join(home, 'dbs')
-        try:
-            for f in os.listdir(dir):
-                r = re.match('hc_(.*).dat', f)
-                if r:
-                    sid = r.group(1)
-                    if sid[0] in ('+','-'):
-                        continue
-                    stat  = os.stat(os.path.join(dir, f))
-                    owner = getuser(stat.st_uid)
-                    mtime = datetime.fromtimestamp(stat.st_mtime)
-                    detected.append((mtime, sid, home, owner))
-        except OSError as e:
-            # Happens if for example we can't read the dbs dir. Just ignore.
-            logging.debug('{0}: {1}'.format(dir, os.strerror(e.errno)))
-
-    # Sort by date, most recent first
-    detected.sort(key=lambda x: x[0],reverse=True)
 
     # build lists of running and stopped instances
     for mtime, sid, orahome, owner in detected:
         ts = mtime.strftime("%Y-%m-%d %H:%M")
         if sid[0] in ('+','-'):
             # Skip ASM and MGMT instances
+            logging.debug('Skipping instance: %s', sid)
             continue
         if not sid in instances:
             # First entry wins, most recent
@@ -92,8 +107,8 @@ def get_instances():
             downlist[sid] = None
         instances[sid]['running'] = running
 
-        logging.info('ORACLE_HOME: %s, owner: %s, timestamp: %s, Instance: %s  (%s)', orahome, owner, ts, sid, status)
-
     logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
     logging.info('Running instances: %s', ', '.join(runlist.keys()))
+    for sid in instances:
+        logging.debug('{0}: {1}'.format(sid, instances[sid]['oracle_home']))
     return instances
