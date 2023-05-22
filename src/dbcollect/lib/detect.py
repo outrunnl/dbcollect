@@ -40,9 +40,9 @@ def get_instances():
     Check if the instance is running by looking for ora_pmon_<sid> processes.
     """
     instances = dict()
-    runlist  = dict()
-    downlist = dict()
-    detected = []
+    runlist   = dict()
+    downlist  = dict()
+    detected  = []
     logging.info('Detecting Oracle instances')
     # Build list of running instances
     out, err, rc = execute('ps -eo uid,gid,args')
@@ -75,29 +75,24 @@ def get_instances():
 
     # build lists of running and stopped instances
     for mtime, sid, orahome, owner in detected:
+        ts = mtime.strftime("%Y-%m-%d %H:%M")
         if sid[0] in ('+','-'):
             # Skip ASM and MGMT instances
             continue
-        instances[sid] = {}
-        ts      = mtime.strftime("%Y-%m-%d %H:%M")
+        if not sid in instances:
+            # First entry wins, most recent
+            instances[sid] = {'oracle_home': orahome, 'mtime': ts}
+
         if sid in runlist:
             running = True
-            status = 'UP'
-            uid     = runlist[sid]['uid']
-            user    = getuser(int(uid))
-            if sid not in instances:
-                instances[sid] = dict(orahome=orahome,uid=uid)
+            status  = 'UP'
         else:
             running       = False
             status        = 'DOWN'
-            user          = owner
             downlist[sid] = None
-        instances[sid]['oracle_home'] = orahome
-        instances[sid]['running']     = running
-        instances[sid]['user']        = user
-        instances[sid]['mtime']       = ts
+        instances[sid]['running'] = running
 
-        logging.info('ORACLE_HOME: %s, owner: %s, timestamp: %s, Instance: %s  (%s)', orahome, user, ts, sid, status)
+        logging.info('ORACLE_HOME: %s, owner: %s, timestamp: %s, Instance: %s  (%s)', orahome, owner, ts, sid, status)
 
     logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
     logging.info('Running instances: %s', ', '.join(runlist.keys()))
