@@ -43,7 +43,7 @@ def logsetup(logpath, debug = False, quiet=False):
         consoleHandler.setLevel(logging.ERROR)
     else:
         consoleHandler.setLevel(logging.INFO)
-    consoleHandler.setFormatter(logging.Formatter('%(levelname)-8s : %(message)s', datefmt='%Y-%m-%d-%I:%M:%S'))
+    consoleHandler.setFormatter(logging.Formatter('%(levelname)-8s : %(message)s', datefmt='%Y-%m-%d-%H:%M:%S'))
     logging.getLogger().addHandler(consoleHandler)
 
 def exception_handler(func):

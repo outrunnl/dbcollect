@@ -257,7 +257,8 @@ You are attempting to run dbcollect on a legacy system with RHEL/OEL 5.x or anot
 
 You are probably running on Enterprise Linux 8 - which by default has python 3 installed, but 'python' is not set to run python3. Run ```alternatives --set python /usr/bin/python3``` so that 'python' starts python3. The same problem has been observed on Solaris/SPARC in some cases.
 
-```ERROR: Cannot import module 'argparse'. Please install python-argparse first:
+```
+ERROR: Cannot import module 'argparse'. Please install python-argparse first:
 yum install python-argparse
 ```
 
@@ -266,8 +267,15 @@ On Enterprise Linux, python-argparse is not installed by default (but in most ca
 ```ERROR    : Exception in job_processor: Job processor timeout```
 
 This happens when a query issued to SQL*Plus takes longer than the timeout period (default 10 minutes). It is usually a sign that the database workload is very high or maybe the instance is hanging (such as when the archive log destination is full).
-
 You can increase the timeout using ```--timeout <t>``` where t is timeout in minutes.
+
+Update: Sometimes a SELECT on DBA_FREE_SPACE or CDB_FREE_SPACE in Oracle is very slow, causing the dbinfo scripts to run very long which in turn causes the job processors to timeout. Possible fix:
+
+```
+SQL> purge dba_recyclebin;
+SQL> EXEC DBMS_STATS.GATHER_DICTIONARY_STATS;
+SQL> EXEC DBMS_STATS.GATHER_FIXED_OBJECTS_STATS;
+```
 
 ### Generating the AWR reports takes a very long time
 
