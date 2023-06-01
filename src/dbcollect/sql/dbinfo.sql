@@ -20,25 +20,7 @@
 -- production systems.
 --
 -- Revision history:
--- 1.0   - first version
--- 1.0.1 - Added TAB OFF to avoid messed up formatting (Bart Sjerps)
--- 1.1.1 - Increased column width/sizes b/c customers had huge databases
---         Max size of any MIB value now 99 petabyte. Should be enough.
---         Feature usage now shows 1 column per feature + inuse + version
--- 1.1.2 - Added platform from v$database
--- 1.2.0 - No longer breaks when MOUNTED/STARTED, split instance/database, fix
---         cpu count for RAC, removed spool parameters, break headings in
---         sections, added archivelogs, asmdisks, dnfs + awr sections,
---         many small fixes, wider page
--- 1.3.0 - Added ASM files summary section, fix backup file report
--- 1.3.1 - Added Compression summary
--- 1.3.2 - Clean up some formatting, moved 11g sections to new file
--- 1.3.3 - Added daily archivelog rate, changed some reports, separate flashback
---         log summary
--- 1.3.4 - Adjusted SIZE_MB for archivelog summary
--- 1.3.5 - Minor formatting changes
--- 1.3.6 - Add backup reports
--- 1.3.7 - fix temp tablespace reports
+-- See Git logs
 -- -----------------------------------------------------------------------------
 
 SET colsep '|'
@@ -50,7 +32,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.7
+PROMPT DBINFO version 1.3.8
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,6 +96,26 @@ UNION ALL SELECT 'arch_compress',    archivelog_compression       FROM v$databas
 /
 
 CLEAR COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT RAC INFO
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL instance_number FORMAT 99  HEAD 'Inst_number'
+COL instance_name   FORMAT A30 HEAD 'Instance'
+COL host_name       FORMAT A30 HEAD 'Hostname'
+COL startup_time               HEAD 'Startup'
+COL status          FORMAT A16 HEAD 'Status'
+
+SELECT instance_name
+, host_name
+, instance_number
+, startup_time
+, status
+FROM gv$instance
+ORDER BY instance_number
+/
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,7 +248,7 @@ COL SIZE_MB     FORMAT 99,999,999,990.99
 COL SESSION_KEY FORMAT 99999   HEAD 'Key'
 COL INPUT_TYPE  FORMAT A12     HEAD 'Type'
 COL DEVTYPE     FORMAT A10     HEAD 'Device'
-COL STATUS      FORMAT A10     HEAD 'Status'
+COL STATUS      FORMAT A25     HEAD 'Status'
 COL TS          FORMAT A19     HEAD 'Start'
 COL ELAPSED     FORMAT 99990   HEAD 'Elapsed'
 COL INPUT_MB    LIKE SIZE_MB   HEAD 'Read'
@@ -374,7 +376,7 @@ WITH DF AS (SELECT tablespace_name
   , ENCRYPTED
   FROM dba_tablespaces
 )
-SELECT DF.tablespace_name ts_name
+SELECT tablespace_name ts_name
 , files
 , ts_type
 , compr
@@ -384,10 +386,10 @@ SELECT DF.tablespace_name ts_name
 , free_mb
 , allocated
 , 100 * (allocated - free_mb) / NULLIF(allocated,0) PCT_USED
-FROM   DF, FS, TS
-WHERE  fs.tablespace_name = DF.tablespace_name
-AND    fs.tablespace_name = TS.tablespace_name
-GROUP BY DF.tablespace_name,ts_type,compr,encrypted,free_mb,allocated,files,objects
+FROM DF
+JOIN FS USING (tablespace_name)
+JOIN TS USING (tablespace_name)
+GROUP BY tablespace_name,ts_type,compr,encrypted,free_mb,allocated,files,objects
 UNION ALL
 SELECT tablespace_name
 , count(*)             files
@@ -471,22 +473,27 @@ COL USED_MB    FORMAT 99,999,999,990.99 HEAD 'Used'
 COL FREE_MB    LIKE USED_MB             HEAD 'Free'
 COL ALLOCATED  LIKE USED_MB             HEAD 'Allocated'
 COL PCT_USED   FORMAT 990.99            HEAD 'Used %'
+COL CREATED                             HEAD 'Created'
+COL MOUNTED                             HEAD 'Mounted'
 
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF USED_MB FREE_MB ALLOCATED ON REPORT
 
-SELECT  disk.name                  DISKNAME
+SELECT d.name                      DISKNAME
 , COALESCE(dg.name, header_status) DG_NAME
-, (disk.total_mb - disk.free_mb)   USED_MB
-, disk.free_mb                     FREE_MB
-, disk.os_mb                       ALLOCATED
-, 100*(disk.total_mb - disk.free_mb)/nullif(disk.total_mb,0) PCT_USED
--- , disk.state
+, (d.total_mb - d.free_mb)         USED_MB
+, d.free_mb                        FREE_MB
+, d.os_mb                          ALLOCATED
+, 100*(d.total_mb - d.free_mb) /
+    NULLIF(d.total_mb,0)           PCT_USED
+, create_date                      CREATED
+, mount_date                       MOUNTED
 , path
-FROM gv$asm_disk disk
-LEFT OUTER JOIN v$asm_diskgroup dg ON disk.group_number = dg.group_number AND dg.group_number <> 0
+FROM gv$asm_disk d
+LEFT OUTER JOIN v$asm_diskgroup dg USING (group_number)
 JOIN v$instance ON inst_id=instance_number
-ORDER BY disk.name,path
+WHERE group_number <> 0
+ORDER BY d.name, path
 /
 
 CLEAR COMPUTES COLUMNS
@@ -507,9 +514,9 @@ COL FILES     FORMAT 999990            HEAD 'Files'
 
 SELECT f.type filetype
 , name dg_name
-, sum(f.bytes)/1048576 SIZE_MB
-, sum(f.space)/1048576 SPACE_MB
-, count(*) files
+, SUM(f.bytes)/1048576 SIZE_MB
+, SUM(f.space)/1048576 SPACE_MB
+, COUNT(*) files
 FROM v$asm_file f
 JOIN v$asm_diskgroup d USING (group_number)
 GROUP BY f.type, name
@@ -527,14 +534,14 @@ COL METRIC  FORMAT A20    HEAD 'Metric'
 COL MINUTES FORMAT 999999 HEAD 'Minutes'
 
 SELECT 'Interval' Metric
-, extract(day from snap_interval)*24*60 +
-  extract(hour from snap_interval)*60 +
-  extract(minute from snap_interval) MINUTES
+, extract(day FROM snap_interval)*24*60 +
+  extract(hour FROM snap_interval)*60 +
+  extract(minute FROM snap_interval) MINUTES
 FROM dba_hist_wr_control UNION ALL
 SELECT 'Retention'
-, extract(day from retention)*24*60 +
-  extract(hour from retention)*60 +
-  extract(minute from retention) MINUTES
+, extract(day FROM retention)*24*60 +
+  extract(hour FROM retention)*60 +
+  extract(minute FROM retention) MINUTES
 FROM dba_hist_wr_control
 /
 

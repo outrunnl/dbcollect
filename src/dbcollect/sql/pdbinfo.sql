@@ -6,8 +6,6 @@
 -- Requires: Oracle database >= 12.1
 -- This script collects pluggable database and container DB info
 -- ----------------------------------------------------------------------------
--- Revision history:
--- 1.3.5 - Adding PDB segment sizes, compress summary, ts objects
 
 SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
@@ -15,13 +13,12 @@ ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT PDBINFO version 1.3.5
+PROMPT PDBINFO version 1.3.8
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT CONTAINER INFO
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 COL METRIC      FORMAT A20        HEAD 'Metric'
 COL VALUE       FORMAT A80        HEAD 'Value'
@@ -120,17 +117,17 @@ COL PCT_USED  FORMAT 990.99            HEAD 'Used %'
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF DBFILES ALLOCATED FREE_MB USED_MB ON REPORT
 
-SELECT TS.PDB_NAME
-, TS.TS_NAME
+SELECT PDB_NAME
+, TS_NAME
 , COUNT(*) DBFILES
 , TS_TYPE
 , COMPR
 , ENCR
-, (SELECT count(*) FROM cdb_segments WHERE cdb_segments.tablespace_name = ts.ts_name) objects
+, (SELECT COUNT(*) FROM cdb_segments WHERE cdb_segments.tablespace_name = ts_name) objects
 , ALLOCATED - FREE_MB USED_MB
 , FREE_MB
 , ALLOCATED
-, 100 * (ALLOCATED - FREE_MB) / nullif(ALLOCATED,0) PCT_USED
+, 100 * (ALLOCATED - FREE_MB) / NULLIF(ALLOCATED,0) PCT_USED
 FROM (
     SELECT P.name                 PDB_NAME
     , tablespace_name             TS_NAME
@@ -142,7 +139,8 @@ FROM (
     LEFT OUTER JOIN v$pdbs P USING(con_id)
     JOIN cdb_data_files DF USING(con_id, TABLESPACE_NAME)
     GROUP BY p.name, tablespace_name, COMPRESS_FOR, ENCRYPTED,contents, allocation_type, extent_management
-) TS,
+) TS
+JOIN
 (
     SELECT COALESCE(P.name,'ROOT') PDB_NAME
     , FS.tablespace_name           TS_NAME
@@ -150,10 +148,8 @@ FROM (
     FROM cdb_free_space FS
     LEFT OUTER JOIN v$pdbs P USING (con_id)
     GROUP BY p.name, fs.tablespace_name
-) FS
-WHERE TS.PDB_NAME = FS.PDB_NAME
-AND   TS.TS_NAME = FS.TS_NAME
-GROUP BY TS.PDB_NAME, TS.TS_NAME, TS_TYPE, COMPR, ENCR, FS.FREE_MB, ALLOCATED
+) FS USING (PDB_NAME, TS_NAME)
+GROUP BY PDB_NAME, TS_NAME, TS_TYPE, COMPR, ENCR, FS.FREE_MB, ALLOCATED
 ORDER BY PDB_NAME, TS_NAME, TS_TYPE
 /
 
@@ -201,7 +197,7 @@ BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
 
 SELECT name                               pdb_name
-, coalesce(t.compress_for,'NONE')         compression
+, COALESCE(t.compress_for,'NONE')         compression
 , SUM(tbl)                                tables
 , SUM(bytes)/1048576                      datasize
 , SUM(ct.block_size*blocks)/1048576       allocated
