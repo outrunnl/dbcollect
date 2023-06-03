@@ -3,7 +3,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.12.8"
+    'version': "1.12.9"
 }
 
 settings = {
@@ -90,6 +90,7 @@ sunos_config = {
     },
     'files': [
         '/etc/release',
+        '/etc/oratab',
         '/var/opt/oracle/oratab',
     ],
 }

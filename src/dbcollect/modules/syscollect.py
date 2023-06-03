@@ -184,10 +184,10 @@ def aix_info(archive, args):
         df_cfg  = JSONFile(cmd='lscfg -vpl {0}'.format(disk))
         df_path = JSONFile(cmd='lspath -l {0} -F parent,status'.format(disk))
         df_attr = JSONFile(cmd='lsattr -El {0}'.format(disk))
-        archive.writestr('disk/{0}_disksize.jsonp', df_size.jsonp())
-        archive.writestr('disk/{0}_lscfg.jsonp', df_cfg.jsonp())
-        archive.writestr('disk/{0}_lspath.jsonp', df_path.jsonp())
-        archive.writestr('disk/{0}_lsattr.jsonp', df_attr.jsonp())
+        archive.writestr('disk/{0}_disksize.jsonp'.format(disk), df_size.jsonp())
+        archive.writestr('disk/{0}_lscfg.jsonp'.format(disk), df_cfg.jsonp())
+        archive.writestr('disk/{0}_lspath.jsonp'.format(disk), df_path.jsonp())
+        archive.writestr('disk/{0}_lsattr.jsonp'.format(disk), df_attr.jsonp())
 
     logging.info('Collecting AIX Network info')
     for nic in nics.split():
@@ -195,15 +195,15 @@ def aix_info(archive, args):
             continue
         df_attr = JSONFile(cmd='lsattr -E -l {0} -F description,value'.format(nic))
         df_stat = JSONFile(cmd='entstat -d {0}'.format(nic))
-        archive.writestr('nic/{0}_lsattr.jsonp', df_attr.jsonp())
-        archive.writestr('nic/{0}_entstat.jsonp', df_stat.jsonp())
+        archive.writestr('nic/{0}_lsattr.jsonp'.format(nic), df_attr.jsonp())
+        archive.writestr('nic/{0}_entstat.jsonp'.format(nic), df_stat.jsonp())
 
     logging.info('Collecting AIX LVM info')
     for vg in vgs.splitlines():
         df_lvs =  JSONFile(cmd='lsvg -l {0}'.format(vg))
         df_pvs =  JSONFile(cmd='lsvg -p {0}'.format(vg))
-        archive.writestr('lvm/{0}_lvs.jsonp', df_lvs.jsonp())
-        archive.writestr('lvm/{0}_pvs.jsonp', df_pvs.jsonp())
+        archive.writestr('lvm/{0}_lvs.jsonp'.format(vg), df_lvs.jsonp())
+        archive.writestr('lvm/{0}_pvs.jsonp'.format(vg), df_pvs.jsonp())
 
     sar_info(archive, args)
 
