@@ -34,7 +34,7 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 COL MIB         FORMAT 999999990.99
 COL compression FORMAT A15        head 'Compression'
 COL tables      FORMAT 999990     head 'Tables'
-COL partitions  LIKE tables       head 'Part'
+COL partitions  LIKE tables       head 'Partitions'
 COL datasize    LIKE MIB          head 'Datasize'
 COL allocated   LIKE MIB          head 'Allocated'
 COL free        LIKE MIB          head 'Free'
@@ -45,6 +45,7 @@ COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
 
 SELECT COALESCE(t.compress_for,'NONE') compression
 , SUM(tbl)                             tables
+, SUM(part)                            partitions
 , SUM(bytes)/1048576                   datasize
 , SUM(block_size*blocks)/1048576       allocated
 , SUM(block_size*empty_blocks)/1048576 free

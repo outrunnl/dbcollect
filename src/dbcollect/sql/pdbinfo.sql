@@ -188,6 +188,7 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 COL PDB_NAME    FORMAT A20               HEAD 'PDB'
 COL COMPRESSION FORMAT A15               HEAD 'Compression'
 COL TABLES      FORMAT 999990            HEAD 'Tables'
+COL PARTITIONS  LIKE TABLES              HEAD 'Partitions'
 COL DATASIZE    FORMAT 99,999,999,990.99 HEAD 'Datasize'
 COL ALLOCATED   LIKE DATASIZE            HEAD 'Allocated'
 COL FREE        LIKE DATASIZE            HEAD 'Free'
@@ -199,6 +200,7 @@ COMPUTE SUM LABEL "Total" OF TABLES PARTITIONS DATASIZE ALLOCATED FREE ON REPORT
 SELECT name                               pdb_name
 , COALESCE(t.compress_for,'NONE')         compression
 , SUM(tbl)                                tables
+, SUM(part)                               partitions
 , SUM(bytes)/1048576                      datasize
 , SUM(ct.block_size*blocks)/1048576       allocated
 , SUM(ct.block_size*empty_blocks)/1048576 free
