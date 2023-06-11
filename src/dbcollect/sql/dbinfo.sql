@@ -32,7 +32,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.3.8
+PROMPT DBINFO version 1.4.0
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -427,6 +427,30 @@ SELECT segment_type  SEGTYPE
 FROM dba_segments
 GROUP BY segment_type
 ORDER BY size_mb
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT RECYCLEBIN
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL TS_NAME    FORMAT A25               HEAD 'Tablespace'
+COL OBJ_TYPE   FORMAT A20               HEAD 'Type'
+COL OBJECTS    FORMAT 999,990           HEAD 'Objects'
+COL SIZE_MB    FORMAT 99,999,999,990.99 HEAD 'Size'
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF SIZE_MB OBJECTS ON REPORT
+
+SELECT TS_NAME
+, TYPE          OBJ_TYPE
+, COUNT(*)      OBJECTS
+, SUM(space*block_size)/1048576 SIZE_MB
+FROM dba_recyclebin
+JOIN dba_tablespaces ON ts_name = tablespace_name
+GROUP BY ts_name, type
 /
 
 CLEAR COMPUTES COLUMNS

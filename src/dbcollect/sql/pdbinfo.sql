@@ -13,7 +13,7 @@ ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT PDBINFO version 1.3.8
+PROMPT PDBINFO version 1.4.0
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -182,7 +182,35 @@ CLEAR COMPUTES COLUMNS
 
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT TABLE COMPRESSION SUMMARY
+PROMPT PDB RECYCLEBIN
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+COL PDB_NAME   FORMAT A20               HEAD 'PDB'
+COL TS_NAME    FORMAT A25               HEAD 'Tablespace'
+COL OBJ_TYPE   FORMAT A20               HEAD 'Type'
+COL OBJECTS    FORMAT 999,990           HEAD 'Objects'
+COL SIZE_MB    FORMAT 99,999,999,990.99 HEAD 'Size'
+
+BREAK ON REPORT
+COMPUTE SUM LABEL "Total" OF SIZE_MB OBJECTS ON REPORT
+
+SELECT name PDB_NAME
+, TS_NAME   TABLESPACE
+, TYPE      OBJ_TYPE
+, count(*)  OBJECTS
+, SUM(space*cts.block_size)/1048576 SIZE_MB
+FROM cdb_recyclebin
+JOIN cdb_tablespaces cts USING (con_id) 
+LEFT OUTER JOIN v$pdbs USING (con_id)
+WHERE ts_name = tablespace_name 
+GROUP BY name, ts_name, type
+/
+
+CLEAR COMPUTES COLUMNS
+
+PROMPT
+PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PROMPT PDB TABLE COMPRESSION SUMMARY
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 COL PDB_NAME    FORMAT A20               HEAD 'PDB'
@@ -220,3 +248,5 @@ ORDER BY name, t.compress_for NULLS FIRST
 /
 
 CLEAR COMPUTES COLUMNS
+
+PROMPT

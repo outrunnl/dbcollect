@@ -6,8 +6,8 @@
 -- -----------------------------------------------------------------------------
 -- Runs sections that only work on 11g and higher. Not yet complete.
 -- Revision history:
--- 1.3.2 - Moved sections from dbinfo.sql, added block change tracking
--- 1.3.5 - Formatting
+-- See Git logs
+-- -----------------------------------------------------------------------------
 
 SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
