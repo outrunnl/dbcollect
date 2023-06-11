@@ -5,17 +5,10 @@ License: GPLv3+
 """
 
 import os, sys, logging
-from pkgutil import get_data
 from subprocess import Popen, PIPE
 
+from lib.functions import getscript
 from lib.errors import ReportingError, SQLPlusError
-
-def loadscript(name):
-    """Directly get an SQL script from the Python package"""
-    if sys.version_info[0] == 2:
-        return get_data('sql', name + '.sql')
-    else:
-        return get_data('sql', name + '.sql').decode()
 
 class Job():
     """AWR/Statspack job definition"""
@@ -36,8 +29,8 @@ class Job():
 
     @property
     def query(self):
-        query = loadscript('{0}_report'.format(self.reptype))
-        return query.format(filename=self.filename, dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
+        sql = getscript('{0}_report.sql'.format(self.reptype))
+        return sql.format(filename=self.filename, dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
 
 class Instance():
     """Oracle Instance with SQL*Plus, scripts and other methods"""
@@ -73,10 +66,11 @@ class Instance():
             raise SQLPlusError('Failed to run SQLPlus ({0}): {1}'.format(path, os.strerror(e.errno)))
         return proc
 
-    def query(self, sql, header=None):
+    def query(self, sql, header=None, onerror=True):
         """Run SQL*Plus query and return the output. Log errors if they appear"""
         proc = self.sqlplus()
-        proc.stdin.write("WHENEVER SQLERROR EXIT SQL.SQLCODE\n")
+        if onerror:
+            proc.stdin.write("WHENEVER SQLERROR EXIT SQL.SQLCODE\n")
         proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
         if header:
             proc.stdin.write(header)
@@ -86,18 +80,10 @@ class Instance():
             raise SQLPlusError('SQLPlus query exited with returncode {0}, see error log'.format(proc.returncode))
         return out.strip()
 
-    def script(self, name, header=None, **kwargs):
+    def script(self, name, **kwargs):
         """Load a script, run it and return the output"""
-        query = loadscript(name)
-        proc  = self.sqlplus()
-        proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
-        if header:
-            proc.stdin.write(header)
-        out, _ = proc.communicate(query)
-        if proc.returncode:
-            logging.debug('SQL*Plus output:\n{0}'.format(out))
-            raise SQLPlusError('SQLPlus query exited with returncode {0}, see error log'.format(proc.returncode))
-        return out
+        sql = getscript(name + '.sql')
+        return self.query(sql, **kwargs).strip()
 
     def get_jobs(self, args):
         """Get the AWR or Statspack parameters and create jobs, return number of jobs"""
@@ -137,39 +123,3 @@ class Instance():
             self.jobs.append(job)
         return len(self.jobs)
 
-    def savescript(self, filename, *args):
-        """Run script(s) and save it as 'filename' in the temp/reports dir"""
-        path = os.path.join(self.tempdir, 'reports', filename)
-        data = ''
-        for name in args:
-            data += self.script(name)
-        with open(path, 'w') as f:
-            f.write(data)
-
-    def info(self, args):
-        """Generate all dbinfo and other reports"""
-        if self.status == 'STARTED':
-            self.savescript('dbinfo.txt', 'instance')
-        elif self.status == 'MOUNTED':
-            self.savescript('dbinfo.txt', 'database')
-        if not self.status == 'OPEN':
-            return
-        if self.version < 11:
-            self.savescript('dbinfo.txt', 'dbinfo')
-        elif self.version >= 11:
-            self.savescript('dbinfo.txt', 'dbinfo','dbinfo_11')
-        if self.version >= 12:
-            self.savescript('pdbinfo.txt', 'pdbinfo')
-        if args.splunk:
-            header = "set colsep ' '\nset timing off\nalter session set nls_date_format='YYYY-MM-DD';\n"
-            if self.version < 11:
-                ext = '10g'
-            elif self.version == 11:
-                ext = '11g'
-            elif self.version > 11:
-                ext = '12c'
-            self.script('capacity_splunk_{0}'.format(ext), header=header)
-            self.script('capacity_{0}'.format(ext), header=header)
-            for f in os.listdir(self.tempdir):
-                if f.startswith('capacity_') or f.endswith('.dsk'):
-                    os.rename(os.path.join(self.tempdir, f), os.path.join(self.tempdir, 'reports', f))

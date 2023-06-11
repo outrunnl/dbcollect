@@ -6,12 +6,13 @@ License: GPLv3+
 
 import os, sys, re, tempfile, logging, time
 from datetime import timedelta
+from multiprocessing import Process
 
 from lib.errors import *
 from lib.detect import get_instances
 from .awrstrip import awrstrip
 from .instance import Instance
-from .workers import *
+from .workers import Shared, Tempdir, job_generator, job_processor, info_processor
 
 def oracle_info(archive, args):
     """Collect Oracle config and workload data"""
@@ -43,23 +44,21 @@ def oracle_info(archive, args):
     msg = 'No reports'
     starttime = time.time()
     for instance in instances:
-        shared = Shared(args, instance, tempdir)
-        repdir = os.path.join(tempdir, 'reports')
-        awrdir = os.path.join(tempdir, 'awr')
+        shared    = Shared(args, instance, tempdir)
+        dbidir    = os.path.join(tempdir, 'dbinfo')
+        awrdir    = os.path.join(tempdir, 'awr')
+        splunkdir = os.path.join(tempdir, 'splunk')
+        infoproc  = Process(target=info_processor, name='DBInfo', args=(shared,))
         generator = Process(target=job_generator, name='Generator', args=(shared,))
         processor = Process(target=job_processor, name='Processor', args=(shared,))
+        infoproc.start()
         processor.start()
         generator.start()
+
         while True:
-            time.sleep(0.1)
-
-            for filename in os.listdir(repdir):
-                path = os.path.join(repdir, filename)
-                archive.store(path, 'oracle/{0}/'.format(instance.sid) + filename)
-                os.unlink(path)
-
+            time.sleep(1)
             filelist = os.listdir(awrdir)
-            if not filelist and not processor.is_alive():
+            if not any((filelist, processor.is_alive())):
                 break
             for filename in filelist:
                 path = os.path.join(awrdir, filename)
@@ -86,10 +85,30 @@ def oracle_info(archive, args):
                     sys.stdout.flush()
 
         generator.join()
+        logging.info('%s: Job generator completed', instance.sid)
+        
         processor.join()
+        logging.info('%s: Job processor completed', instance.sid)
+        
+        infoproc.join()
+        logging.info('%s: DBInfo processor completed', instance.sid)
+
+        for filename in os.listdir(splunkdir):
+            path = os.path.join(splunkdir, filename)
+            archive.store(path, 'oracle/{0}/{1}'.format(instance.sid, filename))
+            os.unlink(path)
+
+        for filename in os.listdir(dbidir):
+            path = os.path.join(dbidir, filename)
+            archive.store(path, 'oracle/dbinfo/{0}'.format(filename))
+            os.unlink(path)
+
         sys.stdout.write('\033[2K')
         sys.stdout.flush()
 
+        if infoproc.exitcode:
+            logging.info('infoproc rc=%s', infoproc.exitcode)
+            raise CustomException('DBInfo generator failed, rc={0}'.format(generator.exitcode))
         if generator.exitcode:
             raise CustomException('Job generator failed, rc={0}'.format(generator.exitcode))
         if processor.exitcode:

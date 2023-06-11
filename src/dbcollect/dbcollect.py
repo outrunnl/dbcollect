@@ -24,6 +24,7 @@ from lib.errors import DBCollectError, ZipCreateError
 from lib.archive import Archive
 from lib.user import switchuser, username, usergroup, usergroups, dbuser
 from lib.jsonfile import JSONFile, buildinfo
+from lib.functions import getscript
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update
@@ -58,6 +59,7 @@ def main():
     parser.add_argument(      "--no-sys",    action="store_true",        help="Skip OS collection")
     parser.add_argument(      "--no-splunk", action="store_true",        help="Skip the Dell SPLUNK/LiveOptics reports (the default)")
     parser.add_argument(      "--splunk",    action="store_true",        help="Run the Dell SPLUNK/LiveOptics reports")
+    parser.add_argument(      "--dbinfo",    action="store_true",        help="Dump dbinfo script(s) to stdout")
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",   type=str,                   help="Exclude Oracle instances (comma separated)")
     parser.add_argument("-t", "--tasks",     type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
@@ -66,6 +68,11 @@ def main():
 
     if args.update:
         update(versioninfo['version'])
+        return
+    elif args.dbinfo:
+        for name in ('dbinfo.sql','dbinfo_11.sql', 'pdbinfo.sql'):
+            sql = getscript(name)
+            print(sql)
         return
     if os.getuid() == 0:
         cmdline = sys.argv[1:]

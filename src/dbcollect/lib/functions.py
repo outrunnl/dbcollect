@@ -6,12 +6,20 @@ License: GPLv3+
 
 import os, sys, errno
 from subprocess import Popen, PIPE
+from pkgutil import get_data
 
 def listdir(dir):
     """Return all files/dirs in dir, or empty list if not exists"""
     if not os.path.isdir(dir):
         return []
     return sorted(os.listdir(dir))
+
+def getscript(name):
+    """Directly get an SQL script from the Python package"""
+    if sys.version_info[0] == 2:
+        return get_data('sql', name)
+    else:
+        return get_data('sql', name).decode()
 
 def getfile(*args):
     """try each file from paths until readable, try next if not exists or no access"""
