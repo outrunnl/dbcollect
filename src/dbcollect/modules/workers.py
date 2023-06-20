@@ -74,10 +74,11 @@ class Session():
         # Tell SQL*Plus to remove lockfile once task is done
         self.proc.stdin.write("HOST rm -f {status}\n".format(status=self.status))
 
-    def run(self, *args, header=None, name=None, nospool=False):
+    def run(self, *args, **kwargs):
         q = ''
-        if header:
-            q += header
+        header  = kwargs.get('header')
+        name    = kwargs.get('name')
+        nospool = kwargs.get('nospool', False)
         if not nospool:
             q += 'SPOOL {0}/{1}_{2}.txt\n'.format(self.tempdir, self.sid, name or args[0])
         for report in args:
