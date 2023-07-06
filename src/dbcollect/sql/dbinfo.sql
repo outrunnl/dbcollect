@@ -32,7 +32,7 @@ ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 -- set emb on
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT DBINFO version 1.4.0
+PROMPT DBINFO version {version}
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -366,7 +366,7 @@ WITH DF AS (SELECT tablespace_name
   FROM dba_data_files DF
   WHERE status = 'AVAILABLE'
   GROUP BY tablespace_name
-), FS AS (SELECT fs.tablespace_name
+), FS AS (SELECT /* +rule */ fs.tablespace_name
   , sum(fs.bytes)/1024/1024 free_mb
   FROM dba_free_space fs
   GROUP BY tablespace_name

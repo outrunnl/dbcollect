@@ -25,7 +25,7 @@ def oracle_info(archive, args):
 
     excluded = args.exclude.split(',') if args.exclude else []
     included = args.include.split(',') if args.include else []
-    inst_info = get_instances()
+    inst_info = get_instances(args)
 
     for sid in inst_info:
         if sid in excluded:

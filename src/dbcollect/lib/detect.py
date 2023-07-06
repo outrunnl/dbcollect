@@ -10,29 +10,33 @@ from datetime import datetime, timedelta
 from lib.functions import getfile, execute
 from lib.user import getuser, getgroup
 
-def orahomes():
+def orahomes(args):
     """Find all existing ORACLE_HOMEs via oratab and/or inventory"""
     dirs    = []
-    orainst = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
-    oratab  = getfile('/etc/oratab','/var/opt/oracle/oratab')
-    if not orainst:
-        logging.error('oraInst.loc not found or readable')
-    else:
-        r = re.match(r'inventory_loc=(.*)', orainst)
-        if r:
-            inventory = getfile(os.path.join(r.group(1), 'ContentsXML/inventory.xml'))
-            if not inventory:
-                logging.error('inventory.xml not found or readable')
-            else:
-                for dir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
-                    logging.debug('ORACLE_HOME (inventory): %s', dir)
-                    dirs.append(dir)
-    if not oratab:
-        logging.error('oratab not found or readable')
-    else:
-        for dir in re.findall(r'^\w+:(\S+):[y|Y|n|N]', oratab, re.M):
-            logging.debug('ORACLE_HOME (oratab): %s', dir)
-            dirs.append(dir)
+    if not args.no_orainv:
+        orainst = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
+        if not orainst:
+            logging.error('oraInst.loc not found or readable')
+        else:
+            r = re.match(r'inventory_loc=(.*)', orainst)
+            if r:
+                inventory = getfile(os.path.join(r.group(1), 'ContentsXML/inventory.xml'))
+                if not inventory:
+                    logging.error('inventory.xml not found or readable')
+                else:
+                    for dir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
+                        logging.debug('ORACLE_HOME (inventory): %s', dir)
+                        dirs.append(dir)
+        
+    if not args.no_oratab:
+        oratab  = getfile('/etc/oratab','/var/opt/oracle/oratab')
+        if not oratab:
+            logging.error('oratab not found or readable')
+        else:
+            for dir in re.findall(r'^\w+:(\S+):[y|Y|n|N]', oratab, re.M):
+                logging.debug('ORACLE_HOME (oratab): %s', dir)
+                dirs.append(dir)
+
     # return only unique dirs that exist
     return [x for x in list(set(dirs)) if os.path.isdir(x)]
 
@@ -48,10 +52,10 @@ def running_instances():
             logging.debug('Running: {} ({}/{})'.format(sid, getuser(int(uid)), getgroup(int(gid))))
     return runlist
 
-def hc_files():
+def hc_files(args):
     # Build list of detected instances from hc_*.dat
     hclist = []
-    for orahome in orahomes():
+    for orahome in orahomes(args):
         dbsdir = os.path.join(orahome, 'dbs')
         if not os.path.isdir(dbsdir):
             logging.debug('Skipping %s (no /dbs directory)', orahome)
@@ -75,7 +79,7 @@ def hc_files():
     hclist.sort(key=lambda x: x[0],reverse=True)
     return hclist
 
-def get_instances():
+def get_instances(args):
     """
     Get all detected instances by searching ORACLE_HOME/dbs for files named hc_<sid>.dat
     If more hc_*.dat files are detected, the one with the latest mtime will be used.
@@ -84,7 +88,7 @@ def get_instances():
     instances = dict()
     downlist  = dict()
     runlist   = running_instances()
-    detected  = hc_files()
+    detected  = hc_files(args)
     logging.info('Detecting Oracle instances')
 
     # build lists of running and stopped instances

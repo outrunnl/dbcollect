@@ -11,7 +11,7 @@ from multiprocessing import Event, Queue, cpu_count
 from multiprocessing.queues import Empty, Full
 
 from lib.functions import getscript
-from lib.config import settings
+from lib.config import settings, versioninfo
 from lib.log import exception_handler
 from lib.errors import *
 
@@ -82,7 +82,7 @@ class Session():
         if not nospool:
             q += 'SPOOL {0}/{1}_{2}.txt\n'.format(self.tempdir, self.sid, name or args[0])
         for report in args:
-            q += getscript(report + '.sql')
+            q += getscript(report + '.sql').format(version=versioninfo['version'])
         q += '\nSPOOL OFF\n'
         self.submit(q)
         while not self.ready:

@@ -13,7 +13,7 @@ ALTER SESSION SET nls_date_format='YYYY-MM-DD HH24:MI:SS';
 ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
 
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROMPT PDBINFO version 1.4.0
+PROMPT PDBINFO version {version}
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 PROMPT
 PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -142,7 +142,7 @@ FROM (
 ) TS
 JOIN
 (
-    SELECT COALESCE(P.name,'ROOT') PDB_NAME
+    SELECT /* +rule */ COALESCE(P.name,'ROOT') PDB_NAME
     , FS.tablespace_name           TS_NAME
     , SUM(fs.bytes/1048576)        FREE_MB
     FROM cdb_free_space FS
