@@ -51,24 +51,32 @@ def linux_info(archive, args):
     """System/SAR info for Linux"""
     info = {}
     for cmd in ('sestatus','uptime'):
-        out, err, rc = execute(cmd)
-        if not rc==0:
-            info['{0}_error'.format(cmd)] = { 'command': cmd, 'stdout': out, 'stderr': err, 'rc': rc }
-        if cmd == 'sestatus':
-            out = out.split()[-1]
-        info[cmd] = out.strip()
+        try:
+            out, err, rc = execute(cmd)
+            if not rc==0:
+                info['{0}_error'.format(cmd)] = { 'command': cmd, 'stdout': out, 'stderr': err, 'rc': rc }
+            if cmd == 'sestatus':
+                out = out.split()[-1]
+            info[cmd] = out.strip()
 
-    for file in os.listdir('/sys/class/dmi/id'):
-        if file in ('modalias','uevent'):
-            continue
-        path = os.path.join('/sys/class/dmi/id', file)
-        if os.path.isfile(path):
-            try:
-                with open(path) as f:
-                    data = f.read()
-                    info[file] = data.rstrip()
-            except IOError:
-                info[file] = None
+        except OSError as e:
+            logging.warning(e)
+
+    try:
+        for file in os.listdir('/sys/class/dmi/id'):
+            if file in ('modalias','uevent'):
+                continue
+            path = os.path.join('/sys/class/dmi/id', file)
+            if os.path.isfile(path):
+                try:
+                    with open(path) as f:
+                        data = f.read()
+                        info[file] = data.rstrip()
+                except IOError:
+                    info[file] = None
+
+    except OSError as e:
+        logging.warning(e)
 
     hostinfo = JSONFile()
     hostinfo.set('hostinfo', info)
