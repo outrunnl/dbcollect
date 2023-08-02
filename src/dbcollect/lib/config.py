@@ -3,7 +3,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.13.3"
+    'version': "1.13.4"
 }
 
 settings = {
@@ -22,12 +22,14 @@ linux_config = {
         'ip_links': 'ip -o link show',
         'ip_addrs': 'ip -o addr show',
         'sysctl': 'sysctl -a',
+        'sar_v': 'sar -V',
         'numactl_hw': 'numactl --hardware',
         'numactl_show': 'numactl --show',
         'lspci': 'lspci',
         'lsblk_bp': 'lsblk -bp',
         'lsblk_long': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname',
         'rpm_packages': 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
+        'dpkg_l': 'dpkg -l',
     },
     'files': [
         '/proc/cmdline',

@@ -150,16 +150,18 @@ def linux_info(archive, args):
     if not args.no_sar:
         logging.info('Collecting Linux SAR files')
         sarinfo = JSONFile()
-        sarinfo.dir('/var/log/sa')
+        sardirs = ('/var/log/sa', '/var/log/sysstat')
+        sarinfo.dir(*sardirs)
         archive.writestr('sarinfo.json', sarinfo.dump())
-        for sarfile in listdir('/var/log/sa'):
-            path = os.path.join('/var/log/sa', sarfile)
-            if sarfile.startswith('sa'):
-                if sarfile.startswith('sar'):
-                    continue
-                if sarfile.endswith('.xz'):
-                    continue
-                archive.store(path)
+        for sardir in sardirs:
+            for sarfile in listdir(sardir):
+                path = os.path.join(sardir, sarfile)
+                if sarfile.startswith('sa'):
+                    if sarfile.startswith('sar'):
+                        continue
+                    if sarfile.endswith('.xz'):
+                        continue
+                    archive.store(path)
 
 
 def aix_info(archive, args):

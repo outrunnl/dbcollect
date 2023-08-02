@@ -104,21 +104,26 @@ class JSONFile():
             self.info['status'] = 'Critical Error'
             logging.critical(e)
 
-    def dir(self, dir):
-        files = []
-        for file in sorted(os.listdir(dir)):
-            path = os.path.join(dir, file)
-            if not os.path.isfile(path):
+    def dir(self, *dirs):
+        self.info['directories'] = []
+        for dir in dirs:
+            if not os.path.isdir(dir):
+                self.info['directories'].append({ 'directory': dir, 'exists': False })
                 continue
-            st = os.stat(path)
-            files.append({
-                'path': path,
-                'size': st.st_size,
-                'mtime': datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
-                'user': getuser(st.st_uid),
-                'group': getgroup(st.st_gid)
-            })
-        self.info['directory'] = files
+            files = []
+            for file in sorted(os.listdir(dir)):
+                path = os.path.join(dir, file)
+                if not os.path.isfile(path):
+                    continue
+                st = os.stat(path)
+                files.append({
+                    'path': path,
+                    'size': st.st_size,
+                    'mtime': datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
+                    'user': getuser(st.st_uid),
+                    'group': getgroup(st.st_gid)
+                })
+            self.info['directories'].append({ 'directory': dir, 'files': files})
 
     def dump(self):
         """Return the data as JSON text"""
