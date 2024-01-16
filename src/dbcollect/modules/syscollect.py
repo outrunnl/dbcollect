@@ -5,7 +5,7 @@ License: GPLv3+
 """
 
 import os, sys, json, re, platform, logging
-from lib.config import linux_config, aix_config, sunos_config
+from lib.config import linux_config, aix_config, sunos_config, hpux_config
 from lib.jsonfile import JSONFile
 from lib.functions import execute, listdir
 
@@ -20,6 +20,8 @@ def host_info(archive, args):
         aix_info(archive, args)
     elif system == 'SunOS':
         sun_info(archive, args)
+    elif system == 'HP-UX':
+        hpux_info(archive, args)
     else:
         logging.error("Unknown platform - {0}".format(system))
 
@@ -229,3 +231,19 @@ def sun_info(archive, args):
         archive.writestr(file + '.jsonp', df.jsonp())
 
     sar_info(archive, args)
+
+def hpux_info(archive, args):
+    """System/SAR info for HP-UX (Itanium)"""
+    # TBD
+    logging.info('Collecting HP-UX System info')
+
+    for tag, cmd in hpux_config['commands'].items():
+        df = JSONFile(cmd=cmd)
+        archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
+
+    for file in hpux_config['files']:
+        df = JSONFile(path=file)
+        archive.writestr(file + '.jsonp', df.jsonp())
+
+    sar_info(archive, args)
+
