@@ -25,7 +25,7 @@ class Job():
     @property
     def filename(self):
         ext = 'html' if self.reptype == 'awr' else 'txt'
-        return '{0}_{1}_{2}_{3}_{4}_{5}.{6}'.format(self.sid, self.instnum, self.reptype, self.beginsnap, self.endsnap, self.begintime, ext)
+        return '{0}_{1}_{2}_{3}_{4}_{5}_{6}.{7}'.format(self.sid, self.dbid, self.instnum, self.reptype, self.beginsnap, self.endsnap, self.begintime, ext)
 
     @property
     def query(self):
@@ -113,6 +113,8 @@ class Instance():
         header = 'define days   = {0}\ndefine offset = {1}\ndefine local  = {2}\n'.format(args.days, args.offset, loc)
         if reptype == 'awr':
             data   = self.script('getawrs', header=header)
+            data  += '\n'
+            data  += self.script('getstbyawrs', header=header)
         elif reptype == 'sp':
             data   = self.script('getsps', header=header)
         else:
