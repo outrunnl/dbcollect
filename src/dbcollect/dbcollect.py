@@ -59,7 +59,6 @@ def main():
     parser.add_argument(      "--no-sys",    action="store_true",        help="Skip OS collection")
     parser.add_argument(      "--no-orainv", action="store_true",        help="Ignore ORACLE_HOMES from Oracle Inventory")
     parser.add_argument(      "--no-oratab", action="store_true",        help="Ignore ORACLE_HOMES from oratab")
-    parser.add_argument(      "--no-splunk", action="store_true",        help="Skip the Dell SPLUNK/LiveOptics reports (the default)")
     parser.add_argument(      "--splunk",    action="store_true",        help="Run the Dell SPLUNK/LiveOptics reports")
     parser.add_argument(      "--dbinfo",    action="store_true",        help="Dump dbinfo script(s) to stdout")
     parser.add_argument(      "--include",   type=str,                   help="Include Oracle instances (comma separated)")
