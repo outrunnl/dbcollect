@@ -103,18 +103,18 @@ class Instance():
         elif spusage>0:
             reptype = 'sp'
             logging.info('{0}: No awr, Statspack detected'.format(self.sid))
-        elif args.ignore:
+        elif args.ignore_awr:
             logging.warning("Skipping {0}: No prior AWR usage or Statspack detected (--ignore)".format(self.sid))
             return 0
         else:
             raise ReportingError("No AWR or Statspack detected for {0} (try --force-awr or --ignore)".format(self.sid))
 
-        loc    = 'Y' if args.local else 'N'
-        header = 'define days   = {0}\ndefine offset = {1}\ndefine local  = {2}\n'.format(args.days, args.offset, loc)
+        inc_rac  = '0' if args.no_rac  else '1'
+        inc_stby = '0' if args.no_stby else '1'
+        inc_pack = '1' if args.force_awr else '0'
+        header = 'define days = {0}\ndefine offset = {1}\ndefine inc_rac = {2}\ndefine inc_stby = {3}\ndefine inc_pack = {4}\n'.format(args.days, args.offset, inc_rac, inc_stby, inc_pack)
         if reptype == 'awr':
             data   = self.script('getawrs', header=header)
-            data  += '\n'
-            data  += self.script('getstbyawrs', header=header)
         elif reptype == 'sp':
             data   = self.script('getsps', header=header)
         else:

@@ -3,50 +3,63 @@
 -- Description : generate SQL to retrieve AWR reports
 -- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
--- Parameters  : days = amount of days for which to collect data
---               offset = days to timeshift back. 0 = until and including today
---               local = Y: generate AWRS for this instance only
+-- Parameters  : days:     amount of days ago to start collect period
+--               offset:   amount of days before current to stop collect period
+--               inc_rac:  include snaps for other instances (RAC)
+--               inc_stby: include snaps for other DBIDs (realime standby DBs)
+--               inc_pack: include snaps for which diag/tuning packs are disabled
 -- Output      : AWR snapshot parameters in CSV format
 -- ----------------------------------------------------------------------------
 
--- define days   = 10
--- define offset = 0
--- define local  = Y|N
+-- defaults:
+-- define days     = 10
+-- define offset   = 0
+-- define inc_rac  = 1
+-- define inc_stby = 1
+-- define inc_pack = 0
 
 SET tab off feedback off verify off heading off lines 1000 pages 0 trims on
 ALTER SESSION SET nls_timestamp_format='YYYYMMDD_HH24MI';
 ALTER SESSION SET nls_date_format='YYYYMMDD_HH24MI';
 WHENEVER SQLERROR EXIT SQL.SQLCODE
 
-WITH INFO AS (SELECT dbid
+WITH INFO AS (
+  SELECT (SELECT MAX(end_interval_time) FROM dba_hist_snapshot) max_time
   , interval '&days'   DAY(3) ndays
   , interval '&offset' DAY(3) offset
   , interval '1'       DAY    oneday
-  , '&local'                  local
-  , (SELECT MAX(end_interval_time) FROM dba_hist_snapshot) max_time
-  , (SELECT instance_number FROM v$instance)               local_inst
-  FROM v$database)
+  , '&inc_rac'  inc_rac
+  , '&inc_stby' inc_stby
+  , '&inc_pack' inc_pack
+  FROM dual
+)
 SELECT dbid
-  || ',' || instance_number
+  || ',' || inst_num
   || ',' || prev_id
   || ',' || snap_id
   || ',' || begintime
   || ',' || endtime
-FROM (SELECT snap_id
-  , instance_number
-  , dbid
+FROM (SELECT dbid
+  , snap_id
+  , snap_flag
+  , instance_number inst_num
   , startup_time
-  , end_interval_time                                                           endtime
-  , lag(end_interval_time) over (PARTITION BY instance_number ORDER BY snap_id) begintime
-  , lag(snap_id)           over (PARTITION BY instance_number ORDER BY snap_id) prev_id
-  , lag(startup_time)      over (PARTITION BY instance_number ORDER BY snap_id) last_startup_time
+  , end_interval_time endtime
+  , lag(end_interval_time) over (PARTITION BY dbid, instance_number ORDER BY snap_id) begintime
+  , lag(snap_id)           over (PARTITION BY dbid, instance_number ORDER BY snap_id) prev_id
+  , lag(startup_time)      over (PARTITION BY dbid, instance_number ORDER BY snap_id) last_startup_time
   FROM dba_hist_snapshot
-  WHERE snap_flag = 0)                                       -- only auto-generated snaps
-JOIN INFO USING (dbid)                                       -- ignore old data from other DBIDs
-WHERE startup_time = last_startup_time                       -- skip over db restarts
-  AND endtime   >= trunc(max_time + oneday - offset - ndays) -- starting time
-  AND begintime <  trunc(max_time + oneday - offset)         -- ending time
-  -- AND endtime   >  begintime + interval '10' MINUTE       -- ignore reports with less than 10 minute interval
-  AND (instance_number = local_inst OR local!='Y')           -- optionally filter AWRs from other RAC nodes
-ORDER BY snap_id, instance_number
+), info
+WHERE prev_id IS NOT NULL                            -- ignore FIRST
+  AND startup_time = last_startup_time               -- skip over db restarts (does not work for standby dbs!)
+  AND endtime   >= trunc(max_time + oneday - ndays)  -- starting time: ndays BEFORE last snap
+  AND begintime <  trunc(max_time + oneday - offset) -- ending time: offset BEFORE last snap
+  AND endtime - begintime > interval '8'  MINUTE     -- ignore reports with less than 8 minute interval
+  AND endtime - begintime < interval '90' MINUTE     -- ignore reports with more than 90 minute INTERVAL
+  AND snap_flag NOT IN (1,2)                         -- ignore manual AND imported snaps (note: standby is always 17)
+  -- optional filters
+  AND (inc_rac  = 1 OR inst_num = (SELECT instance_number FROM v$instance)) -- include other RAC nodes
+  AND (inc_stby = 1 OR dbid = (SELECT dbid FROM v$database))                -- include standby snapshots
+  AND (inc_pack = 1 OR snap_flag NOT IN (4,5))                              -- include when diag/tuninc packs disabled
+ORDER BY dbid, snap_id, inst_num
 /
