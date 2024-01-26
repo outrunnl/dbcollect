@@ -33,6 +33,7 @@ As dbcollect typically runs on production database systems, it has been designed
 * The _dbcollect_ Python code is frequently verified with 'pylint' to detect and remediate potential bugs and issues.
 * _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 50% of available CPUs unless changed with the --tasks parameter.
 * As '/tmp' on most Unix/Linux systems is a separate file system and the only place where files are written, the system cannot become unstable due to filling up other file systems to 100% capacity.
+* The temporary files in /tmp are cleaned up when dbcollect ends (even if there are errors, exception is if it is killed with SIGKILL)
 * The only function in the tool that accesses external (internet) sites is the ```--update``` function which is contained in one simple Python module (```updater.py```) and is only used for updating _dbcollect_ itself, and is restricted to hard-coded URLs on the dbcollect repository on ```github.com```.
 
 Notes:

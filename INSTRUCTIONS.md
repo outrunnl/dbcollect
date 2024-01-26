@@ -116,12 +116,18 @@ dbcollect --quiet
 
 # Force using AWR even if license is not detected:
 dbcollect --force-awr
+# note this also picks up AWRs that have been generated with init.ora setting control_management_pack_access=NONE
 
-# Pick up local AWRS only (Oracle RAC)
-dbcollect --local
+# Pick up local AWRS only (Oracle RAC) - if you plan to run dbcollect on ALL RAC nodes
+dbcollect --no-rac
+
+# Do not pick up AWRs from Data Guard Standby databases:
+dbcollect --no-stby
 
 # Overwrite previous dbcollect ZIP file:
 dbcollect --overwrite
+# or
+dbcollect -o
 
 # Write ZIP file with different filename (will go to /tmp)
 dbcollect --filename mydbcollect.zip
@@ -136,7 +142,7 @@ dbcollect --user sap
 dbcollect --days 31
 
 # Shift collect period so you pick up from 30 days ago to 10 days ago
-dbcollect --offset 10 --days 20
+dbcollect --days 30 --end_days 10
 
 # Remove all SQL code from AWR reports (not for statspack)
 dbcollect --strip

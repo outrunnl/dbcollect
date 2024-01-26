@@ -104,7 +104,9 @@ To collect a longer AWR/Statspack reports period, use the --days option (up to 9
 
 If you want to collect reports from a longer time ago (say, 20 days ago up to 10 days ago), use the offset option:
 
-`dbcollect --days 10 --offset 10`
+`dbcollect --days 20 --end_days 10`
+
+** Changed: --days now always means the number of days ago to START the collect period. --end_days means the day to STOP the collect period 
 
 ### Non-Linux (UNIX) systems
 
@@ -122,7 +124,7 @@ See [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTION
 - Very long names for files, tablespaces, disk groups etc may be truncated/wrapped
 - Very large sized elements or very large amounts of objects may result in `####` notation and no longer be useful. Limits have been increased to insane values so this should not be a problem
 - Newer Oracle versions (20c and up) may cause unreliable numbers, not yet tested
-- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient. See [Troubleshooting](#Troubleshooting). 
+- Oracle RAC sometimes is very slow with generating AWR reports. Known issue. Be patient. See [Troubleshooting](#Troubleshooting).
 
 ## Safety
 
