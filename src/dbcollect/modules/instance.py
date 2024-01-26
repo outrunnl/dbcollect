@@ -112,7 +112,7 @@ class Instance():
         inc_rac  = '0' if args.no_rac  else '1'
         inc_stby = '0' if args.no_stby else '1'
         inc_pack = '1' if args.force_awr else '0'
-        header = 'define days = {0}\ndefine offset = {1}\ndefine inc_rac = {2}\ndefine inc_stby = {3}\ndefine inc_pack = {4}\n'.format(args.days, args.offset, inc_rac, inc_stby, inc_pack)
+        header = 'define days = {0}\ndefine offset = {1}\ndefine inc_rac = {2}\ndefine inc_stby = {3}\ndefine inc_pack = {4}\n'.format(args.days, args.end_days, inc_rac, inc_stby, inc_pack)
         if reptype == 'awr':
             data   = self.script('getawrs', header=header)
         elif reptype == 'sp':

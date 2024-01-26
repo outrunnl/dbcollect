@@ -4,7 +4,7 @@
 -- Author      : Bart Sjerps <bart@dirty-cache.com>
 -- License     : GPLv3+
 -- Parameters  : days:     amount of days ago to start collect period
---               offset:   amount of days before current to stop collect period
+--               end_days: amount of days before current to stop collect period
 --               inc_rac:  include snaps for other instances (RAC)
 --               inc_stby: include snaps for other DBIDs (realime standby DBs)
 --               inc_pack: include snaps for which diag/tuning packs are disabled
@@ -13,7 +13,7 @@
 
 -- defaults:
 -- define days     = 10
--- define offset   = 0
+-- define end_days = 0
 -- define inc_rac  = 1
 -- define inc_stby = 1
 -- define inc_pack = 0
@@ -25,9 +25,9 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE
 
 WITH INFO AS (
   SELECT (SELECT MAX(end_interval_time) FROM dba_hist_snapshot) max_time
-  , interval '&days'   DAY(3) ndays
-  , interval '&offset' DAY(3) offset
-  , interval '1'       DAY    oneday
+  , interval '&days'     DAY(3) ndays
+  , interval '&end_days' DAY(3) end_days
+  , interval '1'         DAY    oneday
   , '&inc_rac'  inc_rac
   , '&inc_stby' inc_stby
   , '&inc_pack' inc_pack
@@ -50,13 +50,13 @@ FROM (SELECT dbid
   , lag(startup_time)      over (PARTITION BY dbid, instance_number ORDER BY snap_id) last_startup_time
   FROM dba_hist_snapshot
 ), info
-WHERE prev_id IS NOT NULL                            -- ignore FIRST
-  AND startup_time = last_startup_time               -- skip over db restarts (does not work for standby dbs!)
-  AND endtime   >= trunc(max_time + oneday - ndays)  -- starting time: ndays BEFORE last snap
-  AND begintime <  trunc(max_time + oneday - offset) -- ending time: offset BEFORE last snap
-  AND endtime - begintime > interval '8'  MINUTE     -- ignore reports with less than 8 minute interval
-  AND endtime - begintime < interval '90' MINUTE     -- ignore reports with more than 90 minute INTERVAL
-  AND snap_flag NOT IN (1,2)                         -- ignore manual AND imported snaps (note: standby is always 17)
+WHERE prev_id IS NOT NULL                              -- ignore FIRST
+  AND startup_time = last_startup_time                 -- skip over db restarts (does not work for standby dbs!)
+  AND endtime   >= trunc(max_time + oneday - ndays)    -- starting time: ndays BEFORE last snap
+  AND begintime <  trunc(max_time + oneday - end_days) -- ending time: offset BEFORE last snap
+  AND endtime - begintime > interval '8'  MINUTE       -- ignore reports with less than 8 minute interval
+  AND endtime - begintime < interval '90' MINUTE       -- ignore reports with more than 90 minute INTERVAL
+  AND snap_flag NOT IN (1,2)                           -- ignore manual AND imported snaps (note: standby is always 17)
   -- optional filters
   AND (inc_rac  = 1 OR inst_num = (SELECT instance_number FROM v$instance)) -- include other RAC nodes
   AND (inc_stby = 1 OR dbid = (SELECT dbid FROM v$database))                -- include standby snapshots
