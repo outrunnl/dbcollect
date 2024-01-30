@@ -17,7 +17,7 @@ safely on systems without Oracle.
 
 import os, sys, re, errno
 import pwd, grp
-from subprocess import check_call, CalledProcessError
+from subprocess import CalledProcessError, Popen
 from lib.functions import execute
 
 def dbuser():
@@ -45,7 +45,7 @@ def switchuser(user, args):
             home = '/tmp'
         except KeyError as e:
             print("User nobody not available, giving up")
-            exit(20)
+            sys.exit(20)
     gid = pwd.getpwnam(user).pw_gid
     os.setgid(gid)
     groups = [g.gr_gid for g in grp.getgrall() if user in g.gr_mem]
@@ -57,10 +57,11 @@ def switchuser(user, args):
     except OSError:
         os.chdir('/tmp')
     try:
-        check_call(args)
+        proc = Popen(args)
+        proc.communicate()
     except KeyboardInterrupt:
         print("Aborted, exiting...")
-        exit(10)
+        sys.exit(10)
     except CalledProcessError as e:
         sys.exit(e.returncode)
     except OSError as e:

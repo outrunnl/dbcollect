@@ -104,7 +104,7 @@ def main():
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
     except Exception as e:
         logging.fatal("Cannot create logfile: {0}".format(e))
-        exit(15)
+        sys.exit(15)
     try:
         archive = Archive(zippath, args.overwrite)
         logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
@@ -122,23 +122,22 @@ def main():
         logging.info("Finished")
     except ZipCreateError as e:
         logging.error("{0}: {1}".format(e, zippath))
-        logging.info("Aborting")
-        exit(20)
+        sys.exit(20)
     except KeyboardInterrupt:
-        logging.fatal("Aborted, exiting...")
-        exit(10)
+        logging.fatal("Aborted! Exiting...")
+        sys.exit(10)
     except IOError as e:
         logging.error("{0}: {1}".format(e.filename, os.strerror(e.errno)))
         logging.info("Aborting")
-        exit(20)
+        sys.exit(20)
     except DBCollectError as e:
         logging.exception(e)
         logging.info("Aborting")
-        exit(30)
+        sys.exit(30)
     except Exception as e:
         logging.exception("{0}, see logfile for debug info".format(e))
         logging.info("Aborting")
-        exit(40)
+        sys.exit(40)
     finally:
         if args.debug and os.path.isfile(logpath):
             with open(logpath) as logfile:
