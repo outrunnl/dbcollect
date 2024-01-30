@@ -1,54 +1,60 @@
-#!/bin/bash
-#============================================================================
-# Title       : mkapp
-# Description : Creates ZIPAPP package
-# Author      : Bart Sjerps <bart@dirty-cache.com>
-# License     : GPLv3+
-# ---------------------------------------------------------------------------
+#!/usr/bin/env python3
+"""
+mkapp - Creates ZIPAPP package
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
 
-set -e
-export gitdir=$(git rev-parse --show-toplevel) || exit 10
-export packager=$(git config --global user.name)
-export email=$(git config --global user.email | sed 's/@/ AT /')
-export progname=dbcollect
+import os, json, argparse
+from datetime import datetime
+from subprocess import run
 
-die() { echo "$(basename $0) error: $@" >&2 ; exit 20 ; }
+def execute(cmd):
+    r = run(cmd.split(), capture_output=True, encoding='utf-8', check=True)
+    return r.stdout.strip()
 
-cat << EOF > "$gitdir"/src/dbcollect/lib/buildinfo.py
-buildinfo = {
-    'builddate': '$(date +"%Y-%m-%d %H:%M")',
-    'branch': '$(git branch --show-current)',
-    'tag': '$(git describe --abbrev=0)',
-    'describe': '$(git describe --dirty)',
-    'packager': '$packager <$email>',
-    'buildhash': '$(git rev-parse --verify HEAD)',
-    'shorthash': '$(git rev-parse --short HEAD)'
-}
-EOF
+gitdir   = execute('git rev-parse --show-toplevel')
+packager = execute('git config --global user.name')
+email    = execute('git config --global user.email')
+progname = 'dbcollect'
 
-makeapp() {
-  echo "Creating $1"
-  python3 -m zipapp \
-	--output "$1" \
-	--main dbcollect:main \
-	--python "/usr/bin/env python" \
-	 $gitdir/src/$progname
-}
+def makebuildinfo():
+    print(f"Creating buildinfo")
+    buildinfo = {}
+    buildinfo['builddate'] = datetime.now().strftime('%Y-%m-%d %H:%M')
+    buildinfo['branch']    = execute('git branch --show-current')
+    buildinfo['tag']       = execute('git describe --abbrev=0')
+    buildinfo['describe']  = execute('git describe --dirty')
+    buildinfo['packager']  = f'{packager} <{email.replace("@", " AT ")}>'
+    buildinfo['buildhash'] = execute('git rev-parse --verify HEAD')
+    buildinfo['shorthash'] = execute('git rev-parse --short HEAD')
 
-#============================================================================
-# Main section - parsing options etc
-# ---------------------------------------------------------------------------
+    with open(os.path.join(gitdir, 'src/dbcollect/lib', 'buildinfo.py'), 'w') as f:
+        f.write('buildinfo = ')
+        json.dump(buildinfo, f, indent=2)
+        f.write('\n')
 
-export outdir=/tmp
+def makeapp(args):
+    print(f"Creating {progname}")
+    srcpath = os.path.join(gitdir, 'src', progname)
+    tgtpath = os.path.join(args.destdir, progname)
+    run(['python3', '-m', 'zipapp', '--output', tgtpath,  '--main', 'dbcollect:main', '--python', '/usr/bin/env python', srcpath], check=True)
 
-while getopts ":d:" OPT; do
-case "$OPT" in
-  d) outdir=$OPTARG;;
-  ?) die "Unknown option -$OPTARG" ;;
-esac
-done ; shift $(expr $OPTIND - 1)
+def tag(args):
+    r = run(['python3', '-c', 'from lib.config import versioninfo; print(versioninfo["version"])'], 
+            cwd=os.path.join(gitdir, 'src/dbcollect'), capture_output=True, encoding='utf-8', check=True)
+    version = r.stdout.strip()
+    print(f'git tag -a -mversion v${version}')
+    print('git push --tags')
 
-makeapp  $outdir/$progname
-ls -ld   $outdir/$progname
-unzip -l $outdir/$progname
-ls -l    $outdir/$progname
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--destdir', default='/tmp')
+    parser.add_argument('--tag', action="store_true")
+
+    args = parser.parse_args()
+    if args.tag:
+        tag(args)
+    else:
+        makebuildinfo()
+        makeapp(args)
