@@ -18,7 +18,10 @@ from lib.config import versioninfo
 from lib.functions import execute
 
 class JSONFile():
-    """Container for a JSON file"""
+    """
+    Container for a JSONPlus file
+    JSONPlus file format is simply a JSON with the data of a command or file appended
+    """
     def __init__(self, cmd=None, path=None, **kwargs):
         self.info = {}
         self.info['application']  = 'dbcollect'
@@ -128,6 +131,11 @@ class JSONFile():
     def dump(self):
         """Return the data as JSON text"""
         return json.dumps(self.info, indent=2, sort_keys=True)
+
+    def save(self, path):
+        """Save self as jsonp file"""
+        with open(path, 'w') as f:
+            f.write(self.jsonp())
 
     def jsonp(self):
         """Return the data as JSONPlus"""

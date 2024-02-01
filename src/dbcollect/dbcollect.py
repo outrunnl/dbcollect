@@ -5,8 +5,7 @@ Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, logging, platform, time
-from datetime import datetime
+import os, sys, logging, platform
 
 sys.dont_write_bytecode = True
 try:
@@ -61,7 +60,6 @@ def main():
     parser.add_argument(      "--no-orainv",  action="store_true",        help="Ignore ORACLE_HOMES from Oracle Inventory")
     parser.add_argument(      "--no-oratab",  action="store_true",        help="Ignore ORACLE_HOMES from oratab")
     parser.add_argument(      "--splunk",     action="store_true",        help="Run the Dell SPLUNK/LiveOptics reports")
-    parser.add_argument(      "--dbinfo",     action="store_true",        help="Dump dbinfo script(s) to stdout")
     parser.add_argument(      "--include",    type=str,                   help="Include Oracle instances (comma separated)")
     parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)")
     parser.add_argument("-t", "--tasks",      type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
@@ -70,11 +68,6 @@ def main():
 
     if args.update:
         update(versioninfo['version'])
-        return
-    elif args.dbinfo:
-        for name in ('dbinfo.sql','dbinfo_11.sql', 'pdbinfo.sql'):
-            sql = getscript(name)
-            print(sql.format(version=versioninfo['version']))
         return
     if os.getuid() == 0:
         cmdline = sys.argv[1:]

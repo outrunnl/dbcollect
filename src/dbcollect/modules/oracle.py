@@ -8,7 +8,7 @@ import os, sys, re, tempfile, logging, time
 from datetime import timedelta
 from multiprocessing import Process
 
-from lib.errors import *
+from lib.errors import CustomException
 from lib.detect import get_instances
 from .awrstrip import awrstrip
 from .instance import Instance

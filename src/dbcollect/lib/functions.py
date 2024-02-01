@@ -16,10 +16,13 @@ def listdir(dir):
 
 def getscript(name):
     """Directly get an SQL script from the Python package"""
-    if sys.version_info[0] == 2:
-        return get_data('sql', name)
-    else:
-        return get_data('sql', name).decode()
+    try:
+        if sys.version_info[0] == 2:
+            return get_data('sql', name)
+        else:
+            return get_data('sql', name).decode()
+    except OSError as e:
+        raise RuntimeError("Cannot load script {0}".format(name))
 
 def getfile(*args):
     """try each file from paths until readable, try next if not exists or no access"""

@@ -8,10 +8,11 @@ import os, sys, time, tempfile, logging
 from shutil import rmtree
 
 from multiprocessing import Event, Queue, cpu_count
-from multiprocessing.queues import Empty, Full
+from multiprocessing.queues import Full
 
 from lib.functions import getscript
-from lib.config import settings, versioninfo
+from lib.config import versioninfo, dbinfo_config
+from lib.jsonfile import JSONFile
 from lib.log import exception_handler
 from lib.errors import *
 
@@ -60,7 +61,9 @@ class Session():
         self.proc.stdin.write("alter session set nls_date_language=american;\n")
 
     def __del__(self):
-        self.proc.communicate('exit;\n')
+        rc = self.proc.poll()
+        if rc:
+            self.proc.communicate('exit;\n')
 
     def submit(self, c):
         if self.proc.poll() is not None:
