@@ -50,13 +50,14 @@ class Tempdir():
 
 class Session():
     """SQL*Plus worker session"""
-    def __init__(self, tempdir, instance):
-        self.tempdir  = tempdir
-        self.instance = instance
-        self.proc     = instance.sqlplus(quiet=True)
-        self.sid      = instance.sid
+    def __init__(self, shared):
+        self.tempdir  = shared.tempdir
+        self.instance = shared.instance
+        self.args     = shared.args
+        self.proc     = self.instance.sqlplus(quiet=True)
+        self.sid      = self.instance.sid
         self.ping     = time.time()
-        self.status   = os.path.join(tempdir, 'lock', "sqlplus_lock_{0}".format(self.proc.pid))
+        self.status   = os.path.join(self.tempdir, 'lock', "sqlplus_lock_{0}".format(self.proc.pid))
         self.proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
         self.proc.stdin.write("alter session set nls_date_language=american;\n")
 
@@ -77,19 +78,86 @@ class Session():
         # Tell SQL*Plus to remove lockfile once task is done
         self.proc.stdin.write("HOST rm -f {status}\n".format(status=self.status))
 
-    def run(self, *args, **kwargs):
-        q = ''
-        header  = kwargs.get('header')
-        name    = kwargs.get('name')
-        nospool = kwargs.get('nospool', False)
-        if not nospool:
-            q += 'SPOOL {0}/{1}_{2}.txt\n'.format(self.tempdir, self.sid, name or args[0])
-        for report in args:
-            q += getscript(report + '.sql').format(version=versioninfo['version'])
-        q += '\nSPOOL OFF\n'
-        self.submit(q)
+    def runscript(self, script, spool=None, header=None):
+        query = ''
+        if spool:
+            query  = 'SPOOL {0}\n'.format(spool)
+        if header:
+            query += getscript('dbinfo/header.sql')
+        query += getscript(script)
+        if spool:
+            query += '\nSPOOL OFF\n'
+        tstart = time.time()
+        elapsed = None
+        status  = None
+
+        self.submit(query)
         while not self.ready:
-            time.sleep(0.1)
+            rc = self.proc.poll()
+            elapsed = time.time() - tstart
+            if rc is not None:
+                status = 'Terminated'
+                logging.error("{0}: Terminated (rc={1}) running dbinfo script {2}".format(self.sid, rc, script))
+                break
+            if time.time() - tstart > self.args.timeout*60:
+                logging.error("{0}: Timeout ({1} seconds) running dbinfo script {2}".format(self.sid, round(elapsed), script))
+                status = 'Timeout'
+                self.proc.terminate()
+                break
+            time.sleep(0.01)
+        elapsed = round(time.time() - tstart,2)
+        if self.ready:
+            status = 'OK'
+
+        return elapsed, status
+
+    def genscripts(self):
+        if self.instance.status == 'STARTED':
+            yield 'instance.sql'
+            return
+        sections = ['basic']
+        if self.instance.status not in ('STARTED','MOUNTED'):
+            if self.instance.version == 11:
+                sections += ['common', 'oracle11']
+            elif self.instance.version > 11:
+                sections += ['common', 'oracle11', 'oracle12']
+
+        for section in sections:
+            for scriptname in dbinfo_config[section]:
+                yield scriptname
+
+    def dbinfo(self):
+        logging.info('{0}: Running dbinfo scripts'.format(self.sid))
+        for scriptname in self.genscripts():
+            logging.debug('{0}: Running dbinfo script {1}'.format(self.sid, scriptname))
+            scriptpath = 'dbinfo/{0}'.format(scriptname)
+            savepath   = '{0}/{1}_{2}'.format(self.tempdir, self.sid, scriptname.replace('.sql','.txt'))
+
+            elapsed, status = self.runscript(scriptpath, savepath, header='common/header.sql')
+            jfile = JSONFile(elapsed=elapsed, status=status)
+            jfile.dbinfo(self.instance, scriptname, savepath)
+            jfile.save(os.path.join(self.tempdir, 'dbinfo', scriptname.replace('.sql', '.jsonp')))
+
+        if self.args.splunk:
+            if self.instance.status in ('STARTED','MOUNTED'):
+                return
+            logging.info('{0}: Running splunk scripts'.format(self.sid))
+            if self.instance.version == 11:
+                section = 'splunk_11'
+            else:
+                section = 'splunk_12'
+            for scriptname in dbinfo_config[section]:
+                logging.debug('{0}: Running splunk script {1}'.format(self.sid, scriptname))
+                scriptpath = 'splunk/{0}'.format(scriptname)
+                elapsed, status = self.runscript(scriptpath, header='splunk/splunk_header.sql')
+            
+            for f in os.listdir(self.tempdir):
+                path    = os.path.join(self.tempdir, f)
+                newpath = os.path.join(self.tempdir, 'splunk', f)
+                if os.path.isdir(path):
+                    continue
+                if f.endswith('.dsk') or f.startswith('capacity_'):
+                    os.rename(path, newpath)
 
     @property
     def ready(self):
@@ -97,7 +165,14 @@ class Session():
 
     @property    
     def runtime(self):
-        return round(time.time() - self.ping)
+        return round(time.time() - self.ping, 2)
+
+def info_processor(shared):
+    """info processor - Runs the dbinfo scripts"""
+    session = Session(shared)
+    session.dbinfo()
+
+    logging.info('%s: DBInfo processor finished, elapsed time %s seconds', shared.instance.sid, session.runtime)
     
 @exception_handler
 def job_generator(shared):
@@ -123,12 +198,10 @@ def job_processor(shared):
     Worker process that handles SQL*Plus subprocesses
     Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
     """
-
-    instance = shared.instance
-    sessions = [Session(shared.tempdir, instance) for x in range(shared.tasks)]
+    sessions = [Session(shared) for x in range(shared.tasks)]
     ping     = time.time()
 
-    logging.info('%s: Started %s SQLPlus sessions', instance.sid, len(sessions))
+    logging.info('%s: Started %s SQLPlus sessions', shared.instance.sid, len(sessions))
 
     while True:
         time.sleep(0.1)
@@ -148,52 +221,3 @@ def job_processor(shared):
             session.submit(job.query)
             ping = time.time()
             break
-
-@exception_handler
-def info_processor(shared):
-    """info processor - Runs the dbinfo scripts"""
-    instance = shared.instance
-    session  = Session(shared.tempdir, instance)
-
-    if instance.status == 'STARTED':
-        session.run('instance')
-    elif instance.status == 'MOUNTED':
-        session.run('database')
-    if instance.status == 'OPEN':
-        if instance.version < 11:
-            session.run('dbinfo')
-
-        elif instance.version >= 11:
-            session.run('dbinfo','dbinfo_11')
-
-        if instance.version >= 12:
-            session.run('pdbinfo')
-
-    for f in os.listdir(shared.tempdir):
-        path = os.path.join(shared.tempdir, f)
-        newp = os.path.join(shared.tempdir, 'dbinfo', f)
-        if not os.path.isfile(path):
-            continue
-        if f.endswith('txt'):
-            os.rename(path, newp)
-
-    if instance.status == 'OPEN':
-        if shared.args.splunk:
-            header = "set colsep ' '\nset timing off\nalter session set nls_date_format='YYYY-MM-DD';\n"
-            if instance.version < 11:
-                ext = '10g'
-            elif instance.version == 11:
-                ext = '11g'
-            elif instance.version > 11:
-                ext = '12c'
-
-            session.run('capacity_splunk_{0}'.format(ext), header=header, nospool=True)
-            session.run('capacity_{0}'.format(ext), header=header, nospool=True)
-
-            for f in os.listdir(shared.tempdir):
-                if f.startswith('capacity_') or f.endswith('.dsk'):
-                    path = os.path.join(shared.tempdir, f)
-                    newp = os.path.join(shared.tempdir, 'splunk', f)
-                    os.rename(path, newp)
-
-    logging.info('%s: Info processor elapsed time %s seconds', instance.sid, session.runtime)

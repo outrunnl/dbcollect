@@ -48,10 +48,11 @@ def oracle_info(archive, args):
         dbidir    = os.path.join(tempdir, 'dbinfo')
         awrdir    = os.path.join(tempdir, 'awr')
         splunkdir = os.path.join(tempdir, 'splunk')
-        infoproc  = Process(target=info_processor, name='DBInfo', args=(shared,))
+
+        info_processor(shared)
+
         generator = Process(target=job_generator, name='Generator', args=(shared,))
         processor = Process(target=job_processor, name='Processor', args=(shared,))
-        infoproc.start()
         processor.start()
         generator.start()
 
@@ -90,9 +91,6 @@ def oracle_info(archive, args):
         processor.join()
         logging.info('%s: Job processor completed', instance.sid)
         
-        infoproc.join()
-        logging.info('%s: DBInfo processor completed', instance.sid)
-
         for filename in os.listdir(splunkdir):
             path = os.path.join(splunkdir, filename)
             archive.store(path, 'oracle/{0}/{1}'.format(instance.sid, filename))
@@ -106,9 +104,6 @@ def oracle_info(archive, args):
         sys.stdout.write('\033[2K')
         sys.stdout.flush()
 
-        if infoproc.exitcode:
-            logging.info('infoproc rc=%s', infoproc.exitcode)
-            raise CustomException('DBInfo generator failed, rc={0}'.format(generator.exitcode))
         if generator.exitcode:
             raise CustomException('Job generator failed, rc={0}'.format(generator.exitcode))
         if processor.exitcode:

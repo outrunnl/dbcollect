@@ -3,11 +3,70 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.14.0"
+    'version': "1.15.0"
 }
 
 settings = {
     'logpath': "/tmp/dbcollect.log",
+}
+
+dbinfo_config = {
+    'basic': [
+        'instance.sql',
+        'database.sql',
+        'rac.sql',
+        'dbfiles.sql',
+        'dbsize.sql',
+        'asmdiskgroups.sql',
+        'asmdisks.sql',
+        'asmsummary.sql',
+        'parameters.sql',
+        'osstats.sql',
+        'archivelogs.sql',
+        'archivesummary.sql',
+        'bctracking.sql',
+        'flashback.sql',
+        'banner.sql',
+    ],
+    'common': [
+        'rmanconfig.sql',
+        'backupjobs.sql',
+        'backups.sql',
+        'awrretention.sql',
+        'awrsnaps.sql',
+        'dnfs.sql',
+        'features.sql',
+        #'sleep.sql',
+        #'error.sql',
+    ],
+    'oracle11': [
+        'db_tablespaces.sql',
+        'db_tsfiles.sql',
+        'db_tempfiles.sql',
+        'db_freespace.sql',
+        'db_segments.sql',
+        'db_recyclebin.sql',
+        'db_compression.sql',
+    ],
+    'oracle12': [
+        'pdb_cdbinfo.sql',
+        'pdb_databases.sql',
+        'pdb_tablespaces.sql',
+        'pdb_tsfiles.sql',
+        'pdb_tempfiles.sql',
+        'pdb_freespace.sql',
+        'pdb_segments.sql',
+        'pdb_recyclebin.sql',
+        'pdb_compression.sql',
+    ],
+    'splunk_11': [
+        'capacity_11g.sql',
+        'capacity_splunk_11g.sql'
+    ],
+    'splunk_12': [
+        'capacity_12c.sql',
+        'capacity_splunk_12c.sql'
+    ],
 }
 
 linux_config = {

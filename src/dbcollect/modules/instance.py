@@ -32,6 +32,33 @@ class Job():
         sql = getscript('{0}_report.sql'.format(self.reptype))
         return sql.format(filename=self.filename, dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
 
+def sqlplus2json(data):
+    """
+    Convert SQL*Plus metadata into json key/values
+    """
+    header = []
+    info = {}
+    for line in data.splitlines():
+        if line.startswith('-----'):
+            # separates header from data rows
+            continue
+        words = line.split('|')
+        if len(words) < 2:
+            # sepatates sections, reset header
+            header = None
+            continue
+        if not header:
+            header = words
+            continue
+        for k, v in zip(header, words):
+            parameter = k.strip().lower()
+            if parameter in ('instance_number', 'dbid', 'version_major'):
+                value = int(v)
+            else:
+                value = v.strip()
+            info[parameter] = value if value else None
+    return info
+
 class Instance():
     """Oracle Instance with SQL*Plus, scripts and other methods"""
     def __init__(self, tempdir, sid, orahome):
@@ -40,9 +67,10 @@ class Instance():
         self.orahome   = orahome
         self.jobs      = []
         self.scripts   = {}
-        status       = self.query("SELECT status, regexp_substr(version, '\d+') FROM v$instance;\n").split()
-        self.status  = status[0]
-        self.version = int(status[1])
+        meta           = self.script('meta')
+        self.instinfo  = sqlplus2json(meta)
+        self.status    = self.instinfo['status']
+        self.version   = self.instinfo['version_major']
 
     def sqlplus(self, quiet=False):
         """
@@ -71,9 +99,10 @@ class Instance():
         proc = self.sqlplus()
         if onerror:
             proc.stdin.write("WHENEVER SQLERROR EXIT SQL.SQLCODE\n")
-        proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
         if header:
             proc.stdin.write(header)
+        else:
+            proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
         out, _ = proc.communicate(sql)
         if proc.returncode:
             logging.debug('SQL*Plus output:\n{0}'.format(out))
@@ -125,3 +154,9 @@ class Instance():
             self.jobs.append(job)
         return len(self.jobs)
 
+    def meta(self):
+        info = {}
+        info['oracle_sid']  = self.sid
+        info['oracle_home'] = self.orahome
+        info.update(self.instinfo)
+        return info

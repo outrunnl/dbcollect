@@ -107,6 +107,22 @@ class JSONFile():
             self.info['status'] = 'Critical Error'
             logging.critical(e)
 
+    def dbinfo(self, instance, name, path):
+        """
+        Create a dbinfo report
+        """
+        self.info['mediatype'] = 'dbinfo'
+        self.info['format']    = 'sqlplus'
+        self.info['script']    = name
+        self.info['oracle']    = instance.meta()
+        try:
+            with open(path) as f:
+                self.data = f.read()
+            os.unlink(path)
+        except Exception as e:
+            self.info['status'] = 'ERROR'
+            self.errors = 'Data not available'
+
     def dir(self, *dirs):
         self.info['directories'] = []
         for dir in dirs:
