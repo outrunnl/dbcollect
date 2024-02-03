@@ -120,7 +120,7 @@ class Session():
             if self.instance.version == 11:
                 sections += ['common', 'oracle11']
             elif self.instance.version > 11:
-                sections += ['common', 'oracle11', 'oracle12']
+                sections += ['common', 'oracle12']
 
         for section in sections:
             for scriptname in dbinfo_config[section]:
@@ -132,11 +132,12 @@ class Session():
             logging.debug('{0}: Running dbinfo script {1}'.format(self.sid, scriptname))
             scriptpath = 'dbinfo/{0}'.format(scriptname)
             savepath   = '{0}/{1}_{2}'.format(self.tempdir, self.sid, scriptname.replace('.sql','.txt'))
+            filename   = '{0}_{1}.jsonp'.format(self.sid, os.path.splitext(scriptname)[0])
 
             elapsed, status = self.runscript(scriptpath, savepath, header='common/header.sql')
             jfile = JSONFile(elapsed=elapsed, status=status)
             jfile.dbinfo(self.instance, scriptname, savepath)
-            jfile.save(os.path.join(self.tempdir, 'dbinfo', scriptname.replace('.sql', '.jsonp')))
+            jfile.save(os.path.join(self.tempdir, 'dbinfo', filename))
 
         if self.args.splunk:
             if self.instance.status in ('STARTED','MOUNTED'):
