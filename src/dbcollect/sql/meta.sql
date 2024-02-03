@@ -24,6 +24,7 @@ FROM v$instance
 SELECT dbid
 , name dbname
 , db_unique_name
+, database_role
 , created
 FROM v$database
 /
