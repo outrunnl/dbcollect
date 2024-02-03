@@ -52,7 +52,7 @@ def sqlplus2json(data):
             continue
         for k, v in zip(header, words):
             parameter = k.strip().lower()
-            if parameter in ('instance_number', 'dbid', 'version_major'):
+            if parameter in ('instance_number', 'version_major'):
                 value = int(v)
             else:
                 value = v.strip()
