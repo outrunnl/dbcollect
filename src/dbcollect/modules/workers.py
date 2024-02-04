@@ -22,7 +22,7 @@ class Shared():
         self.args     = args
         self.instance = instance
         self.tempdir  = tempdir
-        self.jobs     = Queue(10)
+        self.jobs     = Queue(60)
         self.done     = Event()
 
     @property
