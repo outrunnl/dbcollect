@@ -127,6 +127,13 @@ class Session():
                 yield scriptname
 
     def dbinfo(self):
+        logging.info('{0}: Running opatch lspatches'.format(self.sid))
+
+        lspatches  = '{0} lspatches'.format(os.path.join(self.instance.orahome, 'OPatch/opatch'))
+        inventory_info = JSONFile()
+        inventory_info.execute(lspatches)
+        inventory_info.save(os.path.join(self.tempdir, 'dbinfo', '{0}_patches.jsonp'.format(self.sid)))
+
         logging.info('{0}: Running dbinfo scripts'.format(self.sid))
         for scriptname in self.genscripts():
             logging.debug('{0}: Running dbinfo script {1}'.format(self.sid, scriptname))
