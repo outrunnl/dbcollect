@@ -218,7 +218,7 @@ def job_processor(shared):
         for session in sessions:
             if not session.ready:
                 continue
-            job = shared.jobs.get(timeout=60)
+            job = shared.jobs.get(timeout=10)
             session.submit(job.query)
             ping = time.time()
             break
