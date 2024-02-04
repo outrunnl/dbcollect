@@ -4,7 +4,7 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 COL SIZE_MB     FORMAT 99,999,999,990.99
 COL SESSION_KEY FORMAT 99999   HEAD 'Key'
-COL INPUT_TYPE  FORMAT A12     HEAD 'Type'
+COL INPUT_TYPE  FORMAT A16     HEAD 'Type'
 COL DEVTYPE     FORMAT A10     HEAD 'Device'
 COL STATUS      FORMAT A25     HEAD 'Status'
 COL TS          FORMAT A19     HEAD 'Start'

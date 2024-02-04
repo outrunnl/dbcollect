@@ -10,7 +10,7 @@ COL CURRENTLY_USED         FORMAT A10   HEAD 'In Use'
 COL FIRST_USAGE_DATE                    HEAD 'First Usage'
 COL LAST_USAGE_DATE                     HEAD 'Last Usage'
 COL LAST_SAMPLE_DATE                    HEAD 'Last Sample'
-COL AGE                    FORMAT 999   HEAD 'Age'
+COL AGE                    FORMAT 99999 HEAD 'Age'
 COL DESCRIPTION            FORMAT A160  HEAD 'Description'
 
 SELECT name
