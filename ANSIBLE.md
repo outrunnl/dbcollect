@@ -20,9 +20,9 @@ _dbcollect_ can be run on multiple hosts in one go using Ansible. This document 
 mkdir $HOME/multicollect && cd $HOME/multicollect
 
 # Download the playbook, multicollect executable and example hosts file
-curl -O https://raw.githubusercontent.com/outrunnl/dbcollect/devel/contrib/ansible/dbcollect.yml
-curl -O https://raw.githubusercontent.com/outrunnl/dbcollect/devel/contrib/ansible/hosts
-curl -O https://raw.githubusercontent.com/outrunnl/dbcollect/devel/contrib/ansible/multicollect
+curl -O https://raw.githubusercontent.com/outrunnl/dbcollect/master/contrib/ansible/dbcollect.yml
+curl -O https://raw.githubusercontent.com/outrunnl/dbcollect/master/contrib/ansible/hosts
+curl -O https://raw.githubusercontent.com/outrunnl/dbcollect/master/contrib/ansible/multicollect
 
 # Make multicollect executable
 chmod 755 multicollect
