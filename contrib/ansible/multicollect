@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+"""
+multicollect - Runs dbcollect against multiple hosts using Ansible
+Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+License: GPLv3+
+"""
+
+import argparse
+from subprocess import run
+
+description="""\
+Multicollect is a simple wrapper to call ansible-playbook with the right options for dbcollect.
+It runs ansible like this:
+
+ansible-playbook -i <inventory> dbcollect.yml -e 'parameters="<parameters>"'
+
+Use the -n option to only show the command.
+"""
+
+def run_playbook(args, parameters):
+    p = ' '.join(parameters)
+    cmd  = ['ansible-playbook', '-i', 'hosts', 'dbcollect.yml', '-e', f'parameters="{p}"']
+    if args.dryrun:
+        cmd[-1] = f'\'{cmd[-1]}\''
+        print(' '.join(cmd))
+    else:
+        run(cmd)
+
+parser = argparse.ArgumentParser(epilog=description, usage='multicollect [-h] -i INVENTORY <parameters>', formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('-n', '--dryrun', action="store_true", help='Just show the ansible command')
+parser.add_argument('-i', type=str, metavar='INVENTORY', help='Ansible hosts file', default='hosts')
+
+args, parameters = parser.parse_known_args()
+run_playbook(args, parameters)

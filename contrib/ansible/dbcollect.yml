@@ -8,7 +8,13 @@
 #  Author: Bruno Flückiger <bruno@bsdhowto.ch>
 #  Co-Author: Niels Herren
 #  Date: 2021-11-03
-#  Version: 1.0
+#  Version: 1.1
+#  Changes (Bart Sjerps, 2024-02-05):
+#  - python -> python3
+#  - added parameters
+#  - changed target path from /bin to /usr/local/bin
+#  - added temp_path & temp dir for temp files
+#  - parameters now must be provided on the cmdline: -e 'parameters="-o -d 1"'
 #
 ################################################################################
 
@@ -20,6 +26,7 @@
   vars:
     ansible_python_interpreter: auto_silent
     collect_path: "./collects"
+    temp_path: "/tmp/dbc-ansible"
     dbcollect: "dbcollect"
     downloader: "./download.py"
     http_proxy: ""
@@ -37,22 +44,28 @@
             path: "{{ collect_path }}"
             state: directory
 
+        - name: "create local temp dir"
+          file:
+            path: "{{ temp_path }}"
+            state: directory
+
         - name: "remove existing downloader"
           file:
-            path: "{{ downloader }}"
+            path: "{{ temp_path }}/{{ downloader }}"
             state: absent
 
         - name: "download the downloader of dbcollect"
           get_url:
             url: "https://raw.githubusercontent.com/outrunnl/dbcollect/master/scripts/download"
-            dest: "{{ downloader }}"
+            dest: "{{ temp_path }}/{{ downloader }}"
           environment:
             http_proxy: "{{ http_proxy }}"
             https_proxy: "{{ http_proxy }}"
 
         - name: "get the latest version of dbcollect"
           shell:
-            cmd: "python {{ downloader }}"
+            chdir: "{{ temp_path }}"
+            cmd: "python3 {{ downloader }}"
             warn: false
 
       delegate_to: localhost
@@ -65,20 +78,20 @@
 
     - name: "copy dbcollect to host"
       copy:
-        src: "./{{ dbcollect }}"
-        dest: "/bin/{{ dbcollect }}"
+        src: "{{ temp_path }}/{{ dbcollect }}"
+        dest: "/usr/local/bin/{{ dbcollect }}"
         owner: root
         group: root
         mode: 0755
 
     - name: "execute dbcollect"
       shell:
-        cmd: "{{ dbcollect }} --force-awr --overwrite --strip"
+        cmd: "{{ dbcollect }} {{ parameters }}"
         warn: false
 
     - name: "remove dbcollect from host"
       file:
-        path: "/bin/{{ dbcollect }}"
+        path: "/usr/local/bin/{{ dbcollect }}"
         state: absent
 
     - name: "remove old local zip file"
