@@ -44,7 +44,7 @@ def tag(args):
     r = run(['python3', '-c', 'from lib.config import versioninfo; print(versioninfo["version"])'], 
             cwd=os.path.join(gitdir, 'src/dbcollect'), capture_output=True, encoding='utf-8', check=True)
     version = r.stdout.strip()
-    print(f'git tag -a -mversion v${version}')
+    print(f'git tag -a -mversion v{version}')
     print('git push --tags')
 
 if __name__ == '__main__':
