@@ -15,15 +15,15 @@ COL MOUNTED                             HEAD 'Mounted'
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF USED_MB FREE_MB ALLOCATED ON REPORT
 
-SELECT d.name                      DISKNAME
-, COALESCE(dg.name, header_status) DG_NAME
-, (d.total_mb - d.free_mb)         USED_MB
-, d.free_mb                        FREE_MB
-, d.os_mb                          ALLOCATED
+SELECT d.name                      diskname
+, COALESCE(dg.name, header_status) dg_name
+, (d.total_mb - d.free_mb)         used_mb
+, d.free_mb                        free_mb
+, d.os_mb                          allocated
 , 100*(d.total_mb - d.free_mb) /
-    NULLIF(d.total_mb,0)           PCT_USED
-, create_date                      CREATED
-, mount_date                       MOUNTED
+    NULLIF(d.total_mb,0)           pct_used
+, create_date                      created
+, mount_date                       mounted
 , path
 FROM gv$asm_disk d
 LEFT OUTER JOIN v$asm_diskgroup dg USING (group_number)

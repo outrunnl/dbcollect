@@ -7,7 +7,7 @@ COL TABLESPACE_NAME FORMAT A25               HEAD 'Tablespace'
 COL SIZE_MB         FORMAT 99,999,999,990.99 HEAD 'Size'
 COL FREE_MB         LIKE SIZE_MB             HEAD 'Free'
 COL USED_MB         LIKE SIZE_MB             HEAD 'Used'
-COL PCT_USED   FORMAT 990.99            HEAD 'Used %'
+COL PCT_USED        FORMAT 990.99            HEAD 'Used %'
 
 BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF SIZE_MB FREE_MB USED_MB ON REPORT

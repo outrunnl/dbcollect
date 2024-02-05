@@ -18,7 +18,7 @@ SELECT COALESCE(p.name,'-') pdb_name
 FROM v$tempfile tf
 JOIN v$tablespace ts USING (con_id, ts#)
 LEFT JOIN v$pdbs p USING (con_id)
-ORDER BY pdb_name, tablespace_name, FILE#
+ORDER BY pdb_name, tablespace_name, file#
 /
 
 CLEAR COMPUTES COLUMNS

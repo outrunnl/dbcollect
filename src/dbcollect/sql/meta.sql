@@ -1,3 +1,10 @@
+-----------------------------------------------------------------------------
+-- Title       : meta.sql
+-- Description : Get Oracle instance and database metadata
+-- Author      : Bart Sjerps <bart@dirty-cache.com>
+-- License     : GPLv3+
+-----------------------------------------------------------------------------
+
 SET colsep '|'
 SET tab off feedback off verify off heading on lines 1000 pages 50000 trims on
 

@@ -9,7 +9,7 @@ COL FILES                    FORMAT 999,990 HEAD 'Files'
 COL BLKSZ                    FORMAT 99      HEAD 'Blocksize'
 COL STATUS                   FORMAT A9      HEAD 'Status'
 COL CONTENTS                 FORMAT A9      HEAD 'Contents'
-COL COMPRESSION              FORMAT A12     HEAD 'Compression'
+COL DEF_TAB_COMPRESSION      FORMAT A12     HEAD 'Compression'
 COL BIGFILE                  FORMAT A7      HEAD 'Bigfile'
 COL ENCRYPTED                FORMAT A9      HEAD 'Encrypted'
 COL COMPRESS_FOR             FORMAT A12     HEAD 'Compress For'
@@ -22,7 +22,7 @@ SELECT COALESCE(name, '-') pdb_name
 , ct.block_size/1024 blksz
 , status
 , contents
-, def_tab_compression compression
+, def_tab_compression
 , bigfile
 , encrypted
 , compress_for

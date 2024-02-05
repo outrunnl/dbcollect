@@ -19,8 +19,8 @@ SELECT file_type
 , backup_type
 , bs_incr_type
 , compressed
-, STATUS
-, SUM(BYTES)/1048576 size_mb
+, status
+, SUM(bytes)/1048576 size_mb
 , COUNT(*)           files
 FROM v$backup_files
 WHERE file_type NOT IN ('DATAFILE')

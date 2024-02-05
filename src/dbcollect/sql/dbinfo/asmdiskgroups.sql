@@ -21,10 +21,10 @@ SELECT name dg_name
 , allocation_unit_size/1048576 au_size
 , state
 , type
-, DECODE(type, 'EXTERN',1,'NORMAL',2,'HIGH',3,0) MIRRORS
-, (total_mb - free_mb) USED_MB
-, free_mb              FREE_MB
-, total_mb             ALLOCATED
+, DECODE(type, 'EXTERN',1,'NORMAL',2,'HIGH',3,0) mirrors
+, (total_mb - free_mb) used_mb
+, free_mb              free_mb
+, total_mb             allocated
 , ROUND((1- (free_mb / NULLIF(total_mb,0)))*100, 2) PCT_USED
 , created
 , mounted 

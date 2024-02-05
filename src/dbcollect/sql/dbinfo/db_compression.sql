@@ -23,11 +23,11 @@ SELECT '-' pdb_name
 , SUM(empty/1048576)           empty
 , SUM(datasize)/sum(allocated) ratio
 FROM (
-  SELECT tablespace_name, 1 tbl, 0 part, t.compress_for, blocks, block_size*empty_blocks empty, avg_row_len*num_rows datasize, avg_space, block_size*blocks allocated
+  SELECT 1 tbl, 0 part, t.compress_for, blocks, block_size*empty_blocks empty, avg_row_len*num_rows datasize, block_size*blocks allocated
   FROM dba_tables t
   JOIN dba_tablespaces USING (tablespace_name)
   UNION ALL
-  SELECT tablespace_name, 0 tbl, 1 part, p.compress_for, blocks, block_size*empty_blocks empty, avg_row_len*num_rows datasize, avg_space, block_size*blocks allocated
+  SELECT 0 tbl, 1 part, p.compress_for, blocks, block_size*empty_blocks empty, avg_row_len*num_rows datasize, block_size*blocks allocated
   FROM dba_tab_partitions p
   JOIN dba_tablespaces USING (tablespace_name)
 ) t

@@ -9,12 +9,12 @@ COL VALUE       FORMAT A160 HEAD 'Value'
 COL DESCRIPTION FORMAT A80  HEAD 'Description'
 
 SELECT name parameter
-, DECODE(ismodified,'FALSE','','SYSTEM_MOD','SYSTEM','MODIFIED','SESSION',ismodified) MODIFIED
+, DECODE(ismodified,'FALSE','','SYSTEM_MOD','SYSTEM','MODIFIED','SESSION',ismodified) modified
 , description
 , value
 FROM v$parameter
 WHERE value IS NOT NULL
-AND (isdefault = 'FALSE' OR ISMODIFIED != 'FALSE')
+AND (isdefault = 'FALSE' OR ismodified != 'FALSE')
 ORDER BY name
 /
 

@@ -17,9 +17,9 @@ SELECT COALESCE(name, '-') pdb_name
 , COUNT(*)  objects
 , SUM(space*cts.block_size/1048576) size_mb
 FROM cdb_recyclebin
-JOIN cdb_tablespaces cts USING (con_id) 
+JOIN cdb_tablespaces cts USING (con_id)
 LEFT OUTER JOIN v$pdbs USING (con_id)
-WHERE ts_name = tablespace_name 
+WHERE ts_name = tablespace_name
 GROUP BY name, ts_name, type
 /
 

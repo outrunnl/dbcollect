@@ -14,14 +14,14 @@ COL OUTPUT_MB   LIKE SIZE_MB   HEAD 'Written'
 COL RATIO       FORMAT 90.9999 HEAD 'Ratio'
 
 SELECT SESSION_KEY
-, INPUT_TYPE
-, OUTPUT_DEVICE_TYPE     DEVTYPE
-, STATUS
-, TO_CHAR(start_time)    TS
-, ELAPSED_SECONDS        ELAPSED
-, INPUT_BYTES  / 1048576 INPUT_MB
-, OUTPUT_BYTES / 1048576 OUTPUT_MB
-, COMPRESSION_RATIO      RATIO
+, input_type
+, output_device_type     devtype
+, status
+, to_char(start_time)    ts
+, elapsed_seconds        elapsed
+, input_bytes  / 1048576 input_mb
+, output_bytes / 1048576 output_mb
+, compression_ratio      ratio
 FROM V$RMAN_BACKUP_JOB_DETAILS
 ORDER BY start_time
 /

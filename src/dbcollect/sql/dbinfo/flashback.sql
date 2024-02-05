@@ -10,9 +10,9 @@ BREAK ON REPORT
 COMPUTE SUM LABEL "Total" OF FILENAME SIZE_MB ON REPORT
 
 SELECT type
-, bytes/1048576 SIZE_MB
-, name          FILENAME
-FROM V$FLASHBACK_DATABASE_LOGFILE
+, bytes/1048576 size_mb
+, name          filename
+FROM V$flashback_database_logfile
 /
 
 CLEAR COMPUTES COLUMNS

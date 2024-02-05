@@ -21,10 +21,10 @@ SELECT name
 , first_usage_date
 , last_usage_date
 , last_sample_date
-, round(last_sample_date - last_usage_date) age
+, ROUND(last_sample_date - last_usage_date) age
 , description
 FROM  dba_feature_usage_statistics
-WHERE DETECTED_USAGES > 0
+WHERE detected_usages > 0
 ORDER BY dbid, name, version
 /
 
