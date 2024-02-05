@@ -62,9 +62,7 @@ class Session():
         self.proc.stdin.write("alter session set nls_date_language=american;\n")
 
     def __del__(self):
-        rc = self.proc.poll()
-        if rc:
-            self.proc.communicate('exit;\n')
+        self.proc.communicate('exit;\n')
 
     def submit(self, c):
         if self.proc.poll() is not None:
