@@ -182,12 +182,12 @@ def info_processor(shared):
 @exception_handler
 def job_generator(shared):
     """Producer - Submits AWR/SP jobs to the job queue"""
+    timeout = shared.args.timeout * 60
     try:
-        args   = shared.args
         for job in shared.instance.jobs:
-            shared.jobs.put(job, timeout=args.timeout*60)
+            shared.jobs.put(job, timeout=timeout)
     except Full:
-        logging.error('%s: Generator timeout (queue full)', shared.instance.sid)
+        logging.error('{0}: Generator timeout (queue full, {1} seconds)'.format(shared.instance.sid, timeout))
         sys.exit(11)
     except Exception as e:
         logging.exception(e)
@@ -202,6 +202,7 @@ def job_processor(shared):
     Worker process that handles SQL*Plus subprocesses
     Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
     """
+    timeout  = shared.args.timeout * 60
     sessions = [Session(shared) for x in range(shared.tasks)]
     ping     = time.time()
 
@@ -209,8 +210,8 @@ def job_processor(shared):
 
     while True:
         time.sleep(0.1)
-        if (time.time() - ping) > shared.args.timeout*60:
-            raise DBCollectError('Job processor timeout ({0})'.format(shared.instance.sid))
+        if (time.time() - ping) > timeout:
+            raise DBCollectError('{0}: Job processor timeout ({1} seconds)'.format(shared.instance.sid, timeout))
         if shared.jobs.empty():
             # Break the loop if job producer is done AND queue is empty
             if shared.done.is_set():
