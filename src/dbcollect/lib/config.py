@@ -156,7 +156,7 @@ sunos_config = {
     ],
 }
 
-# TBD
+# TBD - experimental
 hpux_config = {
     'commands': {
         'uname_s': 'uname -s',
@@ -164,11 +164,12 @@ hpux_config = {
         'model': 'model',
         'serial': 'getconf MACHINE_SERIAL',
         'machinfo': 'machinfo',
-        'ifconfig': 'ifconfig -a',
-        'ioscan_fnc': 'ioscan –fnC processor',
-        'ioscan_m': 'ioscan –m hwpath',
-        'diskinfo_v': 'diskinfo –v',
-        'idisk_p': 'idisk –p',
+        'ifconfig_a': 'ifconfig -a',
+        'ioscan_fnc': 'ioscan -fnC processor',
+        'ioscan_m': 'ioscan -m hwpath',
+        'diskinfo_v': 'diskinfo -v',
+        'idisk_p': 'idisk -p',
+        'df_p': 'df -p',
         'df_k': 'df -k',
         'df_n': 'df -n',
         'vgdisplay': 'vgdisplay',
