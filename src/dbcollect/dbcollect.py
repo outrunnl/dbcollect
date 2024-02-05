@@ -21,9 +21,8 @@ from lib.config import versioninfo, settings
 from lib.log import logsetup
 from lib.errors import DBCollectError, ZipCreateError
 from lib.archive import Archive
-from lib.user import switchuser, username, usergroup, usergroups, dbuser
+from lib.user import switchuser, username, dbuser
 from lib.jsonfile import JSONFile, buildinfo
-from lib.functions import getscript
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update

@@ -4,7 +4,7 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, re, platform, logging
+import os, platform, logging
 from lib.config import linux_config, aix_config, sunos_config, hpux_config
 from lib.jsonfile import JSONFile
 from lib.functions import execute, listdir
@@ -39,7 +39,7 @@ def sar_info(archive, args):
         path = os.path.join(sarpath, sarfile)
         if sarfile.startswith('sar'):
             continue
-        elif sarfile.startswith('sa'):
+        if sarfile.startswith('sa'):
             df_cpu   = JSONFile(cmd='sar -uf {0}'.format(path))
             df_block = JSONFile(cmd='sar -bf {0}'.format(path))
             df_disk  = JSONFile(cmd='sar -df {0}'.format(path))
@@ -118,18 +118,18 @@ def linux_info(archive, args):
         if dev == 'lo':
             continue
         info = { 'name': dev }
-        dir = os.path.join('/sys/class/net', dev)
-        if not os.path.isdir(dir):
+        directory = os.path.join('/sys/class/net', dev)
+        if not os.path.isdir(directory):
             continue
         for var in ['mtu', 'speed', 'address','duplex']:
-            path = os.path.join(dir, var)
+            path = os.path.join(directory, var)
             try:
                 with open(path) as f:
                     data = f.read().rstrip()
                     if var in ('mtu','speed'):
                         data = int(data)
                     info[var] = data
-            except:
+            except  (IOError, OSError) as e:
                 info[var] = None
         niclist.append(info)
 
@@ -186,9 +186,9 @@ def aix_info(archive, args):
         df = JSONFile(path=file)
         archive.writestr(file + '.jsonp', df.jsonp())
 
-    disks, err, rc = execute('lsdev -Cc disk -Fname')
-    nics, err, rc = execute('ifconfig -l')
-    vgs, err, rc =  execute('lsvg')
+    disks, _, _ = execute('lsdev -Cc disk -Fname')
+    nics, _, _ = execute('ifconfig -l')
+    vgs, _, _ =  execute('lsvg')
 
     logging.info('Collecting AIX Disk info')
     for disk in disks.splitlines():
@@ -246,4 +246,3 @@ def hpux_info(archive, args):
         archive.writestr(file + '.jsonp', df.jsonp())
 
     sar_info(archive, args)
-

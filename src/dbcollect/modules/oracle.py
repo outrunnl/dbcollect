@@ -4,7 +4,7 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, re, tempfile, logging, time
+import os, sys, logging, time
 from datetime import timedelta
 from multiprocessing import Process
 
@@ -32,7 +32,7 @@ def oracle_info(archive, args):
             logging.info('%s is excluded, skipping...', sid)
         elif included and not sid in included:
             logging.info('%s not included, skipping...', sid)
-        elif inst_info[sid]['running'] == False:
+        elif inst_info[sid]['running'] is False:
             logging.debug('%s not running, skipping...', sid)
         else:
             instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])
@@ -87,10 +87,10 @@ def oracle_info(archive, args):
 
         generator.join()
         logging.info('%s: Job generator completed', instance.sid)
-        
+
         processor.join()
         logging.info('%s: Job processor completed', instance.sid)
-        
+
         for filename in os.listdir(splunkdir):
             path = os.path.join(splunkdir, filename)
             archive.store(path, 'oracle/{0}/{1}'.format(instance.sid, filename))

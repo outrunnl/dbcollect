@@ -9,7 +9,7 @@ from datetime import datetime
 
 try:
     from lib.buildinfo import buildinfo
-except:
+except ImportError:
     print("Error: No buildinfo")
     sys.exit(20)
 

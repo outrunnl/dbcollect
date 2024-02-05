@@ -22,13 +22,13 @@ from lib.functions import execute
 
 def dbuser():
     """"Find the first Oracle database owner"""
-    stdout, stderr, rc = execute('ps -eo uid,args')
+    stdout, _, _ = execute('ps -eo uid,args')
     for uid, cmd in re.findall(r'(\d+)\s+(.*)', stdout):
         r = re.match(r'ora_pmon_(\w+)', cmd)
         if r:
-            sid  = r.group(1)
             user = pwd.getpwuid(int(uid)).pw_name
             return user
+    return None
 
 def switchuser(user, args):
     """Call self as a different user with the same parameters"""
@@ -37,13 +37,13 @@ def switchuser(user, args):
     try:
         uid = pwd.getpwnam(user).pw_uid
         home = pwd.getpwnam(user).pw_dir
-    except KeyError as e:
+    except KeyError:
         print("User {0} not available, trying 'nobody'".format(user))
         try:
             user = 'nobody'
             uid = pwd.getpwnam(user).pw_uid
             home = '/tmp'
-        except KeyError as e:
+        except KeyError:
             print("User nobody not available, giving up")
             sys.exit(20)
     gid = pwd.getpwnam(user).pw_gid

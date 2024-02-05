@@ -4,7 +4,7 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, logging, errno
+import os, logging
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from lib.config import versioninfo

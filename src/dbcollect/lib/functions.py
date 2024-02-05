@@ -8,20 +8,19 @@ import os, sys, errno
 from subprocess import Popen, PIPE
 from pkgutil import get_data
 
-def listdir(dir):
+def listdir(directory):
     """Return all files/dirs in dir, or empty list if not exists"""
-    if not os.path.isdir(dir):
+    if not os.path.isdir(directory):
         return []
-    return sorted(os.listdir(dir))
+    return sorted(os.listdir(directory))
 
 def getscript(name):
     """Directly get an SQL script from the Python package"""
     try:
         if sys.version_info[0] == 2:
             return get_data('sql', name)
-        else:
-            return get_data('sql', name).decode()
-    except OSError as e:
+        return get_data('sql', name).decode()
+    except OSError:
         raise RuntimeError("Cannot load script {0}".format(name))
 
 def getfile(*args):

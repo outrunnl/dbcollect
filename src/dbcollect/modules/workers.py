@@ -11,10 +11,10 @@ from multiprocessing import Event, Queue, cpu_count
 from multiprocessing.queues import Full
 
 from lib.functions import getscript
-from lib.config import versioninfo, dbinfo_config
+from lib.config import dbinfo_config
 from lib.jsonfile import JSONFile
 from lib.log import exception_handler
-from lib.errors import *
+from lib.errors import DBCollectError
 
 class Shared():
     """Container class for messages and sharing data between processes"""
@@ -35,8 +35,7 @@ class Shared():
             tasks = max(1, self.args.tasks)
             tasks = min(tasks, cpu_count())
             return tasks
-        else:
-            return max(1, cpu_count()//2)
+        return max(1, cpu_count()//2)
 
 class Tempdir():
     """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
@@ -156,7 +155,7 @@ class Session():
                 logging.debug('{0}: Running splunk script {1}'.format(self.sid, scriptname))
                 scriptpath = 'splunk/{0}'.format(scriptname)
                 elapsed, status = self.runscript(scriptpath, header='splunk/splunk_header.sql')
-            
+
             for f in os.listdir(self.tempdir):
                 path    = os.path.join(self.tempdir, f)
                 newpath = os.path.join(self.tempdir, 'splunk', f)
@@ -169,7 +168,7 @@ class Session():
     def ready(self):
         return not os.path.exists(self.status)
 
-    @property    
+    @property
     def runtime(self):
         return round(time.time() - self.ping, 2)
 
@@ -179,17 +178,16 @@ def info_processor(shared):
     session.dbinfo()
 
     logging.info('%s: DBInfo processor finished, elapsed time %s seconds', shared.instance.sid, session.runtime)
-    
+
 @exception_handler
 def job_generator(shared):
     """Producer - Submits AWR/SP jobs to the job queue"""
     try:
         args   = shared.args
-        sid    = shared.instance.sid
         for job in shared.instance.jobs:
             shared.jobs.put(job, timeout=args.timeout*60)
     except Full:
-        logging.error('%s: Generator timeout (queue full)', sid)
+        logging.error('%s: Generator timeout (queue full)', shared.instance.sid)
         sys.exit(11)
     except Exception as e:
         logging.exception(e)
@@ -212,7 +210,7 @@ def job_processor(shared):
     while True:
         time.sleep(0.1)
         if (time.time() - ping) > shared.args.timeout*60:
-            raise TimeoutError('Job processor timeout (%s)', shared.instance.sid)
+            raise DBCollectError('Job processor timeout ({0})'.format(shared.instance.sid))
         if shared.jobs.empty():
             # Break the loop if job producer is done AND queue is empty
             if shared.done.is_set():

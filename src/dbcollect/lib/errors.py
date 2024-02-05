@@ -16,9 +16,6 @@ class ReportingError(CustomException):
 class SQLPlusError(CustomException):
     pass
 
-class TimeoutError(CustomException):
-    pass
-
 class InstanceDown(CustomException):
     pass
 

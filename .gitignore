@@ -31,6 +31,9 @@
 # Archives
 *.zip
 
+# config
+venv
+
 # Docs
 *.pdf
 __pycache__

@@ -4,9 +4,8 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, re, logging, errno
-from subprocess import Popen, PIPE
-from datetime import datetime, timedelta
+import os, re, logging
+from datetime import datetime
 from lib.functions import getfile, execute
 from lib.user import getuser, getgroup
 
@@ -24,31 +23,31 @@ def orahomes(args):
                 if not inventory:
                     logging.error('inventory.xml not found or readable')
                 else:
-                    for dir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
-                        logging.debug('ORACLE_HOME (inventory): %s', dir)
-                        dirs.append(dir)
-        
+                    for oradir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
+                        logging.debug('ORACLE_HOME (inventory): %s', oradir)
+                        dirs.append(oradir)
+
     if not args.no_oratab:
         oratab  = getfile('/etc/oratab','/var/opt/oracle/oratab')
         if not oratab:
             logging.error('oratab not found or readable')
         else:
-            for dir in re.findall(r'^\w+:(\S+):[y|Y|n|N]', oratab, re.M):
-                logging.debug('ORACLE_HOME (oratab): %s', dir)
-                dirs.append(dir)
+            for oradir in re.findall(r'^\w+:(\S+):[y|Y|n|N]', oratab, re.M):
+                logging.debug('ORACLE_HOME (oratab): %s', oradir)
+                dirs.append(oradir)
 
     # return only unique dirs that exist
     return [x for x in list(set(dirs)) if os.path.isdir(x)]
 
 def running_instances():
     # Build list of running instances
-    runlist = dict()
-    out, err, rc = execute('ps -eo uid,gid,args')
+    runlist = {}
+    out, _, _ = execute('ps -eo uid,gid,args')
     for uid, gid, cmd in re.findall(r'(\d+)\s+(\d+)\s+(.*)', out):
         r = re.match(r'ora_pmon_(\w+)', cmd)
         if r:
             sid = r.group(1)
-            runlist[sid] = dict(uid=uid, gid=gid)
+            runlist[sid] = { 'uid': uid, 'gid': gid }
             logging.debug('Running: {} ({}/{})'.format(sid, getuser(int(uid)), getgroup(int(gid))))
     return runlist
 
@@ -85,14 +84,14 @@ def get_instances(args):
     If more hc_*.dat files are detected, the one with the latest mtime will be used.
     Check if the instance is running by looking for ora_pmon_<sid> processes.
     """
-    instances = dict()
-    downlist  = dict()
+    instances = {}
+    downlist  = {}
     runlist   = running_instances()
     detected  = hc_files(args)
     logging.info('Detecting Oracle instances')
 
     # build lists of running and stopped instances
-    for mtime, sid, orahome, owner in detected:
+    for mtime, sid, orahome, _ in detected:
         ts = mtime.strftime("%Y-%m-%d %H:%M")
         if sid[0] in ('+','-'):
             # Skip ASM and MGMT instances
@@ -104,10 +103,8 @@ def get_instances(args):
 
         if sid in runlist:
             running = True
-            status  = 'UP'
         else:
             running       = False
-            status        = 'DOWN'
             downlist[sid] = None
         instances[sid]['running'] = running
 

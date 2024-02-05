@@ -43,11 +43,11 @@ def awrstrip(path, out=None, inplace=False):
         return
     blacklist = []
     try:
-        iter = tree.iter
-    except:
+        tree_iter = tree.iter
+    except Exception:
         # Need this on Python 2.6
-        iter = tree.getiterator
-    for element in iter():
+        tree_iter = tree.getiterator
+    for element in tree_iter():
         if element.tag == 'table':
             # Look for tables with 'SQL' in the 'summary' attribute
             summary = element.get('summary')

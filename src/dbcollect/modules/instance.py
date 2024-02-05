@@ -78,7 +78,7 @@ class Instance():
         if quiet=True, redirect stdout to /dev/null.
         Note: SQL*Plus never writes to stderr.
         """
-        env  = dict(ORACLE_HOME=self.orahome, ORACLE_SID=self.sid)
+        env  = { 'ORACLE_HOME': self.orahome, 'ORACLE_SID': self.sid }
         path = os.path.join(self.orahome, 'bin/sqlplus')
         cmd  = (path, '-S', '-L', '/', 'as', 'sysdba')
         if quiet:
