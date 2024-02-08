@@ -64,7 +64,8 @@ class Session():
         self.proc.communicate('exit;\n')
 
     def submit(self, c):
-        if self.proc.poll() is not None:
+        self.proc.poll()
+        if self.proc.returncode is not None:
             self.proc = self.instance.sqlplus(quiet=True)
 
         # create a lockfile
@@ -90,7 +91,8 @@ class Session():
 
         self.submit(query)
         while not self.ready:
-            rc = self.proc.poll()
+            self.proc.poll()
+            rc = self.proc.returncode
             elapsed = time.time() - tstart
             if rc is not None:
                 status = 'Terminated'
