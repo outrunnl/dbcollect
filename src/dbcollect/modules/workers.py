@@ -56,12 +56,15 @@ class Session():
         self.proc     = self.instance.sqlplus(quiet=True)
         self.sid      = self.instance.sid
         self.ping     = time.time()
-        self.status   = os.path.join(self.tempdir, 'lock', "sqlplus_lock_{0}".format(self.proc.pid))
         self.proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
         self.proc.stdin.write("alter session set nls_date_language=american;\n")
 
     def __del__(self):
         self.proc.communicate('exit;\n')
+
+    @property
+    def statusfile(self):
+        return os.path.join(self.tempdir, 'lock', "sqlplus_lock_{0}".format(self.proc.pid))
 
     @property
     def logfile(self):
@@ -73,14 +76,18 @@ class Session():
             self.proc = self.instance.sqlplus(quiet=True)
 
         # create a lockfile
+        with open(self.statusfile, 'w') as f:
+            f.write(c)
+
         # Write query to logfile
         with open(self.logfile, 'a') as f:
             f.write(c)
 
         # Send query to SQL*Plus
         self.proc.stdin.write(c)
+
         # Tell SQL*Plus to remove lockfile once task is done
-        self.proc.stdin.write("HOST rm -f {status}\n".format(status=self.status))
+        self.proc.stdin.write("HOST rm -f {status}\n".format(status=self.statusfile))
 
     def runscript(self, script, spool=None, header=None):
         query = ''
@@ -98,14 +105,13 @@ class Session():
         self.submit(query)
         while not self.ready:
             self.proc.poll()
-            rc = self.proc.returncode
             elapsed = time.time() - tstart
-            if rc is not None:
+            if self.proc.returncode is not None:
                 status = 'Terminated'
-                logging.error("{0}: Terminated (rc={1}) running dbinfo script {2}".format(self.sid, rc, script))
+                logging.error("{0}: Terminated (pid={1}, rc={2}) running dbinfo script {3}".format(self.sid, self.proc.pid, self.proc.returncode, script))
                 break
             if time.time() - tstart > self.args.timeout*60:
-                logging.error("{0}: Timeout ({1} seconds) running dbinfo script {2}".format(self.sid, round(elapsed), script))
+                logging.error("{0}: Timeout (pid={1}, {2} seconds) running dbinfo script {3}".format(self.sid, self.proc.pid, round(elapsed), script))
                 status = 'Timeout'
                 self.proc.terminate()
                 break
@@ -114,7 +120,7 @@ class Session():
         if self.ready:
             status = 'OK'
 
-        return elapsed, status
+        return elapsed, status, self.proc.returncode
 
     def genscripts(self):
         if self.instance.status == 'STARTED':
@@ -146,10 +152,10 @@ class Session():
             savepath   = '{0}/{1}_{2}'.format(self.tempdir, self.sid, scriptname.replace('.sql','.txt'))
             filename   = '{0}_{1}.jsonp'.format(self.sid, os.path.splitext(scriptname)[0])
 
-            elapsed, status = self.runscript(scriptpath, savepath, header='common/header.sql')
-            jfile = JSONFile(elapsed=elapsed, status=status)
-            jfile.dbinfo(self.instance, scriptname, savepath)
-            jfile.save(os.path.join(self.tempdir, 'dbinfo', filename))
+            elapsed, status, rc = self.runscript(scriptpath, savepath, header='common/header.sql')
+            jsonfile = JSONFile(elapsed=elapsed, status=status, returncode=rc)
+            jsonfile.dbinfo(self.instance, scriptname, savepath)
+            jsonfile.save(os.path.join(self.tempdir, 'dbinfo', filename))
 
         if self.args.splunk:
             if self.instance.status in ('STARTED','MOUNTED'):
@@ -162,7 +168,7 @@ class Session():
             for scriptname in dbinfo_config[section]:
                 logging.debug('{0}: Running splunk script {1}'.format(self.sid, scriptname))
                 scriptpath = 'splunk/{0}'.format(scriptname)
-                elapsed, status = self.runscript(scriptpath, header='splunk/splunk_header.sql')
+                elapsed, status, rc = self.runscript(scriptpath, header='splunk/splunk_header.sql')
 
             for f in os.listdir(self.tempdir):
                 path    = os.path.join(self.tempdir, f)
@@ -174,7 +180,10 @@ class Session():
 
     @property
     def ready(self):
-        return not os.path.exists(self.status)
+        self.proc.poll()
+        if self.proc.returncode is not None:
+            return True
+        return not os.path.exists(self.statusfile)
 
     @property
     def runtime(self):
