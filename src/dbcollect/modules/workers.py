@@ -41,7 +41,7 @@ class Tempdir():
     """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
     def __init__(self, args):
         self.tempdir = tempfile.mkdtemp(prefix = os.path.join(args.tempdir, 'dbcollect_'))
-        for subdir in ('lock','dbinfo','awr','splunk'):
+        for subdir in ('lock','dbinfo','awr','splunk','log'):
             os.mkdir(os.path.join(self.tempdir, subdir))
 
     def __del__(self):
@@ -63,14 +63,20 @@ class Session():
     def __del__(self):
         self.proc.communicate('exit;\n')
 
+    @property
+    def logfile(self):
+        return os.path.join(self.tempdir, 'log', "{0}_sqlplus_{1}.log".format(self.sid, self.proc.pid))
+
     def submit(self, c):
         self.proc.poll()
         if self.proc.returncode is not None:
             self.proc = self.instance.sqlplus(quiet=True)
 
         # create a lockfile
-        with open(self.status, 'w') as f:
+        # Write query to logfile
+        with open(self.logfile, 'a') as f:
             f.write(c)
+
         # Send query to SQL*Plus
         self.proc.stdin.write(c)
         # Tell SQL*Plus to remove lockfile once task is done

@@ -46,6 +46,7 @@ def oracle_info(archive, args):
     for instance in instances:
         shared    = Shared(args, instance, tempdir)
         dbidir    = os.path.join(tempdir, 'dbinfo')
+        dbldir    = os.path.join(tempdir, 'log')
         awrdir    = os.path.join(tempdir, 'awr')
         splunkdir = os.path.join(tempdir, 'splunk')
 
@@ -99,6 +100,11 @@ def oracle_info(archive, args):
         for filename in os.listdir(dbidir):
             path = os.path.join(dbidir, filename)
             archive.store(path, 'oracle/dbinfo/{0}'.format(filename))
+            os.unlink(path)
+
+        for filename in os.listdir(dbldir):
+            path = os.path.join(dbldir, filename)
+            archive.store(path, 'oracle/log/{0}'.format(filename))
             os.unlink(path)
 
         sys.stdout.write('\033[2K')

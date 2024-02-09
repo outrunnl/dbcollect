@@ -4,4 +4,6 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- Only used to test handling of errors in dbcollect scripts
 
-exit 25;
+SELECT FOO FROM BAR;
+
+-- exit 25;
