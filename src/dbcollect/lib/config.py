@@ -49,6 +49,7 @@ dbinfo_config = {
         'db_tsfiles.sql',
         'db_tempfiles.sql',
         'db_freespace.sql',
+        'db_tempspace.sql',
         'db_segments.sql',
         'db_recyclebin.sql',
         'db_compression.sql',
@@ -60,6 +61,7 @@ dbinfo_config = {
         'pdb_tsfiles.sql',
         'pdb_tempfiles.sql',
         'pdb_freespace.sql',
+        'pdb_tempspace.sql',
         'pdb_segments.sql',
         'pdb_recyclebin.sql',
         'pdb_compression.sql',
@@ -94,6 +96,7 @@ linux_config = {
         'lsblk_long': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname',
         'rpm_packages': 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
         'dpkg_l': 'dpkg -l',
+        'ulimit_a': 'ulimit -a'
     },
     'files': [
         '/proc/cmdline',
