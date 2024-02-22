@@ -92,13 +92,16 @@ class Instance():
                 proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE, encoding='utf-8')
         except OSError as e:
             raise SQLPlusError('Failed to run SQLPlus ({0}): {1}'.format(path, os.strerror(e.errno)))
+        proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
+        proc.stdin.write("alter session set nls_date_language=american;\n")
+        proc.stdin.write("whenever oserror continue;\n")
+
         return proc
 
-    def query(self, sql, header=None, onerror=True):
+    def script(self, name, header=None):
         """Run SQL*Plus query and return the output. Log errors if they appear"""
+        sql = getscript(name + '.sql')
         proc = self.sqlplus()
-        if onerror:
-            proc.stdin.write("WHENEVER SQLERROR EXIT SQL.SQLCODE\n")
         if header:
             proc.stdin.write(header)
         else:
@@ -108,11 +111,6 @@ class Instance():
             logging.debug('SQL*Plus output:\n{0}'.format(out))
             raise SQLPlusError('SQLPlus query exited with returncode {0}, see error log'.format(proc.returncode))
         return out.strip()
-
-    def script(self, name, **kwargs):
-        """Load a script, run it and return the output"""
-        sql = getscript(name + '.sql')
-        return self.query(sql, **kwargs).strip()
 
     def get_jobs(self, args):
         """Get the AWR or Statspack parameters and create jobs, return number of jobs"""

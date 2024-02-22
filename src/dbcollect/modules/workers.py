@@ -53,14 +53,19 @@ class Session():
         self.tempdir  = shared.tempdir
         self.instance = shared.instance
         self.args     = shared.args
-        self.proc     = self.instance.sqlplus(quiet=True)
+        self._proc    = self.instance.sqlplus(quiet=True)
         self.sid      = self.instance.sid
         self.ping     = time.time()
-        self.proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
-        self.proc.stdin.write("alter session set nls_date_language=american;\n")
 
     def __del__(self):
-        self.proc.communicate('exit;\n')
+        self._proc.communicate('exit;\n')
+
+    @property
+    def proc(self):
+        self._proc.poll()
+        if self._proc.returncode is not None:
+            self._proc = self.instance.sqlplus(quiet=True)
+        return self._proc
 
     @property
     def statusfile(self):
@@ -71,10 +76,6 @@ class Session():
         return os.path.join(self.tempdir, 'log', "{0}_sqlplus_{1}.log".format(self.sid, self.proc.pid))
 
     def submit(self, c):
-        self.proc.poll()
-        if self.proc.returncode is not None:
-            self.proc = self.instance.sqlplus(quiet=True)
-
         # create a lockfile
         with open(self.statusfile, 'w') as f:
             f.write(c)
