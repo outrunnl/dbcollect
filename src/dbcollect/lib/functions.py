@@ -44,8 +44,10 @@ def execute(cmd):
     command = cmd.split(' ')
     env = {}
     # Setting PATH for UNIX and Linux. On AIX we also need objrepos
-    env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
+    env['PATH']   = '/usr/sbin:/usr/bin:/bin:/sbin'
     env['ODMDIR'] = '/etc/objrepos'
+    # Make ps -eo ... work on HPUX
+    env['UNIX95'] = 'true'
     if sys.version_info[0] == 2:
         proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     else:
