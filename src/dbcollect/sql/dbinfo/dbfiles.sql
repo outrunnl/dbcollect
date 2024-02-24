@@ -18,7 +18,8 @@ FROM (
   SELECT           'DATAFILE' type, bytes, block_size, name   FROM v$datafile
   UNION ALL SELECT 'TEMPFILE',      bytes, block_size, name   FROM v$tempfile
   UNION ALL SELECT 'CONTROLFILE',   block_size*file_size_blks bytes, block_size, name FROM v$controlfile
-  UNION ALL SELECT 'REDOLOG',       bytes, blocksize,  member fROM v$log a JOIN v$logfile b ON a.Group#=b.Group#
+  UNION ALL SELECT 'REDOLOG',       bytes, blocksize,  member fROM v$log a JOIN v$logfile b USING (group#)
+  UNION ALL SELECT 'STANDBYLOG',    bytes, blocksize,  member fROM v$standby_log a JOIN v$logfile b USING (group#)
 )
 ORDER BY 1, 2
 /

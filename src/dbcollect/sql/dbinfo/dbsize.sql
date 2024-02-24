@@ -15,7 +15,8 @@ SELECT filetype
 FROM (
   SELECT 'DATAFILE' filetype, COUNT(*) dbfiles, SUM(bytes) BYTES FROM v$datafile UNION ALL
   SELECT 'TEMPFILE',          COUNT(*),         SUM(bytes) FROM v$tempfile UNION ALL
-  SELECT 'REDOLOG',           SUM(members),     SUM(bytes) FROM v$log UNION ALL
+  SELECT 'REDOLOG',           SUM(members),     SUM(members*bytes) FROM v$log UNION ALL
+  SELECT 'STANDBYLOG',        COUNT(member),    SUM(bytes) FROM v$logfile JOIN "V$STANDBY_LOG" USING (GROUP#) UNION ALL
   SELECT 'CONTROLFILE',       COUNT(*),         SUM(block_size * file_size_blks) FROM v$controlfile
 )
 ORDER BY 1
