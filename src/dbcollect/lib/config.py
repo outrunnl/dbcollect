@@ -27,6 +27,7 @@ dbinfo_config = {
         'asmsummary.sql',
         'parameters.sql',
         'osstats.sql',
+        'redologs.sql',
         'archivelogs.sql',
         'archivesummary.sql',
         'bctracking.sql',
