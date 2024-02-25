@@ -49,26 +49,43 @@ def oracle_info(archive, args):
         dbldir    = os.path.join(tempdir, 'log')
         awrdir    = os.path.join(tempdir, 'awr')
         splunkdir = os.path.join(tempdir, 'splunk')
+        workers   = []
 
         info_processor(shared)
 
         generator = Process(target=job_generator, name='Generator', args=(shared,))
-        processor = Process(target=job_processor, name='Processor', args=(shared,))
-        processor.start()
         generator.start()
 
+        for i in range(shared.tasks):
+            worker = Process(target=job_processor, name='Processor', args=(shared,))
+            worker.start()
+            workers.append(worker)
+
+        logging.info('%s: Started %s SQLPlus sessions', shared.instance.sid, len(workers))
+
         while True:
+            # Pick up completed AWR or Staspack files and move them to the archive
             time.sleep(1)
             filelist = os.listdir(awrdir)
-            if not any((filelist, processor.is_alive())):
+            working  = any([worker.is_alive() for worker in workers])
+
+            # Break if no more files AND no more workers
+            if not any((filelist, working)):
                 break
+
             for filename in filelist:
                 path = os.path.join(awrdir, filename)
+
+                # If requested, strip HTML file from SQL sections
                 if args.strip and filename.endswith('.html'):
                     awrstrip(path, inplace=True)
                     logging.debug('Stripped SQL code from {0}'.format(filename))
+
+                # Store the file and remove from FS
                 archive.store(path, 'oracle/{0}/'.format(instance.sid) + filename)
                 os.unlink(path)
+
+                # Housekeeping
                 done_jobs += 1
                 pct_done   = float(done_jobs)/total_jobs
                 elapsed    = time.time() - starttime
@@ -89,9 +106,14 @@ def oracle_info(archive, args):
         generator.join()
         logging.info('%s: Job generator completed', instance.sid)
 
-        processor.join()
-        logging.info('%s: Job processor completed', instance.sid)
+        for worker in workers:
+            worker.join()
+            if worker.exitcode:
+                raise CustomException('Worker failed, rc={0}'.format(worker.exitcode))
 
+        logging.info('%s: Workers completed', instance.sid)
+
+        # Pick up Splunk, DBInfo and Log files
         for filename in os.listdir(splunkdir):
             path = os.path.join(splunkdir, filename)
             archive.store(path, 'oracle/{0}/{1}'.format(instance.sid, filename))
@@ -112,7 +134,5 @@ def oracle_info(archive, args):
 
         if generator.exitcode:
             raise CustomException('Job generator failed, rc={0}'.format(generator.exitcode))
-        if processor.exitcode:
-            raise CustomException('Job processor failed, rc={0}'.format(processor.exitcode))
 
     logging.info(msg)

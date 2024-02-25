@@ -5,7 +5,7 @@ License: GPLv3+
 """
 
 import os, sys, logging
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 from lib.functions import getscript
 from lib.errors import ReportingError, SQLPlusError
@@ -24,13 +24,19 @@ class Job():
 
     @property
     def filename(self):
+        """Return the filename to be stored in the archive"""
         ext = 'html' if self.reptype == 'awr' else 'txt'
         return '{0}_{1}_{2}_{3}_{4}_{5}_{6}.{7}'.format(self.sid, self.dbid, self.instnum, self.reptype, self.beginsnap, self.endsnap, self.begintime, ext)
 
     @property
     def query(self):
-        sql = getscript('{0}_report.sql'.format(self.reptype))
-        return sql.format(filename=self.filename, dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
+        """Return the SQLPlus query to generate the AWR or Statspack report"""
+        if self.reptype == 'sp':
+            return 'set term off escape off\ndefine begin_snap={beginsnap}\ndefine end_snap={endsnap}\ndefine report_name={filename}\n@?/rdbms/admin/spreport'.format(
+                beginsnap=self.beginsnap, endsnap=self.endsnap, filename=self.filename)
+
+        return 'SELECT output FROM table (dbms_workload_repository.awr_report_html({dbid},{inst},{beginsnap},{endsnap}));\n'.format(
+            dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
 
 def sqlplus2json(data):
     """
@@ -44,7 +50,7 @@ def sqlplus2json(data):
             continue
         words = line.split('|')
         if len(words) < 2:
-            # sepatates sections, reset header
+            # separate sections, reset header
             header = None
             continue
         if not header:
@@ -52,11 +58,11 @@ def sqlplus2json(data):
             continue
         for k, v in zip(header, words):
             parameter = k.strip().lower()
-            if parameter in ('instance_number', 'version_major'):
+            if parameter in ('instance_number', 'version_major','awrusage','statspack'):
                 value = int(v)
             else:
                 value = v.strip()
-            info[parameter] = value if value else None
+            info[parameter] = value
     return info
 
 class Instance():
@@ -71,6 +77,8 @@ class Instance():
         self.instinfo  = sqlplus2json(meta)
         self.status    = self.instinfo['status']
         self.version   = self.instinfo['version_major']
+        self.awrusage  = self.instinfo.pop('awrusage', 0)
+        self.spusage   = self.instinfo.pop('statspack', 0)
 
     def sqlplus(self, quiet=False):
         """
@@ -82,18 +90,19 @@ class Instance():
         path = os.path.join(self.orahome, 'bin/sqlplus')
         cmd  = (path, '-S', '-L', '/', 'as', 'sysdba')
         if quiet:
-            stdout = open('/dev/null')
+            stdout = open('/dev/null', 'w')
         else:
             stdout = PIPE
         try:
             if sys.version_info[0] == 2:
-                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE)
+                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=STDOUT)
             else:
-                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=PIPE, encoding='utf-8')
+                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=STDOUT, encoding='utf-8')
         except OSError as e:
             raise SQLPlusError('Failed to run SQLPlus ({0}): {1}'.format(path, os.strerror(e.errno)))
         proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
         proc.stdin.write("alter session set nls_date_language=american;\n")
+        # Handle Bug 19033356 - SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND RESULT.
         proc.stdin.write("whenever oserror continue;\n")
 
         return proc
@@ -119,17 +128,23 @@ class Instance():
         if not self.status == 'OPEN':
             logging.info('Instance {0} not open, continue...'.format(self.sid))
             return 0
-        awrusage = int(self.script('awrusage'))
-        spusage  = int(self.script('spusage'))
-        if awrusage>0:
+
+        if args.statspack and self.spusage > 0:
+            reptype = 'sp'
+            logging.info('{0}: Statspack requested'.format(self.sid))
+
+        elif self.awrusage > 0:
             reptype = 'awr'
             logging.info('{0}: AWR usage detected, generating reports '.format(self.sid))
+
         elif args.force_awr:
             reptype = 'awr'
             logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force-awr)".format(self.sid))
-        elif spusage>0:
+
+        elif self.spusage > 0:
             reptype = 'sp'
             logging.info('{0}: No awr, Statspack detected'.format(self.sid))
+
         elif args.ignore_awr:
             logging.warning("Skipping {0}: No prior AWR usage or Statspack detected (--ignore)".format(self.sid))
             return 0

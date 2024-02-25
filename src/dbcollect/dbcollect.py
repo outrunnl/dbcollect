@@ -28,6 +28,7 @@ from modules.syscollect import host_info
 from modules.updater import update
 
 def printversion():
+    """Show version information"""
     print ('Author:    {0}'.format(versioninfo['author']))
     print ('Copyright: {0}'.format(versioninfo['copyright']))
     print ('License:   {0}'.format(versioninfo['license']))
@@ -48,6 +49,7 @@ def main():
     parser.add_argument("-d", "--days",       type=int, default=10,       help="Number of days ago to START collect of AWR data (default 10, max 999)")
     parser.add_argument(      "--end_days",   type=int, default=0,        help="Number of days ago to END AWR collect period, default 0, max 999")
     parser.add_argument(      "--force-awr",  action="store_true",        help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
+    parser.add_argument(      "--statspack",  action="store_true",        help="Prefer Statspack reports even if AWR usage is detected")
     parser.add_argument(      "--ignore-awr", action="store_true",        help="Ignore AWR reports for databases that have no previous usage")
     parser.add_argument(      "--strip",      action="store_true",        help="Strip SQL sections from AWR reports")
     parser.add_argument(      "--no-rac",     action="store_true",        help="Generate AWRs for local instance only")

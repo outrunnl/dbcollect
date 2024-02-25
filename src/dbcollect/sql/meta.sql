@@ -35,3 +35,11 @@ SELECT dbid
 , created
 FROM v$database
 /
+
+SELECT 
+  (SELECT COUNT(table_name) statspack FROM all_tables WHERE table_name = 'STATS$SNAPSHOT') AS STATSPACK
+, (SELECT SUM(detected_usages) FROM dba_feature_usage_statistics u1
+	WHERE u1.version = (SELECT MAX(u2.version) FROM dba_feature_usage_statistics u2 WHERE u2.name = u1.name)
+	AND DBID = (SELECT dbid FROM v$database) AND name = 'AWR Report') AS AWRUSAGE
+FROM dual
+/

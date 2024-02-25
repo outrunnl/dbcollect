@@ -14,7 +14,6 @@ from lib.functions import getscript
 from lib.config import dbinfo_config
 from lib.jsonfile import JSONFile
 from lib.log import exception_handler
-from lib.errors import DBCollectError
 
 class Shared():
     """Container class for messages and sharing data between processes"""
@@ -27,6 +26,7 @@ class Shared():
 
     @property
     def tasks(self):
+        """Return the calculated number of tasks (workers)"""
         if self.args.tasks is not None:
             # Default use maximum of 50% of available cpus
             tasks = self.args.tasks
@@ -53,77 +53,78 @@ class Session():
         self.tempdir  = shared.tempdir
         self.instance = shared.instance
         self.args     = shared.args
-        self._proc    = self.instance.sqlplus(quiet=True)
+        self.proc     = self.instance.sqlplus(quiet=True)
         self.sid      = self.instance.sid
-        self.ping     = time.time()
+        self.start    = time.time()
 
     def __del__(self):
-        self._proc.communicate('exit;\n')
-
-    @property
-    def proc(self):
-        self._proc.poll()
-        if self._proc.returncode is not None:
-            self._proc = self.instance.sqlplus(quiet=True)
-        return self._proc
-
-    @property
-    def statusfile(self):
-        return os.path.join(self.tempdir, 'lock', "sqlplus_lock_{0}".format(self.proc.pid))
+        """Send exit to SQLPlus if it is still running"""
+        if self.proc.returncode is None:
+            self.proc.communicate('exit;\n')
 
     @property
     def logfile(self):
         return os.path.join(self.tempdir, 'log', "{0}_sqlplus_{1}.log".format(self.sid, self.proc.pid))
 
-    def submit(self, c):
-        # create a lockfile
-        with open(self.statusfile, 'w') as f:
-            f.write(c)
-
-        # Write query to logfile
+    def send(self, s):
+        """Send command to SQLPlus and log to logfile"""
         with open(self.logfile, 'a') as f:
-            f.write(c)
+            f.write(s)
+        self.proc.stdin.write(s)
 
-        # Send query to SQL*Plus
-        self.proc.stdin.write(c)
+    def run(self, query, filename=None, header=None):
+        """Run a query using SQLPlus"""
 
-        # Tell SQL*Plus to remove lockfile once task is done
-        self.proc.stdin.write("HOST rm -f {status}\n".format(status=self.statusfile))
+        # Restart SQLPlus if needed
+        self.proc.poll()
+        if self.proc.returncode is not None:
+            logging.debug('Starting new SQLPlus process, rc={0}'.format(self.proc.returncode))
+            self.proc = self.instance.sqlplus(quiet=True)
 
-    def runscript(self, script, spool=None, header=None):
-        query = ''
-        if spool:
-            query  = 'SPOOL {0}\n'.format(spool)
-        if header:
-            query += getscript('dbinfo/header.sql')
-        query += getscript(script)
-        if spool:
-            query += '\nSPOOL OFF\n'
-        tstart = time.time()
-        elapsed = None
-        status  = None
+        # Setup paths and record start time
+        spoolfile = os.path.join(self.tempdir, filename or 'out.txt')
+        statfile  = os.path.join(self.tempdir, '{0}_status'.format(self.proc.pid))
+        starttime = time.time()
 
-        self.submit(query)
-        while not self.ready:
+        # Send commands to SQLPlus
+        if header is not None:
+            self.send(header)
+        self.send('SPOOL {0}\n'.format(filename or 'out.txt'))
+        self.send(query)
+        self.send('\nSPOOL OFF\n')
+        self.send('HOST touch {0}\n'.format(statfile))
+
+        # Wait for the status file to appear and check for errors or timeouts
+        while not os.path.exists(statfile):
+            time.sleep(0.01)
             self.proc.poll()
-            elapsed = time.time() - tstart
             if self.proc.returncode is not None:
-                status = 'Terminated'
-                logging.error("{0}: Terminated (pid={1}, rc={2}) running dbinfo script {3}".format(self.sid, self.proc.pid, self.proc.returncode, script))
+                status = 'Error'
+                logging.error("{0}: Terminated (pid={1}, rc={2}) running SQLPlus script".format(self.sid, self.proc.pid, self.proc.returncode))
+                out, err = self.proc.communicate()
+                logging.error(out)
                 break
-            if time.time() - tstart > self.args.timeout*60:
-                logging.error("{0}: Timeout (pid={1}, {2} seconds) running dbinfo script {3}".format(self.sid, self.proc.pid, round(elapsed), script))
+            elapsed = round(time.time() - starttime,2)
+            if elapsed > self.args.timeout * 60:
                 status = 'Timeout'
+                logging.error("{0}: Timeout (pid={1}, {2} seconds) running SQLPlus script".format(self.sid, self.proc.pid, round(elapsed)))
                 self.proc.terminate()
                 break
-            time.sleep(0.01)
-        elapsed = round(time.time() - tstart,2)
-        if self.ready:
-            status = 'OK'
 
-        return elapsed, status, self.proc.returncode
+        elapsed = round(time.time() - starttime,2)
+        self.proc.poll()
+
+        # Remove status file if exists
+        try:
+            os.unlink(statfile)
+            status = 'OK'
+        except OSError:
+            pass
+
+        return elapsed, self.proc.returncode, status, spoolfile
 
     def genscripts(self):
+        """ Generate the DBInfo scripts that need to be processed"""
         if self.instance.status == 'STARTED':
             yield 'instance.sql'
             return
@@ -139,8 +140,11 @@ class Session():
                 yield scriptname
 
     def dbinfo(self):
+        """ Run DBInfo and SPLUNK scripts"""
         logging.info('{0}: Running opatch lspatches'.format(self.sid))
+        header = getscript('dbinfo/header.sql')
 
+        # Get ORACLE_HOME patch info
         lspatches  = '{0} lspatches'.format(os.path.join(self.instance.orahome, 'OPatch/opatch'))
         inventory_info = JSONFile()
         inventory_info.execute(lspatches)
@@ -149,16 +153,21 @@ class Session():
         logging.info('{0}: Running dbinfo scripts'.format(self.sid))
         for scriptname in self.genscripts():
             logging.debug('{0}: Running dbinfo script {1}'.format(self.sid, scriptname))
-            scriptpath = 'dbinfo/{0}'.format(scriptname)
-            savepath   = '{0}/{1}_{2}'.format(self.tempdir, self.sid, scriptname.replace('.sql','.txt'))
-            filename   = '{0}_{1}.jsonp'.format(self.sid, os.path.splitext(scriptname)[0])
 
-            elapsed, status, rc = self.runscript(scriptpath, savepath, header='common/header.sql')
+            query    = getscript('dbinfo/{0}'.format(scriptname))
+            filename = '{0}_{1}'.format(self.sid, scriptname.replace('.sql','.txt'))
+            savename = '{0}_{1}'.format(self.sid, scriptname.replace('.sql','.jsonp'))
+
+            # Run the script and record the results
+            elapsed, rc, status, outfile = self.run(query, filename=filename, header=header)
+
+            # Create JSONPlus file
             jsonfile = JSONFile(elapsed=elapsed, status=status, returncode=rc)
-            jsonfile.dbinfo(self.instance, scriptname, savepath)
-            jsonfile.save(os.path.join(self.tempdir, 'dbinfo', filename))
+            jsonfile.dbinfo(self.instance, scriptname, outfile)
+            jsonfile.save(os.path.join(self.tempdir, 'dbinfo', savename))
 
         if self.args.splunk:
+            splunkheader = getscript('splunk/splunk_header.sql')
             if self.instance.status in ('STARTED','MOUNTED'):
                 return
             logging.info('{0}: Running splunk scripts'.format(self.sid))
@@ -168,9 +177,12 @@ class Session():
                 section = 'splunk_12'
             for scriptname in dbinfo_config[section]:
                 logging.debug('{0}: Running splunk script {1}'.format(self.sid, scriptname))
-                scriptpath = 'splunk/{0}'.format(scriptname)
-                elapsed, status, rc = self.runscript(scriptpath, header='splunk/splunk_header.sql')
+                query = getscript('splunk/{0}'.format(scriptname))
 
+                # Splunk files contain SPOOL so no filename is needed
+                elapsed, rc, status, outfile = self.run(query, header=splunkheader)
+
+            # Move the finished SPLUNK files to the splunk dir
             for f in os.listdir(self.tempdir):
                 path    = os.path.join(self.tempdir, f)
                 newpath = os.path.join(self.tempdir, 'splunk', f)
@@ -180,15 +192,8 @@ class Session():
                     os.rename(path, newpath)
 
     @property
-    def ready(self):
-        self.proc.poll()
-        if self.proc.returncode is not None:
-            return True
-        return not os.path.exists(self.statusfile)
-
-    @property
     def runtime(self):
-        return round(time.time() - self.ping, 2)
+        return round(time.time() - self.start, 2)
 
 def info_processor(shared):
     """info processor - Runs the dbinfo scripts"""
@@ -218,29 +223,18 @@ def job_generator(shared):
 def job_processor(shared):
     """
     Worker process that handles SQL*Plus subprocesses
-    Starts a range of SQL*Plus sessions, then submits a job from the job queue in the first available session
     """
-    timeout  = shared.args.timeout * 60
-    sessions = [Session(shared) for x in range(shared.tasks)]
-    ping     = time.time()
-
-    logging.info('%s: Started %s SQLPlus sessions', shared.instance.sid, len(sessions))
+    session  = Session(shared)
 
     while True:
-        time.sleep(0.1)
-        if (time.time() - ping) > timeout:
-            raise DBCollectError('{0}: Job processor timeout ({1} seconds)'.format(shared.instance.sid, timeout))
-        if shared.jobs.empty():
+        if shared.jobs.empty() and shared.done.is_set():
             # Break the loop if job producer is done AND queue is empty
-            if shared.done.is_set():
-                break
-            continue
-
-        # Find an available session in which we can submit the job
-        for session in sessions:
-            if not session.ready:
-                continue
-            job = shared.jobs.get(timeout=10)
-            session.submit(job.query)
-            ping = time.time()
             break
+
+        # Get the next job and run it
+        job = shared.jobs.get(timeout=10)
+        elapsed, rc, status, spoolfile = session.run(job.query, job.filename)
+
+        # Move the completed AWR/SP file to the awr dir
+        tgtfile = os.path.join(shared.tempdir, 'awr', job.filename)
+        os.rename(spoolfile, tgtfile)

@@ -42,6 +42,7 @@ class JSONFile():
         self.info.update(kwargs)
 
     def meta(self):
+        """Set default metadata fields"""
         runinfo = {}
         runinfo['python']      = platform.python_version()
         runinfo['timezone']    = time.strftime("%Z", time.gmtime())           # The system's configured timezone
@@ -54,6 +55,7 @@ class JSONFile():
         self.info['buildinfo'] = buildinfo
 
     def set(self, name, val):
+        """Setter for any kind of metric"""
         self.info[name] = val
 
     def execute(self, cmd):
@@ -124,14 +126,15 @@ class JSONFile():
             self.errors = 'Data not available'
 
     def dir(self, *dirs):
+        """Report contents of given directories"""
         self.info['directories'] = []
-        for dir in dirs:
-            if not os.path.isdir(dir):
-                self.info['directories'].append({ 'directory': dir, 'exists': False })
+        for directory in dirs:
+            if not os.path.isdir(directory):
+                self.info['directories'].append({ 'directory': directory, 'exists': False })
                 continue
             files = []
-            for file in sorted(os.listdir(dir)):
-                path = os.path.join(dir, file)
+            for file in sorted(os.listdir(directory)):
+                path = os.path.join(directory, file)
                 if not os.path.isfile(path):
                     continue
                 st = os.stat(path)
@@ -142,7 +145,7 @@ class JSONFile():
                     'user': getuser(st.st_uid),
                     'group': getgroup(st.st_gid)
                 })
-            self.info['directories'].append({ 'directory': dir, 'files': files})
+            self.info['directories'].append({ 'directory': directory, 'files': files})
 
     def dump(self):
         """Return the data as JSON text"""
