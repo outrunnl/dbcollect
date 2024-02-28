@@ -17,6 +17,10 @@ from lib.user import username, usergroup, usergroups, getuser, getgroup
 from lib.config import versioninfo
 from lib.functions import execute
 
+# Workaround for strftime() not working (HP-UX)
+def get_timestamp(ts):
+    return '{0}-{1}-{2} {3}:{4}'.format(ts.year, ts.month, ts.day, ts.hour, ts.minute)
+
 class JSONFile():
     """
     Container for a JSONPlus file
@@ -30,8 +34,8 @@ class JSONFile():
         self.info['machine']      = platform.machine()   # x86_64 | sun4v | 00F6035A4C00 (AIX) | AMD64 etc...
         self.info['system']       = platform.system()    # Linux  | SunOS | SunOS | AIX | Windows
         self.info['processor']    = platform.processor() # x86_64 | i386 | sparc | powerpc | Intel64 Family ...
-        self.info['timestamp']    = datetime.now().strftime("%Y-%m-%d %H:%M")
-        self.info['timestamputc'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+        self.info['timestamp']    = get_timestamp(datetime.now())
+        self.info['timestamputc'] = get_timestamp(datetime.utcnow())
         self.info.update(kwargs)
         self.errors = None
         self.data   = None
