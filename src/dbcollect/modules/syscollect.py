@@ -4,7 +4,7 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, platform, logging
+import os, re, platform, logging
 from lib.config import linux_config, aix_config, sunos_config, hpux_config
 from lib.jsonfile import JSONFile
 from lib.functions import execute, listdir
@@ -234,9 +234,7 @@ def sun_info(archive, args):
 
 def hpux_info(archive, args):
     """System/SAR info for HP-UX (Itanium)"""
-    # TBD
     logging.info('Collecting HP-UX System info')
-
     for tag, cmd in hpux_config['commands'].items():
         df = JSONFile(cmd=cmd)
         archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
@@ -244,5 +242,20 @@ def hpux_info(archive, args):
     for file in hpux_config['files']:
         df = JSONFile(path=file)
         archive.writestr(file + '.jsonp', df.jsonp())
+
+    logging.info('Collecting HP-UX Disk info')
+    disks = []
+    ioscan, err, rc = execute('ioscan -funNC disk')
+    for disk, rest in re.findall(r'^\s+(/dev/disk/\S+)\s+(.*)', ioscan, re.M):
+        rdisks = rest.split()
+        for disk in rdisks:
+            if re.match(r'/dev/rdisk/disk\d+$', disk):
+                disks.append(disk)
+    
+    for dev in disks:
+        disk = os.path.basename(dev)
+        cmd = 'diskinfo {0}'.format(dev)
+        diskinfo = JSONFile(cmd=cmd)
+        archive.writestr('cmd/diskinfo_{0}.jsonp'.format(disk), diskinfo.jsonp())
 
     sar_info(archive, args)
