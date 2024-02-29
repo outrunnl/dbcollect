@@ -103,6 +103,9 @@ def oracle_info(archive, args):
                     sys.stdout.write('\033[2K{0}\033[G'.format(msg))
                     sys.stdout.flush()
 
+        if not args.quiet:
+            print('')
+
         generator.join()
         logging.info('%s: Job generator completed', instance.sid)
 

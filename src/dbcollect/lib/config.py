@@ -8,7 +8,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.15.5"
+    'version': "1.15.6"
 }
 
 settings = {
@@ -173,17 +173,16 @@ hpux_config = {
         'model': 'model',
         'serial': 'getconf MACHINE_SERIAL',
         'machinfo': 'machinfo',
-        'ifconfig_a': 'ifconfig -a',
-        'ioscan_fnc': 'ioscan -fnC processor',
-        'ioscan_m': 'ioscan -m hwpath',
-        'diskinfo_v': 'diskinfo -v',
-        'idisk_p': 'idisk -p',
-        'df_p': 'df -p',
+        'ioscan_proc': 'ioscan -fnC processor',
+        'ioscan_disk': 'ioscan -funNC disk',
+        'ioscan_hwpath': 'ioscan -m hwpath',
+        'lanscan': 'lanscan',
+        'netstat_in': 'netstat -in',
+        'ps_ef': 'ps -ef',
+        'df_p': 'df -P',
         'df_k': 'df -k',
         'df_n': 'df -n',
         'vgdisplay': 'vgdisplay',
-        'pvdisplay': 'pvdisplay',
-        'lvdisplay': 'lvdisplay'
     },
     'files': [
         '/etc/oratab',
