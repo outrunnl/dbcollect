@@ -17,8 +17,8 @@ from lib.user import username, usergroup, usergroups, getuser, getgroup
 from lib.config import versioninfo
 from lib.functions import execute
 
-# Workaround for strftime() not working (HP-UX)
 def get_timestamp(ts):
+    """Workaround for strftime() not working (HP-UX)"""
     return '{0}-{1}-{2} {3}:{4}'.format(ts.year, ts.month, ts.day, ts.hour, ts.minute)
 
 class JSONFile():
@@ -71,9 +71,9 @@ class JSONFile():
         self.info['format']    = 'text'
         self.info['command']   = cmd
         out, err = None, None
-        if sudo==True:
+        if sudo is True:
             if not os.path.exists('/usr/bin/sudo'):
-                self.info['status'] = 'ERROR'    
+                self.info['status'] = 'ERROR'
                 self.errors         = '/usr/bin/sudo not found'
                 return
             cmd = 'sudo -n {0}'.format(cmd)

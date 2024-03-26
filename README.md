@@ -40,7 +40,7 @@ See [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTION
 - Linux: CPU, memory, disks, network interfaces etc
 - AIX, Solaris (SPARC): CPU, memory, limited other info
 - SAR: Binary SAR files (Linux) or SAR reports (UNIX) (Linux SAR provides much more detail)
-- HP/UX: Not supported (let me know if you need it)
+- HP/UX: Experimental support
 - Windows: Not yet supported (TBD)
 
 More collectors may be added in the future.
@@ -110,9 +110,9 @@ If you want to collect reports from a longer time ago (say, 20 days ago up to 10
 
 ### Non-Linux (UNIX) systems
 
-DBCollect now supports AIX and Solaris systems. You need to have Python installed (at least version 2.6).
+DBCollect now supports AIX and Solaris systems, and HP-UX has experimental support. You need to have Python installed (at least version 2.6).
 
-Windows and HP-UX are not (yet) supported although on HP-UX, it may work fine to collect Oracle information (not SAR and system info). Let me know if you want to help with testing.
+Windows is not (yet) supported.
 
 ## Requirements
 

@@ -30,6 +30,7 @@ As dbcollect typically runs on production database systems, it has been designed
 * All Oracle database operations are performed using Oracle SQL*Plus and can only perform database 'SELECT' statements. No items like views, procedures, functions, directories are created in the database. No data can be directly modified. <sup>4</sup>
 * Some database audit events will be generated as _dbcollect_ makes SQL*Plus connections
 * OS level commands are limited to those that do not require 'root' access and cannot modify configurations, but only collect configuration parameters.
+* OS level commands that require 'root' can be used via _sudo_, for this, _dbcollect_ can be run as root with the ```--sudoers``` option, which will make it write a file named `/etc/sudoers.d/dbcollect` providing limited access to some OS commands for users member of the `dba` group. Using this is optional (but highly recommended on HP-UX as it allows _dbcollect_ to get crucial CPU and disk information).
 * The _dbcollect_ Python code is frequently verified with 'pylint' to detect and remediate potential bugs and issues.
 * _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 50% of available CPUs unless changed with the --tasks parameter.
 * As '/tmp' on most Unix/Linux systems is a separate file system and the only place where files are written, the system cannot become unstable due to filling up other file systems to 100% capacity.

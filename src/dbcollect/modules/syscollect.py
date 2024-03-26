@@ -55,7 +55,7 @@ def linux_info(archive, args):
     for cmd in ('sestatus','uptime'):
         try:
             out, err, rc = execute(cmd)
-            if not rc==0:
+            if rc != 0:
                 info['{0}_error'.format(cmd)] = { 'command': cmd, 'stdout': out, 'stderr': err, 'rc': rc }
             if cmd == 'sestatus':
                 out = out.split()[-1]
@@ -104,7 +104,7 @@ def linux_info(archive, args):
                 info[var] = None
         cmd = 'udevadm info -q symlink -n {0}'.format(dev)
         out, err, rc = execute(cmd)
-        if not rc==0:
+        if rc != 0:
             info['udevadm_cmd'] = { 'command': cmd, 'stdout': out, 'stderr': err, 'rc': rc }
         info['symlinks'] = out.split()
         disklist.append(info)
@@ -259,7 +259,7 @@ def hpux_info(archive, args):
         for disk in rdisks:
             if re.match(r'/dev/rdisk/disk\d+$', disk):
                 disks.append(disk)
-    
+
     for dev in disks:
         disk = os.path.basename(dev)
         cmd = '/usr/sbin/diskinfo {0}'.format(dev)

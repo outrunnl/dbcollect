@@ -45,6 +45,8 @@ Enterprise Linux 8 (RHEL 8, OEL 8) should now work fine as dbcollect is Python3 
 
 Older Linux versions (RHEL5) do not work unless there is a more recent version of Python on the system.
 
+Optionally, you can install the sudoers file using ```dbcollect --sudoers```, this will allow _dbcollect_ to pick up some additional information (currently only the output of ```multipath -ll``` which helps in getting Linux multipath configuration details.
+
 ### AIX
 
 On IBM AIX, you need to install Python first. You can get python for AIX from
@@ -56,7 +58,9 @@ On Solaris, Python should be already available. It may be an older version.
 
 ### HP-UX
 
-HP-UX has not yet been tested (mileage may vary, let me know if you want to help testing)
+HP-UX has experimental support. Some OS commands require sudo access, run ```dbcollect --sudoers``` to install the sudoers file
+before proceeding. This will allow _dbcollect_ to pick up required stuff like CPU model, disk capacities and more.
+_sudo_ must be installed for this to work.
 
 ### Windows
 
@@ -110,6 +114,9 @@ dbcollect -h
 
 # Version info
 dbcollect -V
+
+# Install (optional) sudoers file (as root)
+dbcollect --sudoers
 
 # Quiet (only print error messages)
 dbcollect --quiet
