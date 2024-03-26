@@ -23,6 +23,7 @@ from lib.errors import DBCollectError, ZipCreateError
 from lib.archive import Archive
 from lib.user import switchuser, username, dbuser
 from lib.jsonfile import JSONFile, buildinfo
+from lib.functions import sudosetup
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update
@@ -43,6 +44,7 @@ def main():
     parser.add_argument("-q", "--quiet",      action="store_true",        help="Suppress output")
     parser.add_argument("-o", "--overwrite",  action="store_true",        help="Overwrite previous zip file")
     parser.add_argument(      "--update",     action="store_true",        help="Check for updates")
+    parser.add_argument(      "--sudoers",    action="store_true",        help="Install sudoers file")
     parser.add_argument(      "--filename",   type=str,                   help="output filename, default dbcollect-<hostname>.zip")
     parser.add_argument(      "--tempdir",    type=str, default='/tmp',   help="TEMP directory, default /tmp")
     parser.add_argument("-u", "--user",       type=str,                   help="Switch to user (if run as root)")
@@ -69,6 +71,9 @@ def main():
 
     if args.update:
         update(versioninfo['version'])
+        return
+    if args.sudoers:
+        sudosetup()
         return
     if os.getuid() == 0:
         cmdline = sys.argv[1:]

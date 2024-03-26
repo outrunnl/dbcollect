@@ -54,3 +54,14 @@ def execute(cmd):
         proc = Popen(command, env=env, stdin=PIPE, stdout=PIPE, stderr=PIPE, encoding='utf-8')
     stdout, stderr = proc.communicate()
     return (stdout, stderr, proc.returncode)
+
+def sudosetup():
+    sudopath = '/etc/sudoers.d/dbcollect'
+    print('Installing sudoers file: {0}'.format(sudopath))
+    sudoers = get_data('lib', 'sudoers').decode()
+    try:
+        with open(sudopath, 'w') as f:
+            f.write(sudoers)
+            os.chmod(sudopath, 0o600)
+    except OSError as e:
+        print(e)
