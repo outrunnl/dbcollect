@@ -8,7 +8,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.15.6"
+    'version': "1.15.7"
 }
 
 settings = {
@@ -97,7 +97,10 @@ linux_config = {
         'lsblk_long': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname',
         'rpm_packages': 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
         'dpkg_l': 'dpkg -l',
-        'ulimit_a': 'ulimit -a'
+        'ulimit_a': 'ulimit -a',
+    },
+    'rootcommands': {
+        'multipath_ll': '/usr/sbin/multipath -ll',
     },
     'files': [
         '/proc/cmdline',
@@ -173,7 +176,6 @@ hpux_config = {
         'model': 'model',
         'serial': 'getconf MACHINE_SERIAL',
         'machinfo': 'machinfo',
-        'ioscan_proc': 'ioscan -fnC processor',
         'ioscan_disk': 'ioscan -funNC disk',
         'ioscan_hwpath': 'ioscan -m hwpath',
         'lanscan': 'lanscan',
@@ -183,6 +185,11 @@ hpux_config = {
         'df_k': 'df -k',
         'df_n': 'df -n',
         'vgdisplay': 'vgdisplay',
+    },
+    'rootcommands': {
+        'ioscan_proc': '/usr/sbin/ioscan -fnC processor',
+        'pvdisplay': '/usr/sbin/pvdisplay',
+        'lvdisplay': '/usr/sbin/lvdisplay',
     },
     'files': [
         '/etc/oratab',

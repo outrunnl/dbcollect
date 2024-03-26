@@ -147,6 +147,10 @@ def linux_info(archive, args):
         df = JSONFile(cmd=cmd)
         archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
 
+    for tag, cmd in linux_config['rootcommands'].items():
+        df = JSONFile(cmd=cmd, sudo=True)
+        archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
+
     for file in linux_config['files']:
         df = JSONFile(path=file)
         archive.writestr(file + '.jsonp', df.jsonp())
@@ -239,6 +243,10 @@ def hpux_info(archive, args):
         df = JSONFile(cmd=cmd)
         archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
 
+    for tag, cmd in hpux_config['rootcommands'].items():
+        df = JSONFile(cmd=cmd, sudo=True)
+        archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
+
     for file in hpux_config['files']:
         df = JSONFile(path=file)
         archive.writestr(file + '.jsonp', df.jsonp())
@@ -254,8 +262,8 @@ def hpux_info(archive, args):
     
     for dev in disks:
         disk = os.path.basename(dev)
-        cmd = 'diskinfo {0}'.format(dev)
-        diskinfo = JSONFile(cmd=cmd)
+        cmd = '/usr/sbin/diskinfo {0}'.format(dev)
+        diskinfo = JSONFile(cmd=cmd, sudo=True)
         archive.writestr('cmd/diskinfo_{0}.jsonp'.format(disk), diskinfo.jsonp())
 
     sar_info(archive, args)

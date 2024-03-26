@@ -26,7 +26,7 @@ class JSONFile():
     Container for a JSONPlus file
     JSONPlus file format is simply a JSON with the data of a command or file appended
     """
-    def __init__(self, cmd=None, path=None, **kwargs):
+    def __init__(self, cmd=None, path=None, sudo=False, **kwargs):
         self.info = {}
         self.info['application']  = 'dbcollect'
         self.info['version']      = versioninfo['version']
@@ -40,7 +40,7 @@ class JSONFile():
         self.errors = None
         self.data   = None
         if cmd:
-            self.execute(cmd)
+            self.execute(cmd, sudo)
         elif path:
             self.readfile(path)
         self.info.update(kwargs)
@@ -62,7 +62,7 @@ class JSONFile():
         """Setter for any kind of metric"""
         self.info[name] = val
 
-    def execute(self, cmd):
+    def execute(self, cmd, sudo=False):
         """
         Execute a command and return the output with the header.
         Also record status and errors
@@ -71,6 +71,14 @@ class JSONFile():
         self.info['format']    = 'text'
         self.info['command']   = cmd
         out, err = None, None
+        if sudo==True:
+            if not os.path.exists('/usr/bin/sudo'):
+                self.info['status'] = 'ERROR'    
+                self.errors         = '/usr/bin/sudo not found'
+                return
+            cmd = 'sudo -n {0}'.format(cmd)
+            self.info['sudo'] = True
+            self.info['fullcommand'] = cmd
         try:
             out, err, rc = execute(cmd)
             self.data   = out
