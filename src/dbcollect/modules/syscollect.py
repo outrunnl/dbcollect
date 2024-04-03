@@ -90,7 +90,7 @@ def linux_info(archive, args):
     disklist = []
     out, err, rc = execute('lsblk -dno name')
     for dev in out.rstrip().splitlines():
-        info = { 'name': dev }
+        info = { 'name': dev, 'properties': {} }
         for file in  ['dev', 'device/model','device/rev','device/queue_depth','device/vendor','device/serial','size','queue/scheduler']:
             path = os.path.join('/sys/class/block/{0}/{1}'.format(dev, file))
             var = file.split('/')[-1]
@@ -107,6 +107,10 @@ def linux_info(archive, args):
         if rc != 0:
             info['udevadm_cmd'] = { 'command': cmd, 'stdout': out, 'stderr': err, 'rc': rc }
         info['symlinks'] = out.split()
+        cmd = 'udevadm info -q property -n {0}'.format(dev)
+        out, err, rc = execute(cmd)
+        for k, v in re.findall(r'^(\S+)=(.*)', out, re.M):
+            info['properties'][k] = v
         disklist.append(info)
 
     diskinfo = JSONFile()
@@ -137,13 +141,15 @@ def linux_info(archive, args):
     nicinfo.set('nicinfo', {'niclist': niclist} )
     archive.writestr('nicinfo.json', nicinfo.dump())
 
+    out, err, rc = execute('lsblk -V')
+    lsblk_version = (out + err).split()[-1]
+
     for tag, cmd in linux_config['commands'].items():
-        if tag in ('lsblk_long','lsblk_bp'):
-            out, err, rc = execute('lsblk -V')
-            version = (out + err).split()[-1]
-            if version.startswith('2.1'):
-                cmd = cmd.replace(',wwn,hctl,pkname','')
-                cmd = cmd.replace('-bp','-b')
+        if tag == 'lsblk_long' and lsblk_version.startswith('2.1'):
+            continue
+        if tag == 'lsblk_el6' and not lsblk_version.startswith('2.1'):
+            continue
+
         df = JSONFile(cmd=cmd)
         archive.writestr('cmd/{0}.jsonp'.format(tag), df.jsonp())
 

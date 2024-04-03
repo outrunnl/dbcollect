@@ -8,7 +8,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2023, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.15.7"
+    'version': "1.15.8"
 }
 
 settings = {
@@ -93,14 +93,18 @@ linux_config = {
         'numactl_hw': 'numactl --hardware',
         'numactl_show': 'numactl --show',
         'lspci': 'lspci',
-        'lsblk_bp': 'lsblk -bp',
-        'lsblk_long': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname',
+        'lsblk_b': 'lsblk -b',
+        'lsblk_el6': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched',
+        'lsblk_long': 'lsblk -PbnDo name,maj:min,kname,type,label,size,fstype,sched,wwn,hctl,pkname,serial,vendor,model',
         'rpm_packages': 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
         'dpkg_l': 'dpkg -l',
         'ulimit_a': 'ulimit -a',
     },
     'rootcommands': {
         'multipath_ll': '/usr/sbin/multipath -ll',
+        'vgs': 'vgs --separator \t --units m --nosuffix -o +fmt,uuid',
+        'pvs': 'pvs --separator \t --units m --nosuffix -o +uuid,missing,in_use',
+        'lvs': 'lvs --separator \t --units m --nosuffix -o +uuid,stripes,stripe_size,chunk_size'
     },
     'files': [
         '/proc/cmdline',
