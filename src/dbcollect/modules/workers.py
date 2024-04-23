@@ -72,13 +72,13 @@ class Session():
             f.write(s)
         self.proc.stdin.write(s)
 
-    def run(self, query, filename=None, header=None):
+    def run(self, name, query, filename=None, header=None):
         """Run a query using SQLPlus"""
 
         # Restart SQLPlus if needed
         self.proc.poll()
         if self.proc.returncode is not None:
-            logging.debug('Starting new SQLPlus process, rc={0}'.format(self.proc.returncode))
+            logging.debug('rc={0}, Starting new SQLPlus process'.format(self.proc.returncode))
             self.proc = self.instance.sqlplus(quiet=True)
 
         # Setup paths and record start time
@@ -100,15 +100,15 @@ class Session():
             self.proc.poll()
             if self.proc.returncode is not None:
                 status = 'Error'
-                logging.error("{0}: Terminated (pid={1}, rc={2}) running SQLPlus script".format(self.sid, self.proc.pid, self.proc.returncode))
+                logging.error("{0}: Terminated (pid={1}, rc={2}) running SQLPlus script {3}".format(self.sid, self.proc.pid, self.proc.returncode, name))
                 out, err = self.proc.communicate()
-                logging.error(out)
                 break
             elapsed = round(time.time() - starttime,2)
             if elapsed > self.args.timeout * 60:
                 status = 'Timeout'
-                logging.error("{0}: Timeout (pid={1}, {2} seconds) running SQLPlus script".format(self.sid, self.proc.pid, round(elapsed)))
-                self.proc.terminate()
+                logging.error("{0}: Timeout (pid={1}, {2} seconds) running SQLPlus script {3}".format(self.sid, self.proc.pid, round(elapsed), name))
+                self.proc.kill()
+                out, err = self.proc.communicate()
                 break
 
         elapsed = round(time.time() - starttime,2)
@@ -159,7 +159,7 @@ class Session():
             savename = '{0}_{1}'.format(self.sid, scriptname.replace('.sql','.jsonp'))
 
             # Run the script and record the results
-            elapsed, rc, status, outfile = self.run(query, filename=filename, header=header)
+            elapsed, rc, status, outfile = self.run(scriptname, query, filename=filename, header=header)
 
             # Create JSONPlus file
             jsonfile = JSONFile(elapsed=elapsed, status=status, returncode=rc)
@@ -180,7 +180,7 @@ class Session():
                 query = getscript('splunk/{0}'.format(scriptname))
 
                 # Splunk files contain SPOOL so no filename is needed
-                elapsed, rc, status, outfile = self.run(query, header=splunkheader)
+                elapsed, rc, status, outfile = self.run(scriptname, query, header=splunkheader)
 
             # Move the finished SPLUNK files to the splunk dir
             for f in os.listdir(self.tempdir):
@@ -233,7 +233,7 @@ def job_processor(shared):
 
         # Get the next job and run it
         job = shared.jobs.get(timeout=10)
-        elapsed, rc, status, spoolfile = session.run(job.query, job.filename)
+        elapsed, rc, status, spoolfile = session.run('AWR report', job.query, job.filename)
 
         # Move the completed AWR/SP file to the awr dir
         tgtfile = os.path.join(shared.tempdir, 'awr', job.filename)
