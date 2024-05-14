@@ -8,6 +8,7 @@ import os, re, platform, logging
 from lib.config import linux_config, aix_config, sunos_config, hpux_config
 from lib.jsonfile import JSONFile
 from lib.functions import execute, listdir
+from lib.errors import Errors
 
 # Check to continue even if platform is unknown?
 def host_info(archive, args):
@@ -23,7 +24,7 @@ def host_info(archive, args):
     elif system == 'HP-UX':
         hpux_info(archive, args)
     else:
-        logging.error("Unknown platform - {0}".format(system))
+        logging.error(Errors.E008, system)
 
 def sar_info(archive, args):
     """Get UNIX SAR reports"""
@@ -62,7 +63,7 @@ def linux_info(archive, args):
             info[cmd] = out.strip()
 
         except OSError as e:
-            logging.warning(e)
+            logging.warning(Errors.W005, cmd, e)
 
     try:
         for file in os.listdir('/sys/class/dmi/id'):
@@ -78,7 +79,7 @@ def linux_info(archive, args):
                     info[file] = None
 
     except OSError as e:
-        logging.warning(e)
+        logging.warning(Errors.W006, e)
 
     hostinfo = JSONFile()
     hostinfo.set('hostinfo', info)

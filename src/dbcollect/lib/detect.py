@@ -6,6 +6,7 @@ License: GPLv3+
 
 import os, re, logging
 from datetime import datetime
+from lib.errors import Errors
 from lib.functions import getfile, execute
 from lib.user import getuser, getgroup
 
@@ -15,13 +16,13 @@ def orahomes(args):
     if not args.no_orainv:
         orainst = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
         if not orainst:
-            logging.error('oraInst.loc not found or readable')
+            logging.error(Errors.E016)
         else:
             r = re.match(r'inventory_loc=(.*)', orainst)
             if r:
                 inventory = getfile(os.path.join(r.group(1), 'ContentsXML/inventory.xml'))
                 if not inventory:
-                    logging.error('inventory.xml not found or readable')
+                    logging.error(Errors.E017)
                 else:
                     for oradir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
                         logging.debug('ORACLE_HOME (inventory): %s', oradir)
@@ -30,7 +31,7 @@ def orahomes(args):
     if not args.no_oratab:
         oratab  = getfile('/etc/oratab','/var/opt/oracle/oratab')
         if not oratab:
-            logging.error('oratab not found or readable')
+            logging.error(Errors.E018)
         else:
             for oradir in re.findall(r'^\w+:(\S+):[y|Y|n|N]', oratab, re.M):
                 logging.debug('ORACLE_HOME (oratab): %s', oradir)

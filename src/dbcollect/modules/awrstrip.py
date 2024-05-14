@@ -14,6 +14,7 @@ Sections to be removed:
 """
 
 import os, sys, re, logging
+from lib.errors import Errors
 
 try:
     from lxml import etree
@@ -39,7 +40,7 @@ def awrstrip(path, out=None, inplace=False):
     try:
         tree = etree.parse(path)
     except etree.ParseError:
-        logging.error('Parsing error in %s, not stripped', path)
+        logging.error(Errors.E006, path)
         return
     blacklist = []
     try:
@@ -72,4 +73,4 @@ def awrstrip(path, out=None, inplace=False):
         try:
             tree.write(out, encoding="utf-8")
         except IOError as err:
-            logging.error('IO Error writing to %s: %s', out, os.strerror(err.errno))
+            logging.error(Errors.E007, out, os.strerror(err.errno))

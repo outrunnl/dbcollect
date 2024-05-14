@@ -13,6 +13,7 @@ except ImportError:
     print("Error: No buildinfo")
     sys.exit(20)
 
+from lib.errors import Errors
 from lib.user import username, usergroup, usergroups, getuser, getgroup
 from lib.config import versioninfo
 from lib.functions import execute
@@ -119,7 +120,7 @@ class JSONFile():
         except Exception as e:
             self.info['status'] = 'ERROR'
             self.info['status'] = 'Critical Error'
-            logging.critical(e)
+            logging.critical(Errors.E015, path, e)
 
     def dbinfo(self, instance, name, path):
         """

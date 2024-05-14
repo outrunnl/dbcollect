@@ -13,6 +13,7 @@ logsetup must be called AFTER switching users, or strange things will happen.
 """
 
 import sys, logging
+from lib.errors import Errors
 
 class TracebackInfoFilter(logging.Filter):
     """Clear or restore the exception on log records"""
@@ -54,9 +55,9 @@ def exception_handler(func):
         try:
             return func(*args, **kwargs)
         except KeyboardInterrupt:
-            logging.warning('%s interrupted', func.__name__)
+            logging.warning(Errors.W001, func.__name__)
             sys.exit(1)
         except Exception as e:
-            logging.exception('Exception in %s: %s', func.__name__, e)
+            logging.exception(Errors.E013, func.__name__, e)
             sys.exit(99)
     return inner

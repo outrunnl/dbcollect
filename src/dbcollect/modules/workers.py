@@ -10,6 +10,7 @@ from shutil import rmtree
 from multiprocessing import Event, Queue, cpu_count
 from multiprocessing.queues import Full
 
+from lib.errors import Errors
 from lib.functions import getscript
 from lib.config import dbinfo_config
 from lib.jsonfile import JSONFile
@@ -100,13 +101,13 @@ class Session():
             self.proc.poll()
             if self.proc.returncode is not None:
                 status = 'Error'
-                logging.error("{0}: Terminated (pid={1}, rc={2}) running SQLPlus script {3}".format(self.sid, self.proc.pid, self.proc.returncode, name))
+                logging.error(Errors.E009, self.sid, self.proc.pid, self.proc.returncode, name)
                 out, err = self.proc.communicate()
                 break
             elapsed = round(time.time() - starttime,2)
             if elapsed > self.args.timeout * 60:
                 status = 'Timeout'
-                logging.error("{0}: Timeout (pid={1}, {2} seconds) running SQLPlus script {3}".format(self.sid, self.proc.pid, round(elapsed), name))
+                logging.error(Errors.E010, self.sid, self.proc.pid, round(elapsed), name)
                 self.proc.kill()
                 out, err = self.proc.communicate()
                 break
@@ -210,10 +211,10 @@ def job_generator(shared):
         for job in shared.instance.jobs:
             shared.jobs.put(job, timeout=timeout)
     except Full:
-        logging.error('{0}: Generator timeout (queue full, {1} seconds)'.format(shared.instance.sid, timeout))
+        logging.error(Errors.E011, shared.instance.sid, timeout)
         sys.exit(11)
     except Exception as e:
-        logging.exception(e)
+        logging.exception(Errors.E001, e)
         sys.exit(20)
     finally:
         # Set the done flag even if failed

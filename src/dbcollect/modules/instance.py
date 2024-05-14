@@ -8,7 +8,7 @@ import os, sys, logging
 from subprocess import Popen, PIPE, STDOUT
 
 from lib.functions import getscript
-from lib.errors import ReportingError, SQLPlusError
+from lib.errors import Errors, ReportingError, SQLPlusError
 
 class Job():
     """AWR/Statspack job definition"""
@@ -99,7 +99,7 @@ class Instance():
             else:
                 proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=STDOUT, encoding='utf-8')
         except OSError as e:
-            raise SQLPlusError('Failed to run SQLPlus ({0}): {1}'.format(path, os.strerror(e.errno)))
+            raise SQLPlusError(Errors.E019, path, os.strerror(e.errno))
         proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
         proc.stdin.write("alter session set nls_date_language=american;\n")
         # Handle Bug 19033356 - SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND RESULT.
@@ -139,17 +139,17 @@ class Instance():
 
         elif args.force_awr:
             reptype = 'awr'
-            logging.warning("{0}: No prior AWR usage detected, continuing anyway (--force-awr)".format(self.sid))
+            logging.warning(Errors.W002, self.sid)
 
         elif self.spusage > 0:
             reptype = 'sp'
             logging.info('{0}: No awr, Statspack detected'.format(self.sid))
 
         elif args.ignore_awr:
-            logging.warning("Skipping {0}: No prior AWR usage or Statspack detected (--ignore)".format(self.sid))
+            logging.warning(Errors.W004, self.sid)
             return 0
         else:
-            raise ReportingError("No AWR or Statspack detected for {0} (try --force-awr or --ignore)".format(self.sid))
+            raise ReportingError(Errors.E021, self.sid)
 
         inc_rac  = '0' if args.no_rac  else '1'
         inc_stby = '0' if args.no_stby else '1'

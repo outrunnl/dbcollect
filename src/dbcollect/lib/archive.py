@@ -8,7 +8,7 @@ import os, logging
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from lib.config import versioninfo
-from lib.errors import ZipCreateError
+from lib.errors import Errors, ZipCreateError
 
 class Archive():
     """
@@ -21,11 +21,11 @@ class Archive():
         self.prefix  = os.uname()[1]
         self.path    = path
         if os.path.exists(self.path) and not overwrite:
-            raise ZipCreateError("ZIP file already exists")
+            raise ZipCreateError(Errors.E020, path)
         try:
             self.zip = ZipFile(self.path,'w', ZIP_DEFLATED, allowZip64=True)
         except OSError as e:
-            raise ZipCreateError("Cannot create zipfile")
+            raise ZipCreateError(Errors.E003, path)
         comment = 'dbcollect version={0} hostname={1}'.format(versioninfo['version'], self.prefix)
         self.zip.comment = comment.encode('utf-8')
     def __del__(self):
@@ -43,12 +43,12 @@ class Archive():
             self.zip.write(path, fulltag)
         except OSError as e:
             if not ignore:
-                logging.error("OS Error retrieving %s: %s", e.filename, os.strerror(e.errno))
+                logging.error(Errors.E004, e.filename, os.strerror(e.errno))
         except IOError as e:
             if not ignore:
-                logging.error("IO Error retrieving %s: %s", e.filename, os.strerror(e.errno))
+                logging.error(Errors.E005, e.filename, os.strerror(e.errno))
     def writestr(self, tag, data):
         try:
             self.zip.writestr(os.path.join(self.prefix, tag.lstrip('/')), data)
         except Exception as e:
-            logging.warning("Writing data to zip file failed: %s", e)
+            logging.warning(Errors.W003, tag, str(e))

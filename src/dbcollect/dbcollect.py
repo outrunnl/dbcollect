@@ -19,7 +19,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 6:
 
 from lib.config import versioninfo, settings
 from lib.log import logsetup
-from lib.errors import DBCollectError, ZipCreateError
+from lib.errors import Errors, CustomException
 from lib.archive import Archive
 from lib.user import switchuser, username, dbuser
 from lib.jsonfile import JSONFile, buildinfo
@@ -102,8 +102,9 @@ def main():
     try:
         logsetup(logpath, debug = args.debug, quiet=args.quiet)
     except Exception as e:
-        logging.fatal("Cannot create logfile: {0}".format(e))
+        logging.fatal(Errors.E014, logpath, e)
         sys.exit(15)
+
     try:
         archive = Archive(zippath, args.overwrite)
         logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
@@ -119,24 +120,25 @@ def main():
             oracle_info(archive, args)
         logging.info('Zip file {0} is created succesfully.'.format(zippath))
         logging.info("Finished")
-    except ZipCreateError as e:
-        logging.error("{0}: {1}".format(e, zippath))
-        sys.exit(20)
+
     except KeyboardInterrupt:
-        logging.fatal("Aborted! Exiting...")
+        logging.fatal(Errors.E002)
         sys.exit(10)
+
+    except CustomException as e:
+        logging.error(*e.args)
+        sys.exit(10)
+
     except IOError as e:
-        logging.error("{0}: {1}".format(e.filename, os.strerror(e.errno)))
+        logging.error(Errors.E012, e.filename, os.strerror(e.errno))
         logging.info("Aborting")
         sys.exit(20)
-    except DBCollectError as e:
-        logging.exception(e)
-        logging.info("Aborting")
-        sys.exit(30)
+
     except Exception as e:
-        logging.exception("{0}, see logfile for debug info".format(e))
+        logging.exception(Errors.E001, e)
         logging.info("Aborting")
         sys.exit(40)
+
     finally:
         if args.debug and os.path.isfile(logpath):
             with open(logpath) as logfile:

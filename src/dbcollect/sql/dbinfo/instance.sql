@@ -4,7 +4,7 @@ PROMPT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 COL INSTANCE_NUMBER  FORMAT 99   HEAD 'Instance Number'
 COL INSTANCE_NAME    FORMAT A14  HEAD 'Instance Name'
-COL HOST_NAME        FORMAT A25  HEAD 'Hostname'
+COL HOST_NAME        FORMAT A40  HEAD 'Hostname'
 COL VERSION          FORMAT A16  HEAD 'Version'
 COL STARTUP_TIME                 HEAD 'Startup Time'
 COL STATUS           FORMAT A10  HEAD 'Status'

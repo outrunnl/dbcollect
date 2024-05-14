@@ -8,7 +8,7 @@ import os, sys, logging, time
 from datetime import timedelta
 from multiprocessing import Process
 
-from lib.errors import CustomException
+from lib.errors import Errors, CustomException
 from lib.detect import get_instances
 from .awrstrip import awrstrip
 from .instance import Instance
@@ -112,7 +112,7 @@ def oracle_info(archive, args):
         for worker in workers:
             worker.join()
             if worker.exitcode:
-                raise CustomException('Worker failed, rc={0}'.format(worker.exitcode))
+                raise CustomException(Errors.E022, worker.exitcode)
 
         logging.info('%s: Workers completed', instance.sid)
 
@@ -136,6 +136,6 @@ def oracle_info(archive, args):
         sys.stdout.flush()
 
         if generator.exitcode:
-            raise CustomException('Job generator failed, rc={0}'.format(generator.exitcode))
+            raise CustomException(Errors.E023, generator.exitcode)
 
     logging.info(msg)
