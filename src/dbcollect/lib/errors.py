@@ -50,4 +50,6 @@ class Errors():
     E021 = "[DBC-E021] No AWR or Statspack detected for %s (try --force-awr or --ignore)"
     E022 = "[DBC-E022] Worker failed, rc=%s"
     E023 = "[DBC-E023] Job generator failed, rc=%s"
+    E024 = "[DBC-E024] NMON directory not found: %s"
+    E025 = "[DBC-E025] Not a valid NMON file: %s"
 

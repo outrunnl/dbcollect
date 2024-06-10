@@ -63,9 +63,10 @@ def main():
     parser.add_argument(      "--no-orainv",  action="store_true",        help="Ignore ORACLE_HOMES from Oracle Inventory")
     parser.add_argument(      "--no-oratab",  action="store_true",        help="Ignore ORACLE_HOMES from oratab")
     parser.add_argument(      "--splunk",     action="store_true",        help="Run the Dell SPLUNK/LiveOptics reports")
-    parser.add_argument(      "--include",    type=str,                   help="Include Oracle instances (comma separated)")
-    parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)")
-    parser.add_argument("-t", "--tasks",      type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
+    parser.add_argument(      "--nmon",       type=str,                   help="Where to look for NMON files (comma separated)", metavar='PATH')
+    parser.add_argument(      "--include",    type=str,                   help="Include Oracle instances (comma separated)", metavar='INSTANCES')
+    parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)", metavar='INSTANCES')
+    parser.add_argument(      "--tasks",      type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
     parser.add_argument(      "--timeout",    type=int, default=10,       help="Timeout (minutes) for SQL statements (default 10)")
     args = parser.parse_args()
 

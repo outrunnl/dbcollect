@@ -15,6 +15,8 @@ def host_info(archive, args):
     """Get OS and run the corresponding OS/SAR module"""
     system = platform.system()
     logging.info('Collecting OS info ({0})'.format(system))
+    if args.nmon:
+        nmon_info(archive, args)
     if system == 'Linux':
         linux_info(archive, args)
     elif system == 'AIX':
@@ -25,6 +27,26 @@ def host_info(archive, args):
         hpux_info(archive, args)
     else:
         logging.error(Errors.E008, system)
+
+def nmon_info(archive, args):
+    """Get NMON reports"""
+    nmondirs = args.nmon.split(',')
+    nmoninfo = JSONFile()
+    nmoninfo.dir(*nmondirs)
+    archive.writestr('nmoninfo.json', nmoninfo.dump())
+
+    for nmondir in nmondirs:
+        if not os.path.exists(nmondir):
+            logging.error(Errors.E024, nmondir)
+            continue
+        for file in listdir(nmondir):
+            path = os.path.join(nmondir, file)
+            with open(path) as f:
+                buf = f.read(12)
+                if buf != 'AAA,progname':
+                    logging.error(Errors.E025, path)
+                    continue
+            archive.store(path)
 
 def sar_info(archive, args):
     """Get UNIX SAR reports"""
