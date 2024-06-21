@@ -49,7 +49,7 @@ def running_instances():
         if r:
             sid = r.group(1)
             runlist[sid] = { 'uid': uid, 'gid': gid }
-            logging.debug('Running: {} ({}/{})'.format(sid, getuser(int(uid)), getgroup(int(gid))))
+            logging.debug('Running: {0} ({1}/{2})'.format(sid, getuser(int(uid)), getgroup(int(gid))))
     return runlist
 
 def hc_files(args):
