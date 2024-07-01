@@ -129,7 +129,7 @@ class JSONFile():
         self.info['mediatype'] = 'dbinfo'
         self.info['format']    = 'sqlplus'
         self.info['script']    = name
-        self.info['oracle']    = instance.meta()
+        self.info['oracle']    = instance.meta
         try:
             with open(path) as f:
                 self.data = f.read()

@@ -4,7 +4,7 @@ Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, logging
+import os, sys, json, logging
 from subprocess import Popen, PIPE, STDOUT
 
 from lib.functions import getscript
@@ -38,33 +38,6 @@ class Job():
         return 'SELECT output FROM table (dbms_workload_repository.awr_report_html({dbid},{inst},{beginsnap},{endsnap}));\n'.format(
             dbid=self.dbid, inst=self.instnum, beginsnap=self.beginsnap, endsnap=self.endsnap)
 
-def sqlplus2json(data):
-    """
-    Convert SQL*Plus metadata into json key/values
-    """
-    header = []
-    info = {}
-    for line in data.splitlines():
-        if line.startswith('-----'):
-            # separates header from data rows
-            continue
-        words = line.split('|')
-        if len(words) < 2:
-            # separate sections, reset header
-            header = None
-            continue
-        if not header:
-            header = words
-            continue
-        for k, v in zip(header, words):
-            parameter = k.strip().lower()
-            if parameter in ('instance_number', 'version_major','awrusage','statspack'):
-                value = int(v)
-            else:
-                value = v.strip()
-            info[parameter] = value
-    return info
-
 class Instance():
     """Oracle Instance with SQL*Plus, scripts and other methods"""
     def __init__(self, tempdir, sid, orahome):
@@ -73,12 +46,22 @@ class Instance():
         self.orahome   = orahome
         self.jobs      = []
         self.scripts   = {}
-        meta           = self.script('meta')
-        self.instinfo  = sqlplus2json(meta)
-        self.status    = self.instinfo['status']
-        self.version   = self.instinfo['version_major']
-        self.awrusage  = self.instinfo.pop('awrusage', 0)
-        self.spusage   = self.instinfo.pop('statspack', 0)
+        self.meta_txt  = self.script('meta')
+
+        try:
+            self.meta = json.loads(self.meta_txt)
+        except Exception as e:
+            logging.error(Errors.E026, self.sid)
+            logging.debug(self.meta_txt)
+            raise SQLPlusError
+
+        self.meta['oracle_home'] = orahome
+        self.meta['oracle_sid']  = self.sid
+
+        self.status    = self.meta['status']
+        self.version   = self.meta['version_major']
+        self.awrusage  = self.meta.pop('awrusage', 0)
+        self.spusage   = self.meta.pop('statspack', 0)
 
     def sqlplus(self, quiet=False):
         """
@@ -166,10 +149,3 @@ class Instance():
             job = Job(self.sid, dbid, reptype, instnum, beginsnap, endsnap, begintime, endtime)
             self.jobs.append(job)
         return len(self.jobs)
-
-    def meta(self):
-        info = {}
-        info['oracle_sid']  = self.sid
-        info['oracle_home'] = self.orahome
-        info.update(self.instinfo)
-        return info

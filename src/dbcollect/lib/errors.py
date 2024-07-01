@@ -52,4 +52,4 @@ class Errors():
     E023 = "[DBC-E023] Job generator failed, rc=%s"
     E024 = "[DBC-E024] NMON directory not found: %s"
     E025 = "[DBC-E025] Not a valid NMON file: %s"
-
+    E026 = "[DBC-E026] %s: Parsing instance info failed"
