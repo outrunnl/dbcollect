@@ -148,4 +148,7 @@ class Instance():
             dbid, instnum, beginsnap, endsnap, begintime, endtime = line.split(',')
             job = Job(self.sid, dbid, reptype, instnum, beginsnap, endsnap, begintime, endtime)
             self.jobs.append(job)
+
+    @property
+    def num_jobs(self):
         return len(self.jobs)

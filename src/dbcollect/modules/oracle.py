@@ -10,9 +10,10 @@ from multiprocessing import Process
 
 from lib.errors import Errors, CustomException
 from lib.detect import get_instances
+from lib.multiproc import Shared, Tempdir
 from .awrstrip import awrstrip
 from .instance import Instance
-from .workers import Shared, Tempdir, job_generator, job_processor, info_processor
+from .workers import job_generator, job_processor, info_processor
 
 def oracle_info(archive, args):
     """Collect Oracle config and workload data"""
@@ -33,7 +34,8 @@ def oracle_info(archive, args):
         elif included and not sid in included:
             logging.info('%s not included, skipping...', sid)
         elif inst_info[sid]['running'] is False:
-            logging.debug('%s not running, skipping...', sid)
+            pass
+            #    logging.debug('%s not running, skipping...', sid)
         else:
             try:
                 instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])

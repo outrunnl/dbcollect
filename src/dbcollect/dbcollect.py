@@ -66,7 +66,7 @@ def main():
     parser.add_argument(      "--nmon",       type=str,                   help="Where to look for NMON files (comma separated)", metavar='PATH')
     parser.add_argument(      "--include",    type=str,                   help="Include Oracle instances (comma separated)", metavar='INSTANCES')
     parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)", metavar='INSTANCES')
-    parser.add_argument(      "--tasks",      type=int,                   help="Max number of tasks (default 50%% of cpus, 0=max)")
+    parser.add_argument(      "--tasks",      type=int,                   help="Max number of tasks (default 50%% of cpus (up to 8), 0=use all cpus)")
     parser.add_argument(      "--timeout",    type=int, default=10,       help="Timeout (minutes) for SQL statements (default 10)")
     args = parser.parse_args()
 
@@ -112,6 +112,7 @@ def main():
         logging.info('Python version {0}'.format(platform.python_version()))
         logging.info('Current user is {0}'.format(username()))
         logging.info('Zip file is {0}'.format(zippath))
+        logging.info('Command line is {0}'.format(' '.join(sys.argv)))
         metainfo = JSONFile()
         metainfo.meta()
         archive.writestr('meta.json', metainfo.dump())
