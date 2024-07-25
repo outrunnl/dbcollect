@@ -39,9 +39,9 @@ def oracle_info(archive, args):
         else:
             try:
                 instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])
-                num_jobs    = instance.get_jobs(args)
-                total_jobs += num_jobs
-                logging.info('{0}: {1} reports'.format(sid, num_jobs))
+                instance.get_jobs(args)
+                total_jobs += instance.num_jobs
+                logging.info('{0}: {1} reports'.format(sid, instance.num_jobs))
                 instances.append(instance)
             except CustomException:
                 pass

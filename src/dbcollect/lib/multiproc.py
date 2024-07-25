@@ -20,9 +20,9 @@ class Tempdir():
 
 class Shared():
     """Container class for messages and sharing data between processes"""
-    def __init__(self, args, instances, tempdir):
+    def __init__(self, args, instance, tempdir):
         self.args      = args
-        self.instances = instances
+        self.instance  = instance
         self.tempdir   = tempdir
         self.jobs      = Queue(60)
         self.done      = Event()
