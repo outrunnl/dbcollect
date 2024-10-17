@@ -34,17 +34,13 @@ def oracle_info(archive, args):
         elif included and not sid in included:
             logging.info('%s not included, skipping...', sid)
         elif inst_info[sid]['running'] is False:
-            pass
-            #    logging.debug('%s not running, skipping...', sid)
+            logging.debug('%s not running, skipping...', sid)
         else:
-            try:
-                instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])
-                instance.get_jobs(args)
-                total_jobs += instance.num_jobs
-                logging.info('{0}: {1} reports'.format(sid, instance.num_jobs))
-                instances.append(instance)
-            except CustomException:
-                pass
+            instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])
+            instance.get_jobs(args)
+            total_jobs += instance.num_jobs
+            logging.info('{0}: {1} reports'.format(sid, instance.num_jobs))
+            instances.append(instance)
 
     msg = 'No reports'
     starttime = time.time()

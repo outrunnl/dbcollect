@@ -40,6 +40,24 @@ def orahomes(args):
     # return only unique dirs that exist
     return [x for x in list(set(dirs)) if os.path.isdir(x)]
 
+def get_dbsdir(orahome):
+    basetabpath = os.path.join(orahome, 'install', 'orabasetab')
+    if not os.path.exists(basetabpath):
+        return
+
+    with open(basetabpath) as f:
+        orabasetab = f.read()
+
+    r = re.search(r'^(/.*):(.*):(.*):(.*):(.*)', orabasetab, re.M)
+    if not r:
+        return
+    readonly = r.group(4) == 'Y'
+    orabase  = r.group(2)
+    dbsdir   = os.path.join(orabase, 'dbs')
+    if not os.path.exists(dbsdir):
+        return
+    return dbsdir
+
 def running_instances():
     # Build list of running instances
     runlist = {}
@@ -54,24 +72,31 @@ def running_instances():
 
 def hc_files(args):
     # Build list of detected instances from hc_*.dat
-    hclist = []
+    hclist  = []
     for orahome in orahomes(args):
-        dbsdir = os.path.join(orahome, 'dbs')
-        if not os.path.isdir(dbsdir):
-            logging.debug('Skipping %s (no /dbs directory)', orahome)
-            continue
+        dbsdirs = []
+        dbsdirs.append(os.path.join(orahome, 'dbs'))
+        dbsdir2 = get_dbsdir(orahome)
+        if dbsdir2:
+            dbsdirs.append(dbsdir2)
+        logging.debug('dbsdirs: %s', dbsdirs)
         try:
-            for file in os.listdir(dbsdir):
-                path = os.path.join(dbsdir, file)
-                r = re.match('hc_(.*).dat', file)
-                if not r:
+            for dbsdir in dbsdirs:
+                if not os.path.isdir(dbsdir):
+                    logging.debug('Skipping %s (no /dbs directory)', orahome)
                     continue
-                sid   = r.group(1)
-                stat  = os.stat(path)
-                owner = getuser(stat.st_uid)
-                mtime = datetime.fromtimestamp(stat.st_mtime)
-                hclist.append((mtime, sid, orahome, owner))
-                logging.debug('%s, %s, %s', path, mtime.strftime("%Y-%m-%d %H:%M"), owner)
+
+                for file in os.listdir(dbsdir):
+                    path = os.path.join(dbsdir, file)
+                    r = re.match('hc_(.*).dat', file)
+                    if not r:
+                        continue
+                    sid   = r.group(1)
+                    stat  = os.stat(path)
+                    owner = getuser(stat.st_uid)
+                    mtime = datetime.fromtimestamp(stat.st_mtime)
+                    hclist.append((mtime, sid, orahome, owner))
+                    logging.debug('%s, %s, %s', path, mtime.strftime("%Y-%m-%d %H:%M"), owner)
         except OSError as e:
             # Happens if for example we can't read the dbs dir. Just ignore.
             logging.debug('{0}: {1}'.format(dir, os.strerror(e.errno)))
