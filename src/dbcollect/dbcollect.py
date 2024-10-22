@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 dbcollect.py - Retrieve Oracle database and OS config and performance data
-Copyright (c) 2020 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 multicollect - Runs dbcollect against multiple hosts using Ansible
-Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 

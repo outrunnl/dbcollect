@@ -1,6 +1,6 @@
 """
 config.py - DBCollect configuration/settings
-Copyright (c) 2023 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 

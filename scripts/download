@@ -10,7 +10,7 @@ To keep things simple, there is only very basic exception handling.
 Move the downloaded dbcollect to /usr/local/bin or $HOME/bin after downloading if
 it didn't happen automatically.
 
-Copyright (c) 2022 - Bart Sjerps <bart@dirty-cache.com>
+Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
