@@ -25,15 +25,15 @@ The project is hosted on Github.com, and contributions (improvement on code, pro
 As dbcollect typically runs on production database systems, it has been designed to be failsafe where possible. This means that bugs or unexpected behaviour can not lead to data corruption or outages. To achieve this, the following design principles have been applied:
 
 * dbcollect does not run as "root". Even if it is executed as root by the administrator, the first thing dbcollect performs is a switch to a different user. As such, on typical systems, dbcollect cannot modify Operating System files, memory, kernel settings etc.<sup>1</sup>
-* The user under which dbcollect runs should be the Oracle (database) "SYS" owner (usually the user 'oracle'). The reason for this is that dbcollect needs to execute SQL scripts with "sysdba" privileges without having to enter passwords for every database instance. As this user itself has full access to database data and Oracle binaries, additional steps have been taken to restrict access (see below)<sup>2</sup>
-* It is possible to run _dbcollect_ as non-priledged user (such as 'nobody') - in this case you must provide SQL*Net connect strings with user/passwords<sup>3</sup>
+* The user under which dbcollect runs should be the Oracle (database) "SYS" owner (usually the user 'oracle'). The reason for this is that dbcollect needs to execute SQL scripts with "sysdba" privileges without having to enter passwords for every database instance. As this user itself has full access to database data and Oracle binaries, additional steps have been taken to restrict access (see below)<sup>2</sup>. Note that it is possible to avoid this (see next item)
+* It is possible to run _dbcollect_ as non-priledged OS user (such as 'nobody' and DB user 'DBSNMP') - in this case you must provide SQL*Net connect strings with user/passwords<sup>3</sup>
 * Most file write operations are forced to only happen in the temporary directory ('/tmp') <sup>4</sup>
 * All Oracle database operations are performed using Oracle SQL*Plus and can only perform database 'SELECT' statements. No items like views, procedures, functions, directories are created in the database. No data can be directly modified. <sup>5</sup>
 * Some database audit events will be generated as _dbcollect_ makes SQL*Plus connections
 * OS level commands are limited to those that do not require 'root' access and cannot modify configurations, but only collect configuration parameters.
 * OS level commands that require 'root' can be used via _sudo_, for this, _dbcollect_ can be run as root with the ```--sudoers``` option, which will make it write a file named `/etc/sudoers.d/dbcollect` providing limited access to some OS commands for users member of the `dba` group. Using this is optional (but highly recommended on HP-UX as it allows _dbcollect_ to get crucial CPU and disk information).
 * The _dbcollect_ Python code is frequently verified with 'pylint' to detect and remediate potential bugs and issues.
-* _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum 50% of available CPUs unless changed with the --tasks parameter.
+* _dbcollect_ only runs one command or SQL script at a time, except when generating AWR or Statspack reports, then the default is limited to a maximum of 8, or 50% of available CPUs, unless changed with the --tasks parameter.
 * As '/tmp' on most Unix/Linux systems is a separate file system and the only place where files are written, the system cannot become unstable due to filling up other file systems to 100% capacity.
 * The temporary files in /tmp are cleaned up when dbcollect ends (even if there are errors, exception is if it is killed with SIGKILL)
 * The only function in the tool that accesses external (internet) sites is the ```--update``` function which is contained in one simple Python module (```updater.py```) and is only used for updating _dbcollect_ itself, and is restricted to hard-coded URLs on the dbcollect repository on ```github.com```.
@@ -41,7 +41,7 @@ As dbcollect typically runs on production database systems, it has been designed
 Notes:
 
 1. This assumes the system has typical security settings where regular users don't have write access to OS files
-2. Using another user would require the administrator to enter SYS passwords for each database instance - which would not make the tool more secure, only harder to work with
+2. Using another user would require the administrator to enter userid/passwords for each database instance - this is harder to work with but possible if needed
 3. See [Non-priviledged user](#anonymous)
 3. The output ZIP file can be created with a different name, using the ```--filename``` option, but aborts if the file already exists (cannot overwrite). The temporary directory can be changed with ```--tempdir``` but tempfiles are created in a subfolder and cannot overwrite existing files
 4. The database logon itself as well as accessing Oracle AWR reports and other tables generates some audit logging in the database
@@ -71,17 +71,18 @@ For exact details on what data is collected, check the following files/packages:
 
 1. syscollect.py (OS and SAR data)
 2. config.py (list of OS commands to run on each OS to collect system info)
-3. awr_report.sql (AWR reports) or sp_report.sql (Statspack reports)
-4. database.sql, instance.sql, dbinfo.sql, pdbinfo.sql (Additional database information)
+3. various SQL scripts (in the 'sql' directory (for retrieving Additional database information)
 
 ## Database / instance detection
 
 The purpose of this tool is to make it as easy as possible to grab Oracle data. As such, it tries to find all Oracle instances on a host automatically. Earlier versions relied on ```oratab``` for this but it turned out many customers run Oracle instances not listed in oratab. So two separate methods are used:
 
-1. Classic /etc/oratab or /var/opt/oracle/oratab parsing. This often fails to detect instances on RAC with newer Oracle versions as it lists the database/service name instead of the instance.
-2. Using the Oracle inventory (inventory.xml) to find all possible ```ORACLE_HOMEs``` and look for ```hc_<sid>.dat``` files (running instances will always create such a file).
-3. For both oratab and inventory reported instances, the Unix process list is checked to see if the instance is actually running before attempting to connect
-4. Multiple entries with the same instance - but sometimes different ORACLE_HOME can be detected. The one with the most recent ```hc_<sid>.dat``` will be used.
+1. All ORACLE_HOMEs are detected from /etc/oratab (or /var/opt/oracle/oratab) as well as via the Oracle Inventory
+2. ORACLE_HOMEs that appear to be used for clusterware are skipped
+3. A scan is executed for files named `hc_<instance>.dat` in ORACLE_HOME or ORACLE_BASE to indicate possible non-running instances (this is just informational and may not always work)
+4. Running database instances are detected via the UNIX process list ('ps' command). ASM and MGMT instances are ignored.
+5. _dbcollect_ tries to connect (as SYSDBA or using provided credentials) and get the status using each ORACLE_HOME. The first one that succeeds will be used
+6. _dbcollect_ will abort with an error message if it cannot connect to one of the databases.
 
 ## Anonymous user
 
@@ -111,6 +112,8 @@ The time it takes to run _dbcollect_ largely depends on:
 * Whether or not certain known performance issues with Oracle AWR reporting are fixed (depends on Oracle version and patch level)
 
 Expect a runtime between a few minutes (single instance, one database, standard retention, normal 10-day collect period) and many hours or even days on systems with large amounts of database instances, long retention, short AWR intervals and long collection period. For such systems, running in a ```screen``` or ```tmux``` session is recommended so you can disconnect while it is running.
+
+Note that generating AWR reports on Oracle RAC can sometimes be extremely slow. Be patient.
 
 ## ZIP and TEMP size
 
