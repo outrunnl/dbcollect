@@ -17,6 +17,8 @@ DECLARE
 	v_instance  VARCHAR(1000);
 	v_database  VARCHAR(1000);
 	v_feat      VARCHAR(1000);
+	v_cpus      VARCHAR(100);
+	v_cpucores  VARCHAR(100);
 	v_awr       INTEGER;
 	v_statspack INTEGER;
 BEGIN
@@ -44,6 +46,14 @@ BEGIN
 		INTO v_database FROM v$database;
 	END IF;
 
+	SELECT ',' || 
+			chr(10)  || '  "num_cpus": ' || value
+	INTO v_cpus FROM v$osstat WHERE stat_name = 'NUM_CPUS';
+
+	SELECT ',' || 
+			chr(10)  || '  "num_cpu_cores": ' || value
+	INTO v_cpucores FROM v$osstat WHERE stat_name = 'NUM_CPU_CORES';
+
 	IF v_status IN ('OPEN') THEN
 		EXECUTE IMMEDIATE 'SELECT COUNT(table_name) statspack FROM all_tables WHERE table_name = ''STATS$SNAPSHOT''' INTO v_statspack;
 		EXECUTE IMMEDIATE 
@@ -58,6 +68,6 @@ BEGIN
 		INTO v_feat FROM DUAL;
 	END IF;
 
-	DBMS_OUTPUT.PUT_LINE('{' || chr(10) || v_instance || v_database || v_feat || chr(10) || '}' );
+	DBMS_OUTPUT.PUT_LINE('{' || chr(10) || v_instance || v_database || v_cpus || v_cpucores || v_feat || chr(10) || '}' );
 END;
 /

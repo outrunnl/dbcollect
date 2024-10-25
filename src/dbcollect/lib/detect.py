@@ -144,6 +144,15 @@ def get_instances(args):
         hclist    = get_hcfiles(orahomes)
 
     runlist = running_instances()
+
+    # TBD - work in progress
+    """
+    if args.dbcreds and args.dbremote:
+        for sid in creds:
+            if not sid in runlist:
+                runlist[sid] = { 'connectstring': creds[sid] }
+    """
+
     for sid in runlist:
         connectstring = None
         instances[sid] = {}
