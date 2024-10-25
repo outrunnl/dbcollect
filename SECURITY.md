@@ -26,8 +26,9 @@ As dbcollect typically runs on production database systems, it has been designed
 
 * dbcollect does not run as "root". Even if it is executed as root by the administrator, the first thing dbcollect performs is a switch to a different user. As such, on typical systems, dbcollect cannot modify Operating System files, memory, kernel settings etc.<sup>1</sup>
 * The user under which dbcollect runs should be the Oracle (database) "SYS" owner (usually the user 'oracle'). The reason for this is that dbcollect needs to execute SQL scripts with "sysdba" privileges without having to enter passwords for every database instance. As this user itself has full access to database data and Oracle binaries, additional steps have been taken to restrict access (see below)<sup>2</sup>
-* Most file write operations are forced to only happen in the temporary directory ('/tmp') <sup>3</sup>
-* All Oracle database operations are performed using Oracle SQL*Plus and can only perform database 'SELECT' statements. No items like views, procedures, functions, directories are created in the database. No data can be directly modified. <sup>4</sup>
+* It is possible to run _dbcollect_ as non-priledged user (such as 'nobody') - in this case you must provide SQL*Net connect strings with user/passwords<sup>3</sup>
+* Most file write operations are forced to only happen in the temporary directory ('/tmp') <sup>4</sup>
+* All Oracle database operations are performed using Oracle SQL*Plus and can only perform database 'SELECT' statements. No items like views, procedures, functions, directories are created in the database. No data can be directly modified. <sup>5</sup>
 * Some database audit events will be generated as _dbcollect_ makes SQL*Plus connections
 * OS level commands are limited to those that do not require 'root' access and cannot modify configurations, but only collect configuration parameters.
 * OS level commands that require 'root' can be used via _sudo_, for this, _dbcollect_ can be run as root with the ```--sudoers``` option, which will make it write a file named `/etc/sudoers.d/dbcollect` providing limited access to some OS commands for users member of the `dba` group. Using this is optional (but highly recommended on HP-UX as it allows _dbcollect_ to get crucial CPU and disk information).
@@ -41,6 +42,7 @@ Notes:
 
 1. This assumes the system has typical security settings where regular users don't have write access to OS files
 2. Using another user would require the administrator to enter SYS passwords for each database instance - which would not make the tool more secure, only harder to work with
+3. See [Non-priviledged user](#anonymous)
 3. The output ZIP file can be created with a different name, using the ```--filename``` option, but aborts if the file already exists (cannot overwrite). The temporary directory can be changed with ```--tempdir``` but tempfiles are created in a subfolder and cannot overwrite existing files
 4. The database logon itself as well as accessing Oracle AWR reports and other tables generates some audit logging in the database
 
@@ -80,6 +82,16 @@ The purpose of this tool is to make it as easy as possible to grab Oracle data. 
 2. Using the Oracle inventory (inventory.xml) to find all possible ```ORACLE_HOMEs``` and look for ```hc_<sid>.dat``` files (running instances will always create such a file).
 3. For both oratab and inventory reported instances, the Unix process list is checked to see if the instance is actually running before attempting to connect
 4. Multiple entries with the same instance - but sometimes different ORACLE_HOME can be detected. The one with the most recent ```hc_<sid>.dat``` will be used.
+
+## Anonymous user
+
+Some customers are concerned about running dbcollect as ```oracle``` or a DBA user, or having dbcollect connecting using ```SYSDBA``` privileges, even considering only SELECT statements are performed.
+
+It is now possible to connect using SQL\*Net as any OS user, even ones having zero privileges (such as ```nobody```). An SQLNet database login must be available with ```SELECT ANY DICTIONARY``` privileges (or read access to v$, DBA_* and CDB_* tables).
+
+This user must have access to a valid ORACLE_HOME (to run SQL*Plus), and a credentials file must be provided with a (readable) file containing a valid connect url for each instance.
+
+More information in the [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTIONS.md#using-a-credentials-file)
 
 ## SQL query text
 

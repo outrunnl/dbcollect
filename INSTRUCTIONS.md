@@ -167,11 +167,57 @@ dbcollect --tasks 2
 # (sets tasks to number of CPUs)
 dbcollect --tasks 0
 
+# Use credentials file instead of connect using OPS$
+# This allows dbcollect to run as non-privileged user (i.e., 'nobody'), see "using a credentials file" below
+dbcollect --dbcreds /tmp/creds
 
+# Specify the ORACLE_HOME
+# Use if the OS user has no access to oratab/oracle inventory
+dbcollect --dbcreds /tmp/creds --orahome /u01/app/oracle/product/21.0.0/dbhome_1
 ```
 When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
 
 Please send this ZIP file to the person who requested it.
+
+## Using a credentials file
+
+With the option ```--dbcreds <credentials file>```, _dbcollect_ will make SQL\*Plus connections using SQL\*Net with any database user, instead of OS (OPS$) connections using SYSDBA privileges.
+
+This allows _dbcollect_ to run as any OS user (i.e., 'nobody'), because it no longer requires OS level authentication, as long as it has access to a valid Oracle SQL*Plus environment (ORACLE_HOME).
+
+* OS user must have access to a valid ORACLE_HOME for running SQL\*Plus.
+* A credentials file must be provided with a (readable) file containing a valid connect url for each instance.
+* The privileges must be provided in the credentials file where each line has the form ```<instance_name>:<connection_url>```.
+* The database user must have read access to v$, DBA_\* and CDB_\* tables (provided by the ```SELECT ANY DICTIONARY``` privilege
+* An SQLNet database login must be available with ```SELECT ANY DICTIONARY``` privileges (or read access to v$, DBA_\* and CDB_\* tables).
+* This requires the listener to be available and listening for the provided service.
+
+The ```DBSNMP``` user is predefined with these privileges. When using ```DBSNMP``` for this purpose, it must be unlocked and have a valid password on each instance.
+
+The ```ORACLE_HOME``` will be retrieved from ```/etc/oratab``` but can be provided with ```--orahome``` if oratab is not valid or available for the OS user.
+
+The database user/password must be provided in the connectstring as such:
+
+`<instance>:<url>`
+
+Where url is something like `<dbuser/dbpassword>@//<fqdn>/<service name>`
+
+For example:
+```
+orcl:dbsnmp/topsecret@//example.local/orcl
+orcl2:johndoe/topsecret@//test.local/orcl2
+```
+
+Note that _dbcollect_ will try to connect to each running instance and will fail if any of the provided credentials are invalid or missing, or the connection cannot be made for whatever reason. There is a 2 second timeout for hanging connections.
+
+The OS user does not even need to have a valid OS login, it can be executed as root using the ```runuser``` command:
+
+```
+echo '/usr/local/bin/dbcollect -o --dbcreds /tmp/creds' | runuser nobody -s /bin/bash
+
+```
+An example wrapper script is provided in the [contrib](https://github.com/outrunnl/dbcollect/tree/master/scripts) directory.
+
 
 ### Usage for Live Optics or SPLUNK based reporting
 
