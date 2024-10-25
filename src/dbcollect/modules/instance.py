@@ -4,11 +4,11 @@ Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, json, logging
-from subprocess import Popen, PIPE, STDOUT
+import json, logging
 
 from lib.functions import getscript
 from lib.errors import Errors, ReportingError, SQLPlusError
+from lib.sqlplus import sqlplus
 
 class Job():
     """AWR/Statspack job definition"""
@@ -40,10 +40,11 @@ class Job():
 
 class Instance():
     """Oracle Instance with SQL*Plus, scripts and other methods"""
-    def __init__(self, tempdir, sid, orahome):
+    def __init__(self, tempdir, sid, orahome, connectstring):
         self.tempdir   = tempdir
         self.sid       = sid
         self.orahome   = orahome
+        self.connect   = connectstring
         self.jobs      = []
         self.scripts   = {}
         self.meta_txt  = self.script('meta')
@@ -64,27 +65,11 @@ class Instance():
         self.spusage   = self.meta.pop('statspack', 0)
 
     def sqlplus(self, quiet=False):
-        """
-        Create a Popen() SQL*Plus session
-        if quiet=True, redirect stdout to /dev/null.
-        Note: SQL*Plus never writes to stderr.
-        """
-        env  = { 'ORACLE_HOME': self.orahome, 'ORACLE_SID': self.sid }
-        path = os.path.join(self.orahome, 'bin/sqlplus')
-        cmd  = (path, '-S', '-L', '/', 'as', 'sysdba')
-        if quiet:
-            stdout = open('/dev/null', 'w')
-        else:
-            stdout = PIPE
-        try:
-            if sys.version_info[0] == 2:
-                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=STDOUT)
-            else:
-                proc = Popen(cmd, cwd=self.tempdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=STDOUT, encoding='utf-8')
-        except OSError as e:
-            raise SQLPlusError(Errors.E019, path, os.strerror(e.errno))
+        """Create SQL*Plus session and initialize with header"""
+        proc = sqlplus(self.orahome, self.sid, self.connect, self.tempdir, quiet=quiet)
         proc.stdin.write("SET tab off feedback off verify off heading off lines 32767 pages 0 trims on\n")
         proc.stdin.write("alter session set nls_date_language=american;\n")
+
         # Handle Bug 19033356 - SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND RESULT.
         proc.stdin.write("whenever oserror continue;\n")
 

@@ -44,6 +44,8 @@ def main():
     parser.add_argument("-u", "--user",       type=str,                   help="Switch to user (if run as root)")
     parser.add_argument("-d", "--days",       type=int, default=10,       help="Number of days ago to START collect of AWR data (default 10, max 999)")
     parser.add_argument(      "--end_days",   type=int, default=0,        help="Number of days ago to END AWR collect period, default 0, max 999")
+    parser.add_argument(      "--dbcreds",    type=str,                   help="DB Credentials file", metavar='<file>')
+    parser.add_argument(      "--orahome",    type=str,                   help="ORACLE_HOME to run SQL*Plus", metavar='<dir>')
     parser.add_argument(      "--force-awr",  action="store_true",        help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
     parser.add_argument(      "--statspack",  action="store_true",        help="Prefer Statspack reports even if AWR usage is detected")
     parser.add_argument(      "--ignore-awr", action="store_true",        help="Ignore AWR reports for databases that have no previous usage")
@@ -123,9 +125,11 @@ def main():
 
     except CustomException as e:
         logging.error(*e.args)
-        sys.exit(10)
+        logging.info("Aborting")
+        sys.exit(50)
 
     except IOError as e:
+        logging.exception(e)
         logging.error(Errors.E012, e.filename, os.strerror(e.errno))
         logging.info("Aborting")
         sys.exit(20)

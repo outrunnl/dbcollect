@@ -59,11 +59,15 @@ def switchuser(user, args):
     try:
         proc = Popen(args)
         proc.communicate()
+        sys.exit(proc.returncode)
+
     except KeyboardInterrupt:
         print("Aborted, exiting...")
         sys.exit(10)
+
     except CalledProcessError as e:
         sys.exit(e.returncode)
+
     except OSError as e:
         if e.errno in [errno.EACCES]:
             print('%s, %s' % (e, ' '.join(args)))

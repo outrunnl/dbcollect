@@ -35,11 +35,13 @@ def oracle_info(archive, args):
             logging.info('%s not included, skipping...', sid)
         elif inst_info[sid]['running'] is False:
             logging.debug('%s not running, skipping...', sid)
+        elif inst_info[sid]['oracle_home'] is None:
+            raise CustomException(Errors.E027, sid)
         else:
-            instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'])
+            instance    = Instance(tempdir, sid, inst_info[sid]['oracle_home'], inst_info[sid]['connectstring'])
             instance.get_jobs(args)
             total_jobs += instance.num_jobs
-            logging.info('{0}: {1} reports'.format(sid, instance.num_jobs))
+            logging.info('{0}: generating {1} workload reports'.format(sid, instance.num_jobs))
             instances.append(instance)
 
     msg = 'No reports'
