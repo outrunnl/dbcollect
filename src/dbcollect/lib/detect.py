@@ -171,39 +171,3 @@ def get_instances(args):
                 logging.debug('%s: SQL*Plus output:\n%s\n', sid, out)
 
     return instances
-
-def get_instances_org(args):
-    """
-    Get all detected instances by searching ORACLE_HOME/dbs for files named hc_<sid>.dat
-    If more hc_*.dat files are detected, the one with the latest mtime will be used.
-    Check if the instance is running by looking for ora_pmon_<sid> processes.
-    """
-    instances = {}
-    downlist  = {}
-    runlist   = running_instances()
-    detected  = hc_files(args)
-    logging.info('Detecting Oracle instances')
-
-    # build lists of running and stopped instances
-    for mtime, sid, orahome, _ in detected:
-        ts = mtime.strftime("%Y-%m-%d %H:%M")
-        if sid[0] in ('+','-'):
-            # Skip ASM and MGMT instances
-            logging.debug('Skipping instance: %s', sid)
-            continue
-        if not sid in instances:
-            # First entry wins, most recent
-            instances[sid] = {'oracle_home': orahome, 'mtime': ts}
-
-        if sid in runlist:
-            running = True
-        else:
-            running       = False
-            downlist[sid] = None
-        instances[sid]['running'] = running
-
-    logging.info('Stopped instances: %s', ', '.join(downlist.keys()))
-    logging.info('Running instances: %s', ', '.join(runlist.keys()))
-    for sid in instances:
-        logging.debug('{0}: {1}'.format(sid, instances[sid]['oracle_home']))
-    return instances
