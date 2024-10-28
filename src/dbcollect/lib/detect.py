@@ -6,7 +6,7 @@ License: GPLv3+
 
 import os, re, logging
 from datetime import datetime
-from lib.errors import Errors, CustomException
+from lib.errors import Errors, CustomException, ConnectionError
 from lib.functions import getfile, execute
 from lib.user import getuser, getgroup
 from lib.sqlplus import sqlplus, get_dbsdir
@@ -110,15 +110,18 @@ def running_instances():
     return runlist
 
 def get_creds(args):
+    """Parse the credentials file"""
     info = {}
     try:
         with open(args.dbcreds, 'rb') as f:
             data = f.read()
+            # Required on Python 3, <str> on Python 2
             if isinstance(data, bytes):
                 data = data.decode()
 
-            for sid, conn in re.findall(r'(\S+?):(.*)', data, re.M):
-                info[sid] = conn
+        for sid, s_enabled, conn in re.findall(r'(\S+?):([YyNn]):(.*)', data, re.M):
+            enabled = s_enabled in ('Y','y')
+            info[sid] = { 'enabled': enabled, 'connectstring': conn }
 
     except IOError as e:
         logging.error(e)
@@ -133,7 +136,7 @@ def get_instances(args):
     creds     = {}
     if args.dbcreds:
         logging.info('Using credentials file, SQL*Net connections, skipping idle instance detection')
-        creds    = get_creds(args)
+        creds = get_creds(args)
         if args.orahome:
             orahomes = [args.orahome]
         else:
@@ -156,14 +159,20 @@ def get_instances(args):
     for sid in runlist:
         connectstring = None
         instances[sid] = {}
+        instances[sid]['enabled'] = None
         instances[sid]['running'] = True
         instances[sid]['oracle_home'] = None
         if args.dbcreds:
             try:
-                connectstring = creds[sid]
+                connectstring = creds[sid]['connectstring']
+                instances[sid]['enabled'] = creds[sid]['enabled']
             except KeyError:
                 raise CustomException(Errors.E029, sid)
+        else:
+            instances[sid]['enabled'] = True
 
+        if instances[sid]['enabled'] == False:
+            continue
         if not orahomes:
             raise CustomException(Errors.E031)
         for orahome in orahomes:
@@ -175,8 +184,21 @@ def get_instances(args):
                 instances[sid]['connectstring'] = connectstring
                 break
             elif proc.returncode == 124:
-                logging.error(Errors.E030, sid)
+                raise ConnectionError(Errors.E030, sid)
             else:
+                for err, msg in re.findall(r'^(ORA-\d+):(.*)', out, re.M):
+                    #ORA-12528: TNS:listener: all appropriate instances are blocking new connections
+                    #ORA-01033: ORACLE initialization or shutdown in progress
+                    #ORA-01017: invalid username/password; logon denied
+                    #ORA-12537: TNS:connection closed
+                    #ORA-12514: TNS:listener does not currently know of service requested in connect
+                    #ORA-12154: TNS:could not resolve the connect identifier specified
+                    if err in ('ORA-01033','ORA-12528','ORA-12537'):
+                        raise ConnectionError(Errors.E033, sid, err)
+                    elif err in ('ORA-01017','ORA-12514','ORA-12154'):
+                        raise ConnectionError(Errors.E034, sid, err)
+                # If no known ORA- error is found
                 logging.debug('%s: SQL*Plus output:\n%s\n', sid, out)
+                raise ConnectionError(Errors.E035, sid, err)
 
     return instances

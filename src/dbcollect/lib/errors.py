@@ -16,6 +16,9 @@ class ReportingError(CustomException):
 class SQLPlusError(CustomException):
     pass
 
+class ConnectionError(CustomException):
+    pass
+
 class Errors():
     """
     Info, Warning and Error messages
@@ -26,6 +29,7 @@ class Errors():
     W004 = "[DBC-W004] Skipping %s: No prior AWR usage or Statspack detected (--ignore)"
     W005 = "[DBC-W005] Executing %s failed (%s)"
     W006 = "[DBC-W006] Reading DMI info failed (%s)"
+    W007 = "[DBC-W007] Skipping %s: disabled in credentials file"
 
     E001 = "[DBC-E001] Unknown error: %s, see logfile for debug info"
     E002 = "[DBC-E002] Keyboard interrupt, Aborting..."
@@ -59,3 +63,6 @@ class Errors():
     E030 = "[DBC-E030] %s: Timeout connecting to instance"
     E031 = "[DBC-E031] No valid ORACLE_HOME provided (try --orahome)"
     E032 = "[DBC-E032] Cannot read credentials file %s"
+    E033 = "[DBC-E033] %s: Instance not available (%s)"
+    E034 = "[DBC-E034] %s: Invalid credentials provided (%s)"
+    E035 = "[DBC-E035] %s: Unknown Oracle error, see logfile (%s)"
