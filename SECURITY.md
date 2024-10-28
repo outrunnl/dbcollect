@@ -77,12 +77,24 @@ For exact details on what data is collected, check the following files/packages:
 
 The purpose of this tool is to make it as easy as possible to grab Oracle data. As such, it tries to find all Oracle instances on a host automatically. Earlier versions relied on ```oratab``` for this but it turned out many customers run Oracle instances not listed in oratab. So two separate methods are used:
 
+* Automatic detection using ```oratab``` and Oracle Inventory (connections as SYSDBA via OS authentication (oracle or dba user)
+* Manual connections using credentials file (connections via SQL*Net and listener, any user)
+
+### Automatic detection
+
 1. All ORACLE_HOMEs are detected from /etc/oratab (or /var/opt/oracle/oratab) as well as via the Oracle Inventory
 2. ORACLE_HOMEs that appear to be used for clusterware are skipped
 3. A scan is executed for files named `hc_<instance>.dat` in ORACLE_HOME or ORACLE_BASE to indicate possible non-running instances (this is just informational and may not always work)
 4. Running database instances are detected via the UNIX process list ('ps' command). ASM and MGMT instances are ignored.
-5. _dbcollect_ tries to connect (as SYSDBA or using provided credentials) and get the status using each ORACLE_HOME. The first one that succeeds will be used
-6. _dbcollect_ will abort with an error message if it cannot connect to one of the databases.
+5. _dbcollect_ tries to connect (as SYSDBA) and get the status using each ORACLE_HOME. The first one that succeeds will be used
+6. _dbcollect_ will abort with an error message if it cannot connect to an instance after trying all ORACLE_HOMEs.
+
+### Manual credentials
+
+1. All ORACLE_HOMEs are detected from /etc/oratab (or /var/opt/oracle/oratab) or the provided ORACLE_HOME from the commandline is used.
+2. Running database instances are detected via the UNIX process list ('ps' command). ASM and MGMT instances are ignored.
+3. _dbcollect_ tries to connect (via the provided connect string) and get the status using each ORACLE_HOME. The first one that succeeds will be used
+4. _dbcollect_ will abort with an error message if it cannot connect to an instance after trying all ORACLE_HOMEs.
 
 ## Anonymous user
 

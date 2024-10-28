@@ -31,9 +31,8 @@ mv dbcollect $HOME/bin/
 * Some free space in /tmp (or elsewhere, use --tempdir)
 * Oracle RDBMS 11g or higher (optional)
 * Diagnostics pack license OR statspack configured on the database(s)
-* Access to the 'oracle' special user or dba privileges ('root' not required)
+* Access to the 'oracle' special user or dba privileges ('root' not required) or a credentials file
 * Database instances up and running (opened read/write required for AWR/Statspack)
-* SYS credentials (hence the 'oracle' or dba user requirement)
 
 ### Linux
 
@@ -198,17 +197,17 @@ The ```ORACLE_HOME``` will be retrieved from ```/etc/oratab``` but can be provid
 
 The database user/password must be provided in the connectstring as such:
 
-`<instance>:<url>`
+`<instance>:<enabled Y|N>:<url>`
 
 Where url is something like `<dbuser/dbpassword>@//<fqdn>/<service name>`
 
 For example:
 ```
-orcl:dbsnmp/topsecret@//example.local/orcl
-orcl2:johndoe/topsecret@//test.local/orcl2
+orcl:Y:dbsnmp/topsecret@//example.local/orcl
+orcl2:N:johndoe/topsecret@//test.local/orcl2
 ```
 
-Note that _dbcollect_ will try to connect to each running instance and will fail if any of the provided credentials are invalid or missing, or the connection cannot be made for whatever reason. There is a 2 second timeout for hanging connections.
+Note that _dbcollect_ will try to connect to each enabled and running instance, and will fail if any of the provided credentials are invalid or missing, or the connection cannot be made for whatever reason. There is a 2 second timeout for hanging connections.
 
 The OS user does not even need to have a valid OS login, it can be executed as root using the ```runuser``` command:
 

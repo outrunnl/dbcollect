@@ -10,7 +10,7 @@ _dbcollect_ is a metadata collection tool for Oracle databases, providing worklo
 
 * Dell LiveOptics
 * Dell's internal Splunk-based Workload Analyzer for Oracle (used by Oracle specialists at Dell)
-* DBLytics (The advanced DB workload analyzer tool I have developed - more info TBD)
+* LoadMaster (The advanced DB workload analyzer tool I have developed - more info TBD)
 
 It is written in Python, and collects various OS configuration files and
 the output of some system commands, as well as AWR or Statspack reports for each
@@ -21,7 +21,7 @@ The results are collected in a ZIP file named (default):
 
 For LiveOptics and Dell's Workload Analyzer, the per-database directories in the ZIP file contain all files you need to upload to the reporting tools.
 
-For the advanced analyzer, send the entire ZIP file (via secure FTP or other means).
+For the advanced analyzer (LoadMaster), send the entire ZIP file (via secure FTP or other means).
 
 ## Installing and usage
 
@@ -72,7 +72,7 @@ More info on Oracle feature usage: [Oracle Feature Usage](https://oracle-base.co
 
 ### Oracle running as other user than 'oracle'
 
-DBCollect by default switches to the first user it detects that runs a regular database instance, like `ora_pmon_<sid>`. Usually this is the 'oracle' user. If you do NOT run as root, run it as the user that Oracle database runs as, or a user with `dba` privileges (connect as sysdba).
+If executed as 'root', DBCollect by default switches to the first user it detects that runs a regular database instance, like `ora_pmon_<sid>`. Usually this is the 'oracle' user. If you do NOT run as root, run it as the user that Oracle database runs as, or a user with `dba` privileges (connect as sysdba). It is also possible to run as any other user (including non-privileged and even disabled OS users) using a credentials file See [INSTRUCTIONS](https://github.com/outrunnl/dbcollect/blob/master/INSTRUCTIONS.md) for information on credential files.
 
 If you run as root and want to specify a particular user, use the -u/--user option:
 
@@ -81,8 +81,6 @@ If you run as root and want to specify a particular user, use the -u/--user opti
 Many systems have a split user configuration for Oracle clusterware (i.e. a `grid` user). This is fine as _dbcollect_ only needs the database user credentials.
 
 Having more than one `oracle` user for running databases should work as long as they share the `dba` privileges (i.e., they can all connect to all instances as sysdba).
-
-Running instances with different users not sharing dba privileges is not supported (contact me for a workaround).
 
 
 ### Statspack
@@ -158,7 +156,7 @@ A: AWR reports are great but have a few problems and limitations for our purpose
 
 Q: Is dbcollect safe to run?
 
-A: dbcollect is designed to run as non-root user but it has to be the oracle user or a user with sysdba privileges. The SQL scripts only contain SELECT statements so they cannot modify database data. The Python tools cannot delete/overwrite any file except in `/tmp` or the output ZIP file otherwise specified in the arguments. External commands are not executed as root and are verified to only gather system info, not modify anything. CPU consumption is limited by default to 50%. These restrictions should make one confident that dbcollect is safe to run on production systems.
+A: dbcollect is designed to run as non-root user but it has to be the oracle user or a user with sysdba privileges, or any other user using a credentials file. The SQL scripts only contain SELECT statements so they cannot modify database data. The Python tools cannot delete/overwrite any file except in `/tmp` or the output ZIP file otherwise specified in the arguments. External commands are not executed as root and are verified to only gather system info, not modify anything (some commands may be executed if using 'sudoers' access). CPU consumption is limited by default to either 50% or a maximum of 8 CPUs. These restrictions should make one confident that dbcollect is safe to run on production systems.
 
 Q: Why is dbcollect written in Python 2? This is no longer supported!
 
@@ -187,7 +185,7 @@ unzip dbcollect -d dbcollect-source
 
 Q: How do I know my download has not been tampered with?
 
-A: If you downloaded dbcollect from github using https, you should be good. If you want to make sure, get the MD5 hash and I can check for you if it is the correct one:
+A: If you downloaded dbcollect from github releases using https, you should be good. If you want to make sure, get the MD5 hash and I can check for you if it is the correct one:
 ```
 md5sum dbcollect
 ```
