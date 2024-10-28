@@ -187,18 +187,28 @@ def get_instances(args):
                 raise ConnectionError(Errors.E030, sid)
             else:
                 for err, msg in re.findall(r'^(ORA-\d+):(.*)', out, re.M):
-                    #ORA-12528: TNS:listener: all appropriate instances are blocking new connections
                     #ORA-01033: ORACLE initialization or shutdown in progress
+                    #ORA-12528: TNS:listener: all appropriate instances are blocking new connections
                     #ORA-01017: invalid username/password; logon denied
                     #ORA-12537: TNS:connection closed
                     #ORA-12514: TNS:listener does not currently know of service requested in connect
                     #ORA-12154: TNS:could not resolve the connect identifier specified
+                    #ORA-12541: TNS:no listener
+                    #ORA-12543: TNS:destination host unreachable
+
                     if err in ('ORA-01033','ORA-12528','ORA-12537'):
-                        raise ConnectionError(Errors.E033, sid, err)
-                    elif err in ('ORA-01017','ORA-12514','ORA-12154'):
-                        raise ConnectionError(Errors.E034, sid, err)
-                # If no known ORA- error is found
+                        # STARTED, MOUNTED
+                        raise ConnectionError(Errors.E033, sid, err, msg)
+                    elif err in ('ORA-01017'):
+                        # Wrong credentials
+                        raise ConnectionError(Errors.E034, sid, err, msg)
+                    elif err in ('ORA-12154','ORA-12514','ORA-12541','ORA-12543'):
+                        raise ConnectionError(Errors.E036, sid, err, msg)
+
+                    raise ConnectionError(Errors.E035, sid, err, msg)
+
+                # If no ORA-???? error is found at all - cannot happen?
                 logging.debug('%s: SQL*Plus output:\n%s\n', sid, out)
-                raise ConnectionError(Errors.E035, sid, err)
+                raise ConnectionError(Errors.E001, 'SQL*Plus failed without ORA-* error')
 
     return instances
