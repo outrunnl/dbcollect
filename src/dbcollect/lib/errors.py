@@ -19,6 +19,12 @@ class SQLPlusError(CustomException):
 class ConnectionError(CustomException):
     pass
 
+class SQLError(CustomException):
+    pass
+
+class SQLTimeout(CustomException):
+    pass
+
 class Errors():
     """
     Info, Warning and Error messages
@@ -39,7 +45,7 @@ class Errors():
     E006 = "[DBC-E006] HTML Parsing error in %s, not stripped"
     E007 = "[DBC-E007] I/O error writing %s: %s"
     E008 = "[DBC-E008] Unknown platform %s"
-    E009 = "[DBC-E009] %s: Terminated (pid=%s, rc=%s) running SQLPlus script %s"
+    E009 = "[DBC-E009] %s: Worker terminated (pid=%s, rc=%s) running SQLPlus script %s"
     E010 = "[DBC-E010] %s: Timeout (pid=%s, %s seconds) running SQLPlus script %s"
     E011 = "[DBC-E011] %s: Generator timeout (queue full, %s seconds)"
     E012 = "[DBC-E012] I/O error in %s: %s"

@@ -113,15 +113,21 @@ def oracle_info(archive, args):
         if not args.quiet:
             print('')
 
-        generator.join()
-        logging.info('%s: Job generator completed', instance.sid)
-
         for worker in workers:
             worker.join()
             if worker.exitcode:
-                raise CustomException(Errors.E022, worker.exitcode)
+                logging.error(Errors.E022, worker.exitcode)
 
         logging.info('%s: Workers completed', instance.sid)
+
+        # Clean hanging jobs
+        while not shared.jobs.empty():
+            _ = shared.jobs.get()
+            time.sleep(0.001)
+
+        logging.debug('%s: Waiting for job generator', instance.sid)
+        generator.join()
+        logging.info('%s: Job generator completed', instance.sid)
 
         # Pick up Splunk, DBInfo and Log files
         for filename in os.listdir(splunkdir):

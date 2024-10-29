@@ -8,7 +8,7 @@ import os, sys, time, logging
 
 from multiprocessing.queues import Full
 
-from lib.errors import Errors
+from lib.errors import Errors, SQLError, SQLTimeout
 from lib.functions import getscript
 from lib.config import dbinfo_config
 from lib.jsonfile import JSONFile
@@ -23,6 +23,7 @@ class Session():
         self.proc     = self.instance.sqlplus(quiet=True)
         self.sid      = self.instance.sid
         self.start    = time.time()
+        self.proc.stdin.write('WHENEVER SQLERROR EXIT SQL.SQLCODE\n')
 
     def __del__(self):
         """Send exit to SQLPlus if it is still running"""
@@ -47,6 +48,7 @@ class Session():
         if self.proc.returncode is not None:
             logging.debug('rc={0}, Starting new SQLPlus process'.format(self.proc.returncode))
             self.proc = self.instance.sqlplus(quiet=True)
+            self.proc.stdin.write('WHENEVER SQLERROR EXIT SQL.SQLCODE\n')
 
         # Setup paths and record start time
         spoolfile = os.path.join(self.tempdir, filename or 'out.txt')
@@ -65,18 +67,14 @@ class Session():
         while not os.path.exists(statfile):
             time.sleep(0.01)
             self.proc.poll()
+
             if self.proc.returncode is not None:
-                status = 'Error'
-                logging.error(Errors.E009, self.sid, self.proc.pid, self.proc.returncode, name)
-                out, err = self.proc.communicate()
-                break
+                raise SQLError(Errors.E009, self.sid, self.proc.pid, self.proc.returncode, name) 
+
             elapsed = round(time.time() - starttime,2)
             if elapsed > self.args.timeout * 60:
-                status = 'Timeout'
-                logging.error(Errors.E010, self.sid, self.proc.pid, round(elapsed), name)
                 self.proc.kill()
-                out, err = self.proc.communicate()
-                break
+                raise SQLTimeout(Errors.E010, self.sid, self.proc.pid, round(elapsed), name)
 
         elapsed = round(time.time() - starttime,2)
         self.proc.poll()
@@ -86,7 +84,7 @@ class Session():
             os.unlink(statfile)
             status = 'OK'
         except OSError:
-            pass
+            status = 'ERROR'
 
         return elapsed, self.proc.returncode, status, spoolfile
 
@@ -188,9 +186,7 @@ def job_generator(shared):
 
 @exception_handler
 def job_processor(shared):
-    """
-    Worker process that handles SQL*Plus subprocesses
-    """
+    """Worker process that handles SQL*Plus subprocesses"""
     session  = Session(shared)
 
     while True:
@@ -200,7 +196,15 @@ def job_processor(shared):
 
         # Get the next job and run it
         job = shared.jobs.get(timeout=10)
-        elapsed, rc, status, spoolfile = session.run('AWR report', job.query, job.filename)
+        try:
+            elapsed, rc, status, spoolfile = session.run('AWR report', job.query, job.filename)
+        
+        except SQLTimeout as e:
+            logging.error(*e.args)
+            sys.exit(87)
+        except SQLError as e:
+            logging.error(*e.args)
+            sys.exit(88)
 
         # Move the completed AWR/SP file to the awr dir
         tgtfile = os.path.join(shared.tempdir, 'awr', job.filename)

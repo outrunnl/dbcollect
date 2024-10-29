@@ -129,6 +129,55 @@ def get_creds(args):
 
     return info
 
+def test_sql_connection(orahome, sid, connectstring):
+    """Try to connect, return True on succes, False on not avaliable, raise exception otherwise"""
+    proc   = sqlplus(orahome, sid, connectstring, '/tmp', timeout=2)
+    out, _ = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSELECT status from v$instance;')
+    logging.debug('{0}, {1}, sqlplus returncode={2}'.format(sid, orahome, proc.returncode))
+
+    if proc.returncode == 124:
+        # Timeout
+        raise ConnectionError(Errors.E030, sid)
+
+    if proc.returncode == 0:
+        return True
+
+    for err, msg in re.findall(r'^(ORA-\d+):(.*)', out, re.M):
+        """
+        find the first ORA-* error
+        Known errors:
+        ORA-01034: ORACLE not available
+        ORA-01033: ORACLE initialization or shutdown in progress
+        ORA-12528: TNS:listener: all appropriate instances are blocking new connections
+        ORA-01017: invalid username/password; logon denied
+        ORA-12537: TNS:connection closed
+        ORA-12514: TNS:listener does not currently know of service requested in connect
+        ORA-12154: TNS:could not resolve the connect identifier specified
+        ORA-12541: TNS:no listener
+        ORA-12543: TNS:destination host unreachable
+        """
+
+        if err == 'ORA-01034':
+            # Wrong ORACLE_HOME
+            return False
+
+        if err in ('ORA-01033','ORA-12528','ORA-12537'):
+            # STARTED, MOUNTED
+            raise ConnectionError(Errors.E033, sid, err, msg)
+
+        elif err in ('ORA-01017'):
+            # Wrong credentials
+            raise ConnectionError(Errors.E034, sid, err, msg)
+
+        elif err in ('ORA-12154','ORA-12514','ORA-12541','ORA-12543'):
+            raise ConnectionError(Errors.E036, sid, err, msg)
+
+        raise ConnectionError(Errors.E035, sid, err, msg)
+
+    # If no ORA-???? error is found at all - cannot happen?
+    logging.debug('%s: SQL*Plus output:\n%s\n', sid, out)
+    raise ConnectionError(Errors.E001, 'SQL*Plus failed without ORA-* error')
+
 def get_instances(args):
     """Get all detected instances by trying to connect using each available ORACLE_HOME"""
     logging.info('Detecting Oracle instances')
@@ -176,39 +225,10 @@ def get_instances(args):
         if not orahomes:
             raise CustomException(Errors.E031)
         for orahome in orahomes:
-            proc   = sqlplus(orahome, sid, connectstring, '/tmp', timeout=2)
-            out, _ = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSELECT status from v$instance;')
-            logging.debug('{0}, {1}, sqlplus returncode={2}'.format(sid, orahome, proc.returncode))
-            if proc.returncode == 0:
+            status = test_sql_connection(orahome, sid, connectstring)
+            if status is True:
                 instances[sid]['oracle_home']   = orahome
                 instances[sid]['connectstring'] = connectstring
                 break
-            elif proc.returncode == 124:
-                raise ConnectionError(Errors.E030, sid)
-            else:
-                for err, msg in re.findall(r'^(ORA-\d+):(.*)', out, re.M):
-                    #ORA-01033: ORACLE initialization or shutdown in progress
-                    #ORA-12528: TNS:listener: all appropriate instances are blocking new connections
-                    #ORA-01017: invalid username/password; logon denied
-                    #ORA-12537: TNS:connection closed
-                    #ORA-12514: TNS:listener does not currently know of service requested in connect
-                    #ORA-12154: TNS:could not resolve the connect identifier specified
-                    #ORA-12541: TNS:no listener
-                    #ORA-12543: TNS:destination host unreachable
-
-                    if err in ('ORA-01033','ORA-12528','ORA-12537'):
-                        # STARTED, MOUNTED
-                        raise ConnectionError(Errors.E033, sid, err, msg)
-                    elif err in ('ORA-01017'):
-                        # Wrong credentials
-                        raise ConnectionError(Errors.E034, sid, err, msg)
-                    elif err in ('ORA-12154','ORA-12514','ORA-12541','ORA-12543'):
-                        raise ConnectionError(Errors.E036, sid, err, msg)
-
-                    raise ConnectionError(Errors.E035, sid, err, msg)
-
-                # If no ORA-???? error is found at all - cannot happen?
-                logging.debug('%s: SQL*Plus output:\n%s\n', sid, out)
-                raise ConnectionError(Errors.E001, 'SQL*Plus failed without ORA-* error')
 
     return instances
