@@ -6,7 +6,7 @@ License: GPLv3+
 
 import os, tempfile
 from shutil import rmtree
-from multiprocessing import Event, Queue, cpu_count
+from multiprocessing import Event, Queue
 
 class Tempdir():
     """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
@@ -26,16 +26,3 @@ class Shared():
         self.tempdir   = tempdir
         self.jobs      = Queue(60)
         self.done      = Event()
-
-    @property
-    def tasks(self):
-        """Return the calculated number of tasks (workers)"""
-        if self.args.tasks is not None:
-            # Default use maximum of 50% of available cpus
-            tasks = self.args.tasks
-            if tasks == 0:
-                return cpu_count()
-            tasks = max(1, self.args.tasks)
-            tasks = min(tasks, cpu_count())
-            return tasks
-        return max(1, min(8,cpu_count()//2))

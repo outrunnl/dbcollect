@@ -63,6 +63,7 @@ class Instance():
         self.version   = self.meta['version_major']
         self.awrusage  = self.meta.pop('awrusage', 0)
         self.spusage   = self.meta.pop('statspack', 0)
+        self.cpus      = self.meta['cpus']
 
     def sqlplus(self, quiet=False):
         """Create SQL*Plus session and initialize with header"""
@@ -137,3 +138,14 @@ class Instance():
     @property
     def num_jobs(self):
         return len(self.jobs)
+
+    def tasks(self, _tasks=None):
+        if _tasks == 0:
+            # Unlimited, set equal to NUM_CPUS
+            return self.cpus
+        elif _tasks is None:
+            # Set to 50% of NUM_CPUS, max 8
+            return max(1, min(8, self.cpus//2))
+
+        # default
+        return min(max(1, _tasks), self.cpus)

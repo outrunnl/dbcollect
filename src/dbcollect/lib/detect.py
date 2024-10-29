@@ -115,7 +115,7 @@ def get_creds(args):
     try:
         with open(args.dbcreds, 'rb') as f:
             data = f.read()
-            # Required on Python 3, <str> on Python 2
+            # Required on Python 3, data is <str> on Python 2
             if isinstance(data, bytes):
                 data = data.decode()
 

@@ -17,8 +17,7 @@ DECLARE
 	v_instance  VARCHAR(1000);
 	v_database  VARCHAR(1000);
 	v_feat      VARCHAR(1000);
-	v_cpus      VARCHAR(100);
-	v_cpucores  VARCHAR(100);
+	v_osstats   VARCHAR(100);
 	v_awr       INTEGER;
 	v_statspack INTEGER;
 BEGIN
@@ -46,13 +45,17 @@ BEGIN
 		INTO v_database FROM v$database;
 	END IF;
 
-	SELECT ',' || 
-			chr(10)  || '  "num_cpus": ' || value
-	INTO v_cpus FROM v$osstat WHERE stat_name = 'NUM_CPUS';
-
-	SELECT ',' || 
-			chr(10)  || '  "num_cpu_cores": ' || value
-	INTO v_cpucores FROM v$osstat WHERE stat_name = 'NUM_CPU_CORES';
+	SELECT ',' ||
+	   	   chr(10) || '  "sockets": ' || COALESCE(to_char(sockets), 'null') || ','
+		|| chr(10) || '  "cores": '   || COALESCE(to_char(cores),   'null') || ','
+		|| chr(10) || '  "cpus": '    || COALESCE(to_char(cpus),    'null')
+	INTO v_osstats
+	FROM (SELECT 
+		  MAX(CASE WHEN stat_name = 'NUM_CPUS'        THEN value ELSE NULL END) cpus
+		, MAX(CASE WHEN stat_name = 'NUM_CPU_CORES'   THEN value ELSE NULL END) cores
+		, MAX(CASE WHEN stat_name = 'NUM_CPU_SOCKETS' THEN value ELSE NULL END) sockets
+		FROM v$osstat WHERE stat_name in ('NUM_CPUS', 'NUM_CPU_CORES', 'NUM_CPU_SOCKETS')
+	);
 
 	IF v_status IN ('OPEN') THEN
 		EXECUTE IMMEDIATE 'SELECT COUNT(table_name) statspack FROM all_tables WHERE table_name = ''STATS$SNAPSHOT''' INTO v_statspack;
@@ -68,6 +71,6 @@ BEGIN
 		INTO v_feat FROM DUAL;
 	END IF;
 
-	DBMS_OUTPUT.PUT_LINE('{' || chr(10) || v_instance || v_database || v_cpus || v_cpucores || v_feat || chr(10) || '}' );
+	DBMS_OUTPUT.PUT_LINE('{' || chr(10) || v_instance || v_database || v_osstats || v_feat || chr(10) || '}' );
 END;
 /

@@ -62,8 +62,8 @@ def oracle_info(archive, args):
 
         generator = Process(target=job_generator, name='Generator', args=(shared,))
         generator.start()
-
-        for i in range(shared.tasks):
+        num_tasks = instance.tasks(args.tasks)
+        for i in range(num_tasks):
             worker = Process(target=job_processor, name='Processor', args=(shared,))
             worker.start()
             workers.append(worker)
@@ -71,7 +71,7 @@ def oracle_info(archive, args):
         logging.info('%s: Started %s SQLPlus sessions', shared.instance.sid, len(workers))
 
         while True:
-            # Pick up completed AWR or Staspack files and move them to the archive
+            # Pick up completed AWR or Statspack files and move them to the archive
             time.sleep(1)
             filelist = os.listdir(awrdir)
             working  = any([worker.is_alive() for worker in workers])
