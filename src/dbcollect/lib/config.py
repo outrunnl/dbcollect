@@ -20,6 +20,8 @@ dbinfo_config = {
         'instance.sql',
         'database.sql',
         'rac.sql',
+        'session_privileges.sql',
+        'tbl_privileges.sql',
         'dbfiles.sql',
         'dbsize.sql',
         'asmdiskgroups.sql',

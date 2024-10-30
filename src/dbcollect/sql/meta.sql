@@ -32,6 +32,7 @@ BEGIN
 		|| chr(10) || '  "status": '          || chr(34) || status          || chr(34) || ','
 		|| chr(10) || '  "parallel": '        || chr(34) || parallel        || chr(34) || ','
 		|| chr(10) || '  "sysdate": '         || chr(34) || sysdate         || chr(34) || ','
+		|| chr(10) || '  "dbuser": '          || chr(34) || user            || chr(34) || ','
 		|| chr(10) || '  "version_major": '   || v_version
 	INTO v_instance FROM v$instance;
 
