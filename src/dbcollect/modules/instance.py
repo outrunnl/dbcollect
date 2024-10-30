@@ -52,9 +52,8 @@ class Instance():
         try:
             self.meta = json.loads(self.meta_txt)
         except Exception as e:
-            logging.error(Errors.E026, self.sid)
-            logging.debug(self.meta_txt)
-            raise SQLPlusError
+            logging.debug('meta.sql output:\n%s', self.meta_txt)
+            raise SQLPlusError(Errors.E026, self.sid)
 
         self.meta['oracle_home'] = orahome
         self.meta['oracle_sid']  = self.sid
@@ -86,8 +85,8 @@ class Instance():
             proc.stdin.write("SET tab off feedback off verify off heading off lines 1000 pages 0 trims on\n")
         out, _ = proc.communicate(sql)
         if proc.returncode:
-            logging.debug('SQL*Plus output:\n{0}'.format(out))
-            raise SQLPlusError('SQLPlus query exited with returncode {0}, see error log'.format(proc.returncode))
+            logging.debug('SQL*Plus output for query {0}.sql:\n{1}'.format(name, out))
+            raise SQLPlusError(Errors.E041, self.sid, proc.returncode)
         return out.strip()
 
     def get_jobs(self, args):

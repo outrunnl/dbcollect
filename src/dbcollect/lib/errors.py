@@ -73,3 +73,8 @@ class Errors():
     E034 = "[DBC-E034] %s: Invalid credentials provided (%s:%s)"
     E035 = "[DBC-E035] %s: Unknown Oracle error, see logfile (%s:%s)"
     E036 = "[DBC-E036] %s: TNS connection issue (%s:%s)"
+    E037 = "[DBC-E037] %s: Insufficient privileges [%s:%s]"
+    E038 = "[DBC-E038] %s: Insufficient privileges on V$ tables [%s:%s]"
+    E039 = "[DBC-E039] %s: Incomplete set of workload reports (failed workers)"
+    E040 = "[DBC-E040] %s: [%s] Cannot execute AWR generation procedure [%s:%s]"
+    E041 = "[DBC-E041] %s: SQLPlus query failed, returncode=%s (see logfile)"

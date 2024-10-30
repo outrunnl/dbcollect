@@ -147,21 +147,29 @@ def test_sql_connection(orahome, sid, connectstring):
         find the first ORA-* error
         Known errors:
         ORA-01034: ORACLE not available
+        ORA-00942: table or view does not exist
+        ORA-01045: user <user> lacks CREATE SESSION privilege; logon denied
         ORA-01033: ORACLE initialization or shutdown in progress
         ORA-12528: TNS:listener: all appropriate instances are blocking new connections
         ORA-01017: invalid username/password; logon denied
         ORA-12537: TNS:connection closed
-        ORA-12514: TNS:listener does not currently know of service requested in connect
         ORA-12154: TNS:could not resolve the connect identifier specified
+        ORA-12514: TNS:listener does not currently know of service requested in connect
         ORA-12541: TNS:no listener
         ORA-12543: TNS:destination host unreachable
         """
 
         if err == 'ORA-01034':
-            # Wrong ORACLE_HOME
+            # Wrong ORACLE_HOME, try another one
             return False
 
-        if err in ('ORA-01033','ORA-12528','ORA-12537'):
+        elif err in ('ORA-01045'):
+            raise ConnectionError(Errors.E037, sid, err, msg)
+        
+        elif err in ('ORA-00942'):
+            raise ConnectionError(Errors.E038, sid, err, msg)
+
+        elif err in ('ORA-01033','ORA-12528'):
             # STARTED, MOUNTED
             raise ConnectionError(Errors.E033, sid, err, msg)
 

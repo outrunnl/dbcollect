@@ -4,7 +4,7 @@ Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, time, logging
+import os, sys, re, time, logging
 
 from multiprocessing.queues import Full
 
@@ -69,7 +69,13 @@ class Session():
             self.proc.poll()
 
             if self.proc.returncode is not None:
-                raise SQLError(Errors.E009, self.sid, self.proc.pid, self.proc.returncode, name) 
+                with open(spoolfile) as f:
+                    data = f.read()
+                    for err, msg in re.findall(r'^(ORA-\d+):(.*)', data, re.M):
+                        if err == 'ORA-00904':
+                            raise SQLError(Errors.E040, name, self.sid, err, msg)
+                logging.debug('\n%s', data)
+                raise SQLError(Errors.E009, self.sid, self.proc.pid, self.proc.returncode, name)
 
             elapsed = round(time.time() - starttime,2)
             if elapsed > self.args.timeout * 60:
@@ -185,9 +191,10 @@ def job_generator(shared):
         shared.done.set()
 
 @exception_handler
-def job_processor(shared):
+def job_processor(shared, n):
     """Worker process that handles SQL*Plus subprocesses"""
     session  = Session(shared)
+    name = 'Worker {0}'.format(n)
 
     while True:
         if shared.jobs.empty() and shared.done.is_set():
@@ -197,14 +204,15 @@ def job_processor(shared):
         # Get the next job and run it
         job = shared.jobs.get(timeout=10)
         try:
-            elapsed, rc, status, spoolfile = session.run('AWR report', job.query, job.filename)
+            elapsed, rc, status, spoolfile = session.run(name, job.query, job.filename)
         
         except SQLTimeout as e:
             logging.error(*e.args)
-            sys.exit(87)
+            sys.exit(20)
+
         except SQLError as e:
             logging.error(*e.args)
-            sys.exit(88)
+            sys.exit(20)
 
         # Move the completed AWR/SP file to the awr dir
         tgtfile = os.path.join(shared.tempdir, 'awr', job.filename)

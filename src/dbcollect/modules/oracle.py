@@ -64,7 +64,7 @@ def oracle_info(archive, args):
         generator.start()
         num_tasks = instance.tasks(args.tasks)
         for i in range(num_tasks):
-            worker = Process(target=job_processor, name='Processor', args=(shared,))
+            worker = Process(target=job_processor, name='Processor', args=(shared,i))
             worker.start()
             workers.append(worker)
 
@@ -111,11 +111,15 @@ def oracle_info(archive, args):
                     sys.stdout.flush()
 
         if not args.quiet:
-            print('')
+            sys.stdout.write('\033[2K{0}\033[G'.format(''))
+            sys.stdout.flush()
 
         for worker in workers:
             worker.join()
-            if worker.exitcode:
+            if worker.exitcode == 20:
+                # SQLError or SQLTimeout, already logged
+                pass
+            elif worker.exitcode:
                 logging.error(Errors.E022, worker.exitcode)
 
         logging.info('%s: Workers completed', instance.sid)
@@ -147,6 +151,9 @@ def oracle_info(archive, args):
 
         sys.stdout.write('\033[2K')
         sys.stdout.flush()
+
+        if any([worker.exitcode for worker in workers]):
+            raise CustomException(Errors.E039, instance.sid)
 
         if generator.exitcode:
             raise CustomException(Errors.E023, generator.exitcode)
