@@ -4,7 +4,7 @@ Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import json, logging
+import json, re, logging
 
 from lib.functions import getscript
 from lib.errors import Errors, ReportingError, SQLPlusError
@@ -12,10 +12,10 @@ from lib.sqlplus import sqlplus
 
 class Job():
     """AWR/Statspack job definition"""
-    def __init__(self, sid, dbid, reptype, instnum, beginsnap, endsnap, begintime, endtime):
+    def __init__(self, reptype, sid, dbid, instnum, beginsnap, endsnap, begintime, endtime):
+        self.reptype   = reptype
         self.sid       = sid
         self.dbid      = dbid
-        self.reptype   = reptype
         self.instnum   = instnum
         self.beginsnap = beginsnap
         self.endsnap   = endsnap
@@ -48,10 +48,13 @@ class Instance():
         self.jobs      = []
         self.scripts   = {}
         self.meta_txt  = self.script('meta')
-
         try:
-            self.meta = json.loads(self.meta_txt)
+            # extract the json part (prevent glogin.sql problems)
+            r    = re.match(r'.*?(^{.*?^})', self.meta_txt, re.M | re.S)
+            meta = r.group(1)
+            self.meta = json.loads(meta)
         except Exception as e:
+            logging.debug(e)
             logging.debug('meta.sql output:\n%s', self.meta_txt)
             raise SQLPlusError(Errors.E026, self.sid)
 
@@ -130,8 +133,10 @@ class Instance():
         else:
             raise ValueError('Bad reporttype', reptype)
         for line in data.splitlines():
-            dbid, instnum, beginsnap, endsnap, begintime, endtime = line.split(',')
-            job = Job(self.sid, dbid, reptype, instnum, beginsnap, endsnap, begintime, endtime)
+            words = line.split(',')
+            if not len(words) == 6:
+                continue
+            job = Job(self.sid, reptype, *words)
             self.jobs.append(job)
 
     @property

@@ -231,7 +231,7 @@ def get_instances(args):
         if instances[sid]['enabled'] == False:
             continue
         if not orahomes:
-            raise CustomException(Errors.E031)
+            raise CustomException(Errors.E031, sid)
         for orahome in orahomes:
             status = test_sql_connection(orahome, sid, connectstring)
             if status is True:
