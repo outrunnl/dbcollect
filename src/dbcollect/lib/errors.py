@@ -25,6 +25,9 @@ class SQLError(CustomException):
 class SQLTimeout(CustomException):
     pass
 
+class InstanceNotAvailable(CustomException):
+    pass
+
 class Errors():
     """
     Info, Warning and Error messages

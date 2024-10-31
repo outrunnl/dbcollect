@@ -6,7 +6,7 @@ License: GPLv3+
 
 import os, re, logging
 from datetime import datetime
-from lib.errors import Errors, CustomException, ConnectionError
+from lib.errors import Errors, CustomException, ConnectionError, InstanceNotAvailable
 from lib.functions import getfile, execute
 from lib.user import getuser, getgroup
 from lib.sqlplus import sqlplus, get_dbsdir
@@ -171,13 +171,13 @@ def test_sql_connection(orahome, sid, connectstring):
 
         elif err in ('ORA-01033','ORA-12528'):
             # STARTED, MOUNTED
-            raise ConnectionError(Errors.E033, sid, err, msg)
+            raise InstanceNotAvailable(Errors.E033, sid, err, msg)
 
         elif err in ('ORA-01017'):
             # Wrong credentials
             raise ConnectionError(Errors.E034, sid, err, msg)
 
-        elif err in ('ORA-12154','ORA-12514','ORA-12541','ORA-12543'):
+        elif err in ('ORA-12154','ORA-12514','ORA-12537', 'ORA-12541','ORA-12543'):
             raise ConnectionError(Errors.E036, sid, err, msg)
 
         raise ConnectionError(Errors.E035, sid, err, msg)
@@ -233,10 +233,15 @@ def get_instances(args):
         if not orahomes:
             raise CustomException(Errors.E031, sid)
         for orahome in orahomes:
-            status = test_sql_connection(orahome, sid, connectstring)
-            if status is True:
-                instances[sid]['oracle_home']   = orahome
-                instances[sid]['connectstring'] = connectstring
+            try:
+                status = test_sql_connection(orahome, sid, connectstring)
+                if status is True:
+                    instances[sid]['oracle_home']   = orahome
+                    instances[sid]['connectstring'] = connectstring
+                    break
+            except InstanceNotAvailable as e:
+                logging.error(*e.args)
+                instances[sid]['running'] = False
                 break
 
     return instances
