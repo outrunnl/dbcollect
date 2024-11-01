@@ -45,6 +45,7 @@ dbinfo_config = {
         'dnfs.sql',
         'features.sql',
         'watermarks.sql',
+        'archive_dest_status.sql',
         #'sleep.sql',
         #'error.sql',
     ],
@@ -59,6 +60,7 @@ dbinfo_config = {
         'db_compression.sql',
     ],
     'oracle12': [
+        'dataguard_config.sql',
         'pdb_cdbinfo.sql',
         'pdb_databases.sql',
         'pdb_tablespaces.sql',
