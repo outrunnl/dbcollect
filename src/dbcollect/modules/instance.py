@@ -136,7 +136,7 @@ class Instance():
             words = line.split(',')
             if not len(words) == 6:
                 continue
-            job = Job(self.sid, reptype, *words)
+            job = Job(reptype, self.sid, *words)
             self.jobs.append(job)
 
     @property
