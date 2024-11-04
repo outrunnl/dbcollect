@@ -20,7 +20,7 @@ from lib.functions import execute
 
 def get_timestamp(ts):
     """Workaround for strftime() not working (HP-UX)"""
-    return '{0}-{1}-{2} {3}:{4}'.format(ts.year, ts.month, ts.day, ts.hour, ts.minute)
+    return '{0:04}-{1:02}-{2:02} {3:02}:{4:02}'.format(ts.year, ts.month, ts.day, ts.hour, ts.minute)
 
 class JSONFile():
     """
