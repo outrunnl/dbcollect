@@ -192,6 +192,16 @@ def linux_info(archive, args):
 
     if not args.no_sar:
         logging.info('Collecting Linux SAR files')
+
+        out, err, rc = execute('rpm -q --quiet sysstat')
+        if rc != 0:
+            logging.warning(Errors.W008)
+
+        if os.path.isfile('/usr/bin/systemctl'):
+            out, err, rc = execute('systemctl is-active --quiet sysstat-collect.timer')
+            if rc != 0:
+                logging.warning(Errors.W009)                    
+
         sarinfo = JSONFile()
         sardirs = ('/var/log/sa', '/var/log/sysstat')
         sarinfo.dir(*sardirs)
@@ -202,10 +212,7 @@ def linux_info(archive, args):
                 if sarfile.startswith('sa'):
                     if sarfile.startswith('sar'):
                         continue
-                    if sarfile.endswith('.xz'):
-                        continue
                     archive.store(path)
-
 
 def aix_info(archive, args):
     """System/SAR info for AIX (pSeries)"""

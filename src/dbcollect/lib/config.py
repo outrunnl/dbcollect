@@ -104,6 +104,8 @@ linux_config = {
         'rpm_packages': 'rpm -qa --queryformat %{name}|%{version}|%{release}|%{summary}\\n',
         'dpkg_l': 'dpkg -l',
         'ulimit_a': 'ulimit -a',
+        'systemctl_units': 'systemctl list-units',
+        'systemctl_timers': 'systemctl list-timers',
     },
     'rootcommands': {
         'multipath_ll': '/usr/sbin/multipath -ll',

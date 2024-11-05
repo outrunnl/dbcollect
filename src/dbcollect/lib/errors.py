@@ -39,6 +39,8 @@ class Errors():
     W005 = "[DBC-W005] Executing %s failed (%s)"
     W006 = "[DBC-W006] Reading DMI info failed (%s)"
     W007 = "[DBC-W007] Skipping %s: disabled in credentials file"
+    W008 = "[DBC-W008] sysstat not installed, not collecting OS performance data"
+    W009 = "[DBC-W009] sysstat timer not active, not collecting OS performance data"
 
     E001 = "[DBC-E001] Unknown error: %s, see logfile for debug info"
     E002 = "[DBC-E002] Keyboard interrupt, Aborting..."
