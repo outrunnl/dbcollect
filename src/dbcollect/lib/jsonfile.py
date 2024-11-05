@@ -63,9 +63,10 @@ class JSONFile():
         """Setter for any kind of metric"""
         self.info[name] = val
 
-    def execute(self, cmd, sudo=False):
+    def execute(self, cmd, sudo=False, **kwargs):
         """
         Execute a command and return the output with the header.
+        Forward kwargs to the execute function (extra env variables)
         Also record status and errors
         """
         self.info['mediatype'] = 'command'
@@ -81,7 +82,7 @@ class JSONFile():
             self.info['sudo'] = True
             self.info['fullcommand'] = cmd
         try:
-            out, err, rc = execute(cmd)
+            out, err, rc = execute(cmd, **kwargs)
             self.data   = out
             self.errors = err
             self.info['status']     = 'OK'

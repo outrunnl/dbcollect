@@ -116,10 +116,16 @@ class Session():
         header = getscript('dbinfo/header.sql')
 
         # Get ORACLE_HOME patch info
-        lspatches  = '{0} lspatches'.format(os.path.join(self.instance.orahome, 'OPatch/opatch'))
+        lspatches_cmd  = '{0} lspatches'.format(os.path.join(self.instance.orahome, 'OPatch/opatch'))
         inventory_info = JSONFile()
-        inventory_info.execute(lspatches)
+        inventory_info.execute(lspatches_cmd)
         inventory_info.save(os.path.join(self.tempdir, 'dbinfo', '{0}_patches.jsonp'.format(self.sid)))
+
+        # Get Listener services
+        listener_cmd  = '{0} status'.format(os.path.join(self.instance.orahome, 'bin/lsnrctl'))
+        listener_info = JSONFile()
+        listener_info.execute(listener_cmd, ORACLE_HOME=self.instance.orahome)
+        listener_info.save(os.path.join(self.tempdir, 'dbinfo', '{0}_listener.jsonp'.format(self.sid)))
 
         logging.info('{0}: Running dbinfo scripts'.format(self.sid))
         for scriptname in self.genscripts():

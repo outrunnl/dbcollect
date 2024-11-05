@@ -34,15 +34,16 @@ def getfile(*args):
                 continue
             raise
 
-def execute(cmd):
+def execute(cmd, **kwargs):
     """
     Run a command, and return the output of stdout. Any stderr messages will be logged.
     If the command fails (i.e. does not exists or exits with non-zero return code), logs an error
     Even if the command fails, still an empty string is returned so the program continues.
-    Provide opts as an array with extra options, these will be appended w/o changes.
+    kwargs are added to the environment variables (i.e. if ORACLE_HOME needs to be set)
     """
     command = cmd.split(' ')
     env = {}
+    env.update(kwargs)
     # Setting PATH for UNIX and Linux. On AIX we also need objrepos
     env['PATH']   = '/usr/sbin:/usr/bin:/bin:/sbin'
     env['ODMDIR'] = '/etc/objrepos'
