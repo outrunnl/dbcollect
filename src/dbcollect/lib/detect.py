@@ -77,7 +77,7 @@ def get_hcfiles(orahomes):
         logging.debug('dbsdir (%s): %s', orahome, dbsdir)
         for file in os.listdir(dbsdir):
             path = os.path.join(dbsdir, file)
-            r = re.match('hc_(.*).dat', file)
+            r = re.match(r'hc_(.*).dat', file)
             if not r:
                 continue
             sid   = r.group(1)
