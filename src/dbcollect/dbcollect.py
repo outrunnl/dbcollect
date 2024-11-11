@@ -104,6 +104,7 @@ def main():
         sys.exit(15)
 
     try:
+        logging.info('For diagnosing errors, check https://wiki.dirty-cache.com/DBC:Errors')
         archive = Archive(zippath, args.overwrite)
         logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
         logging.info('Python version {0}'.format(platform.python_version()))

@@ -24,7 +24,7 @@ def get_inventory_homes():
         with open(inventory_path) as f:
             inventory = f.read()
 
-        for oradir in re.findall("<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
+        for oradir in re.findall(r"<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
             logging.debug('ORACLE_HOME (inventory): %s', oradir)
             crsctl = os.path.join(oradir, 'bin', 'crsctl')
             if os.path.isfile(crsctl):
