@@ -73,23 +73,26 @@ def get_hcfiles(orahomes):
     hclist = []
     info = {}
     for orahome in orahomes:
-        dbsdir = get_dbsdir(orahome)
-        logging.debug('dbsdir (%s): %s', orahome, dbsdir)
-        for file in os.listdir(dbsdir):
-            path = os.path.join(dbsdir, file)
-            r = re.match(r'hc_(.*).dat', file)
-            if not r:
-                continue
-            sid   = r.group(1)
-            stat  = os.stat(path)
-            owner = getuser(stat.st_uid)
-            group = getgroup(stat.st_gid)
-            mtime = datetime.fromtimestamp(stat.st_mtime)
-            hclist.append((path, mtime, sid, orahome, owner, group))
-            if not path in info:
-                info[path] = { 'sid': sid, 'mtime': mtime.strftime("%Y-%m-%d %H:%M"), 'owner': owner, 'group': group, 'orahomes': []}
-            info[path]['orahomes'].append(orahome)
-            logging.debug('hc_dat file: %s, %s/%s, %s', path, owner, group, mtime.strftime("%Y-%m-%d %H:%M"))
+        try:
+            dbsdir = get_dbsdir(orahome)
+            logging.debug('dbsdir (%s): %s', orahome, dbsdir)
+            for file in os.listdir(dbsdir):
+                path = os.path.join(dbsdir, file)
+                r = re.match(r'hc_(.*).dat', file)
+                if not r:
+                    continue
+                sid   = r.group(1)
+                stat  = os.stat(path)
+                owner = getuser(stat.st_uid)
+                group = getgroup(stat.st_gid)
+                mtime = datetime.fromtimestamp(stat.st_mtime)
+                hclist.append((path, mtime, sid, orahome, owner, group))
+                if not path in info:
+                    info[path] = { 'sid': sid, 'mtime': mtime.strftime("%Y-%m-%d %H:%M"), 'owner': owner, 'group': group, 'orahomes': []}
+                info[path]['orahomes'].append(orahome)
+                logging.debug('hc_dat file: %s, %s/%s, %s', path, owner, group, mtime.strftime("%Y-%m-%d %H:%M"))
+        except  (IOError, OSError) as e:
+            logging.debug('No dbs dir for %s, skipping', orahome)
 
     hclist.sort(key=lambda x: x[0],reverse=True)
     sids = [info[x]['sid'] for x in info]
@@ -131,7 +134,7 @@ def get_creds(args):
 
 def test_sql_connection(orahome, sid, connectstring):
     """Try to connect, return True on succes, False on not avaliable, raise exception otherwise"""
-    proc   = sqlplus(orahome, sid, connectstring, '/tmp', timeout=2)
+    proc   = sqlplus(orahome, sid, connectstring, '/tmp', timeout=10)
     out, _ = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSELECT status from v$instance;')
     logging.debug('{0}, {1}, sqlplus returncode={2}'.format(sid, orahome, proc.returncode))
 
