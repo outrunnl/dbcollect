@@ -60,6 +60,6 @@ WHERE prev_id IS NOT NULL                              -- ignore FIRST
   -- optional filters
   AND (inc_rac  = 1 OR inst_num = (SELECT instance_number FROM v$instance)) -- include other RAC nodes
   AND (inc_stby = 1 OR dbid = (SELECT dbid FROM v$database))                -- include standby snapshots
-  AND (inc_pack = 1 OR snap_flag NOT IN (4,5))                              -- include when diag/tuninc packs disabled
+  AND (inc_pack = 1 OR snap_flag NOT IN (4,5))                              -- include when diag/tuning packs disabled
 ORDER BY dbid, snap_id, inst_num
 /
