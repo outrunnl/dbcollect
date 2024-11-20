@@ -35,7 +35,6 @@
 venv
 
 # Docs
-*.pdf
 __pycache__
 buildinfo.py
 version.txt
