@@ -28,6 +28,15 @@ For LiveOptics and Dell's Workload Analyzer, the per-database directories in the
 
 For the advanced analyzer (LoadMaster), send the entire ZIP file (via secure FTP or other means).
 
+## Quick howto
+
+* Download dbcollect: [latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest)
+* Move it to ```/usr/local/bin``` (if you are root) or ```$HOME/bin``` (if you are not root)
+* Make it executable: ```chmod 755 /usr/local/bin/dbcollect```
+* Test if it works (run with help option): ```dbcollect -h```
+* Collect the data: ```dbcollect -o```
+* Get and upload the dbcollect ZIP datafile (```/tmp/dbcollect-<hostname>.zip```)
+
 ## Info collected by dbcollect:
 
 - AWR or Statspack reports for a default period of about 10 days

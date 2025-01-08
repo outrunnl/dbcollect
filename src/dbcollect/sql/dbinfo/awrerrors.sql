@@ -16,7 +16,6 @@ SELECT dbid
 , instance_number
 , table_name
 , error_number
-, step_id
 FROM dba_hist_snap_error
 ORDER BY 2,1
 /
