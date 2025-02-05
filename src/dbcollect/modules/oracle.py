@@ -55,7 +55,6 @@ def oracle_info(archive, args):
         dbidir    = os.path.join(tempdir, 'dbinfo')
         dbldir    = os.path.join(tempdir, 'log')
         awrdir    = os.path.join(tempdir, 'awr')
-        splunkdir = os.path.join(tempdir, 'splunk')
         workers   = []
 
         info_processor(shared)
@@ -133,12 +132,7 @@ def oracle_info(archive, args):
         generator.join()
         logging.info('%s: Job generator completed', instance.sid)
 
-        # Pick up Splunk, DBInfo and Log files
-        for filename in os.listdir(splunkdir):
-            path = os.path.join(splunkdir, filename)
-            archive.store(path, 'oracle/{0}/{1}'.format(instance.sid, filename))
-            os.unlink(path)
-
+        # Pick up DBInfo and Log files
         for filename in os.listdir(dbidir):
             path = os.path.join(dbidir, filename)
             archive.store(path, 'oracle/dbinfo/{0}'.format(filename))

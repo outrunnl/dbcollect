@@ -111,7 +111,7 @@ class Session():
                 yield scriptname
 
     def dbinfo(self):
-        """ Run DBInfo and SPLUNK scripts"""
+        """ Run DBInfo scripts"""
         logging.info('{0}: Running opatch lspatches'.format(self.sid))
         header = getscript('dbinfo/header.sql')
 
@@ -136,37 +136,18 @@ class Session():
             savename = '{0}_{1}'.format(self.sid, scriptname.replace('.sql','.jsonp'))
 
             # Run the script and record the results
-            elapsed, rc, status, outfile = self.run(scriptname, query, filename=filename, header=header)
+            try:
+                elapsed, rc, status, outfile = self.run(scriptname, query, filename=filename, header=header)
+                # Create JSONPlus file
+                jsonfile = JSONFile(elapsed=elapsed, status=status, returncode=rc)
+                jsonfile.dbinfo(self.instance, scriptname, outfile)
+                jsonfile.save(os.path.join(self.tempdir, 'dbinfo', savename))
 
-            # Create JSONPlus file
-            jsonfile = JSONFile(elapsed=elapsed, status=status, returncode=rc)
-            jsonfile.dbinfo(self.instance, scriptname, outfile)
-            jsonfile.save(os.path.join(self.tempdir, 'dbinfo', savename))
+            except SQLTimeout as e:
+                logging.error(*e.args)
 
-        if self.args.splunk:
-            splunkheader = getscript('splunk/splunk_header.sql')
-            if self.instance.status in ('STARTED','MOUNTED'):
-                return
-            logging.info('{0}: Running splunk scripts'.format(self.sid))
-            if self.instance.version == 11:
-                section = 'splunk_11'
-            else:
-                section = 'splunk_12'
-            for scriptname in dbinfo_config[section]:
-                logging.debug('{0}: Running splunk script {1}'.format(self.sid, scriptname))
-                query = getscript('splunk/{0}'.format(scriptname))
-
-                # Splunk files contain SPOOL so no filename is needed
-                elapsed, rc, status, outfile = self.run(scriptname, query, header=splunkheader)
-
-            # Move the finished SPLUNK files to the splunk dir
-            for f in os.listdir(self.tempdir):
-                path    = os.path.join(self.tempdir, f)
-                newpath = os.path.join(self.tempdir, 'splunk', f)
-                if os.path.isdir(path):
-                    continue
-                if f.endswith('.dsk') or f.startswith('capacity_'):
-                    os.rename(path, newpath)
+            except SQLError as e:
+                logging.error(*e.args)
 
     @property
     def runtime(self):
@@ -209,17 +190,9 @@ def job_processor(shared, n):
 
         # Get the next job and run it
         job = shared.jobs.get(timeout=10)
-        try:
-            elapsed, rc, status, spoolfile = session.run(name, job.query, job.filename)
+
+        elapsed, rc, status, spoolfile = session.run(name, job.query, job.filename)
         
-        except SQLTimeout as e:
-            logging.error(*e.args)
-            sys.exit(20)
-
-        except SQLError as e:
-            logging.error(*e.args)
-            sys.exit(20)
-
         # Move the completed AWR/SP file to the awr dir
         tgtfile = os.path.join(shared.tempdir, 'awr', job.filename)
         os.rename(spoolfile, tgtfile)

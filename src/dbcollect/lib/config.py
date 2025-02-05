@@ -8,7 +8,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2024, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.17.6"
+    'version': "1.17.7"
 }
 
 settings = {
@@ -73,14 +73,6 @@ dbinfo_config = {
         'pdb_segments.sql',
         'pdb_recyclebin.sql',
         'pdb_compression.sql',
-    ],
-    'splunk_11': [
-        'capacity_11g.sql',
-        'capacity_splunk_11g.sql'
-    ],
-    'splunk_12': [
-        'capacity_12c.sql',
-        'capacity_splunk_12c.sql'
     ],
 }
 

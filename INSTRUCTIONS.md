@@ -25,7 +25,7 @@ mv dbcollect $HOME/bin/
 
 ## Prerequisites
 
-* Python 2.6 or higher
+* Python 2.6 or higher, or 3.6 or higher
 * Python-argparse (is usually included in the Python distribution except for very old versions)
 * Enterprise Linux 6, 7 or 8, Solaris 11, IBM AIX 7
 * Some free space in /tmp (or elsewhere, use --tempdir)
@@ -217,10 +217,6 @@ echo '/usr/local/bin/dbcollect -o --dbcreds /tmp/creds' | runuser nobody -s /bin
 ```
 An example wrapper script is provided in the [contrib](https://github.com/outrunnl/dbcollect/tree/master/scripts) directory.
 
-
-### Usage for Live Optics or SPLUNK based reporting
-
-The data collected by _dbcollect_ can be used for uploading to Dell LiveOptics (Oracle Database reporting) or the Dell internal SPLUNK Oracle reporting (Dell employees only). For this, unzip the ZIP file and upload the folder containing Oracle data: ```<hostname>/oracle/<instance>/...``` for each instance required.
 
 ### More info
 

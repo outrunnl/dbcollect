@@ -13,8 +13,6 @@ Detailed manuals for _dbcollect_ are available here: [Dirty Cache Wiki - DBColle
 
 _dbcollect_ is a metadata collection tool for Oracle databases, providing workload and config data from database hosts for:
 
-* Dell LiveOptics
-* Dell's internal Splunk-based Workload Analyzer for Oracle (used by Oracle specialists at Dell)
 * LoadMaster (The advanced DB workload analyzer tool I have developed - more info TBD)
 
 It is written in Python, and collects various OS configuration files and

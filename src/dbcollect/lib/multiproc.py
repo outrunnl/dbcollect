@@ -12,7 +12,7 @@ class Tempdir():
     """Temp directory class with subdirs, which cleans up the tempdir when it gets deleted"""
     def __init__(self, args):
         self.tempdir = tempfile.mkdtemp(prefix = os.path.join(args.tempdir, 'dbcollect_'))
-        for subdir in ('lock','dbinfo','awr','splunk','log'):
+        for subdir in ('lock','dbinfo','awr','log'):
             os.mkdir(os.path.join(self.tempdir, subdir))
 
     def __del__(self):

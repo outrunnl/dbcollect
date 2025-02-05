@@ -9,7 +9,9 @@ import os, sys, logging, platform, argparse
 sys.dont_write_bytecode = True
 
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
-    sys.exit("Requires Python 2 (2.6 or higher, EL6)")
+    sys.exit("Requires Python 2.6 or higher, or 3.6 or higher")
+elif sys.version_info[0] == 3 and sys.version_info[1] < 6:
+    sys.exit("Requires Python 2.6 or higher, or 3.6 or higher")
 
 from lib.config import versioninfo, settings
 from lib.log import logsetup
@@ -59,7 +61,6 @@ def main():
     parser.add_argument(      "--no-sys",     action="store_true",        help="Skip OS collection")
     parser.add_argument(      "--no-orainv",  action="store_true",        help="Ignore ORACLE_HOMES from Oracle Inventory")
     parser.add_argument(      "--no-oratab",  action="store_true",        help="Ignore ORACLE_HOMES from oratab")
-    parser.add_argument(      "--splunk",     action="store_true",        help="Run the Dell SPLUNK/LiveOptics reports")
     parser.add_argument(      "--nmon",       type=str,                   help="Where to look for NMON files (comma separated)", metavar='PATH')
     parser.add_argument(      "--include",    type=str,                   help="Include Oracle instances (comma separated)", metavar='INSTANCES')
     parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)", metavar='INSTANCES')

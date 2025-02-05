@@ -193,9 +193,13 @@ def linux_info(archive, args):
     if not args.no_sar:
         logging.info('Collecting Linux SAR files')
 
-        out, err, rc = execute('rpm -q --quiet sysstat')
-        if rc != 0:
-            logging.warning(Errors.W008)
+        try:
+            out, err, rc = execute('rpm -q --quiet sysstat')
+            if rc != 0:
+                logging.warning(Errors.W008)
+
+        except OSError:
+            pass
 
         if os.path.isfile('/usr/bin/systemctl'):
             out, err, rc = execute('systemctl is-active --quiet sysstat-collect.timer')
