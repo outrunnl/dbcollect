@@ -48,7 +48,7 @@ dbinfo_config = {
         'features.sql',
         'watermarks.sql',
         'archive_dest_status.sql',
-        'sleep.sql',
+        #'sleep.sql',
         #'error.sql',
     ],
     'oracle11': [
