@@ -69,12 +69,17 @@ class Session():
             self.proc.poll()
 
             if self.proc.returncode is not None:
-                with open(spoolfile) as f:
-                    data = f.read()
-                    for err, msg in re.findall(r'^(ORA-\d+):(.*)', data, re.M):
-                        if err == 'ORA-00904':
-                            raise SQLError(Errors.E040, name, self.sid, err, msg)
-                logging.debug('\n%s', data)
+                try:
+                    with open(spoolfile) as f:
+                        data = f.read()
+                except (OSError, IOError):
+                    data = ''
+
+                for err, msg in re.findall(r'^(ORA-\d+):(.*)', data, re.M):
+                    if err == 'ORA-00904':
+                        raise SQLError(Errors.E040, name, self.sid, err, msg)
+                    logging.debug('\n%s', data)
+
                 raise SQLError(Errors.E009, self.sid, self.proc.pid, self.proc.returncode, name)
 
             elapsed = round(time.time() - starttime,2)

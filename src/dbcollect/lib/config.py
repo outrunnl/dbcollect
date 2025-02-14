@@ -8,7 +8,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2024, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.17.7"
+    'version': "1.17.8"
 }
 
 settings = {
@@ -48,7 +48,7 @@ dbinfo_config = {
         'features.sql',
         'watermarks.sql',
         'archive_dest_status.sql',
-        #'sleep.sql',
+        'sleep.sql',
         #'error.sql',
     ],
     'oracle11': [
