@@ -16,7 +16,6 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
     """
     env  = { 'ORACLE_HOME': orahome, 'ORACLE_SID': sid }
     sqlplus_bin = os.path.join(orahome, 'bin/sqlplus')
-    timeout_bin = '/usr/bin/timeout'
 
     if connectstring:
         cmd  = [sqlplus_bin, '-S', '-L', connectstring]
@@ -25,7 +24,7 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
 
     if timeout is not None:
         cmd.insert(0, str(timeout))
-        cmd.insert(0, timeout_bin)
+        cmd.insert(0, 'timeout')
 
     if quiet:
         stdout = open('/dev/null', 'w')
@@ -41,7 +40,8 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
         return proc
 
     except OSError as e:
-        raise SQLPlusError(Errors.E019, sqlplus_bin, os.strerror(e.errno))
+        msg = ' '.join(cmd)
+        raise SQLPlusError(Errors.E019, msg, os.strerror(e.errno))
 
 def get_dbsdir(orahome):
     orabasetab = os.path.join(orahome, 'install', 'orabasetab')
