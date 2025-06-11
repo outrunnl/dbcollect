@@ -28,7 +28,7 @@ For the advanced analyzer (LoadMaster), send the entire ZIP file (via secure FTP
 
 ## Quick howto
 
-* Download dbcollect: [latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest)
+* Download latest dbcollect: [latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest/download/dbcollect)
 * Move it to ```/usr/local/bin``` (if you are root) or ```$HOME/bin``` (if you are not root)
 * Make it executable: ```chmod 755 /usr/local/bin/dbcollect```
 * Test if it works (run with help option): ```dbcollect -h```
