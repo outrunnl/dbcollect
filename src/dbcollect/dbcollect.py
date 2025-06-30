@@ -19,7 +19,7 @@ from lib.errors import Errors, CustomException
 from lib.archive import Archive
 from lib.user import switchuser, username, dbuser
 from lib.jsonfile import JSONFile, buildinfo
-from lib.functions import sudosetup
+from lib.functions import sudosetup, getfile
 from modules.oracle import oracle_info
 from modules.syscollect import host_info
 from modules.updater import update
@@ -107,8 +107,10 @@ def main():
     try:
         logging.info('For diagnosing errors, check https://wiki.dirty-cache.com/DBC:Errors')
         archive = Archive(zippath, args.overwrite)
+        osname = getfile('/etc/system-release') or 'Unknown'
         logging.info('dbcollect {0} - database and system info collector'.format(versioninfo['version']))
         logging.info('Python version {0}'.format(platform.python_version()))
+        logging.info('OS version is {0}'.format(osname.strip()))
         logging.info('Current user is {0}'.format(username()))
         logging.info('Zip file is {0}'.format(zippath))
         logging.info('Command line is {0}'.format(' '.join(sys.argv)))
