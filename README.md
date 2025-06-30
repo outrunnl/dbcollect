@@ -26,12 +26,44 @@ For LiveOptics and Dell's Workload Analyzer, the per-database directories in the
 
 For the advanced analyzer (LoadMaster), send the entire ZIP file (via secure FTP or other means).
 
-## Quick howto
+## Installation
+
+### Linux, as root
+
+This sets up dbcollect in /usr/local/bin for all users.
+
+```
+# Setup dbcollect
+curl -L https://github.com/outrunnl/dbcollect/releases/latest/download/dbcollect -o /usr/local/bin/dbcollect && chmod 755 /usr/local/bin/dbcollect
+
+# Test functionality
+dbcollect -V
+
+# If you get Python errors
+alternatives --set python /usr/bin/python3
+```
+
+### Linux, as non-root (i.e. DBA user)
+```
+# Setup user bin directory if it does not already exist
+mkdir -p $HOME/bin
+
+# Setup DBCollect
+curl -L https://github.com/outrunnl/dbcollect/releases/latest/download/dbcollect -o $HOME/bin/dbcollect && chmod 755 $HOME/bin/dbcollect
+
+# Test functionality
+dbcollect -V
+
+# If you get Python errors
+python3 ~/bin/dbcollect -V
+```
+
+### Manual install
 
 * Download latest dbcollect: [latest dbcollect version](https://github.com/outrunnl/dbcollect/releases/latest/download/dbcollect)
 * Move it to ```/usr/local/bin``` (if you are root) or ```$HOME/bin``` (if you are not root)
 * Make it executable: ```chmod 755 /usr/local/bin/dbcollect```
-* Test if it works (run with help option): ```dbcollect -h```
+* Test if it works (run with help option): ```dbcollect -V```
 * Collect the data: ```dbcollect -o```
 * Get and upload the dbcollect ZIP datafile (```/tmp/dbcollect-<hostname>.zip```)
 
