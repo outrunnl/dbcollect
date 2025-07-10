@@ -26,11 +26,17 @@ def get_inventory_homes():
 
         for oradir in re.findall(r"<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
             logging.debug('ORACLE_HOME (inventory): %s', oradir)
-            crsctl = os.path.join(oradir, 'bin', 'crsctl')
+            crsctl  = os.path.join(oradir, 'bin', 'crsctl')
+            sqlplus = os.path.join(oradir, 'bin', 'sqlplus')
             if os.path.isfile(crsctl):
                 # This is a grid home
                 logging.debug('Skipping %s (is grid home)', oradir)
                 continue
+            if not os.path.isfile(sqlplus):
+                # This is another oracle_home type (i.e. oraagent)
+                logging.debug('Skipping %s (no sqlplus executable)', oradir)
+                continue
+
             orahomes.append(oradir)
 
     except AttributeError as e:
@@ -51,6 +57,12 @@ def get_oratab_homes():
     else:
         for sid, oradir in re.findall(r'^(\w+):(\S+):[y|Y|n|N]', oratab, re.M):
             logging.debug('ORACLE_HOME (oratab): %s:%s', sid, oradir)
+            sqlplus = os.path.join(oradir, 'bin', 'sqlplus')
+            if not os.path.isfile(sqlplus):
+                # This is another oracle_home type (i.e. oraagent)
+                logging.debug('Skipping %s (no sqlplus executable)', oradir)
+                continue
+
             orahomes.append(oradir)
     return orahomes
 
