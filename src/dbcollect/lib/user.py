@@ -17,6 +17,7 @@ safely on systems without Oracle.
 
 import os, sys, re, errno
 import pwd, grp
+from pkgutil import get_data
 from subprocess import CalledProcessError, Popen
 from lib.functions import execute
 
@@ -52,6 +53,14 @@ def switchuser(user, args):
     groups.append(gid)
     os.setgroups(groups)
     os.setuid(uid)
+
+    try:
+        get_data('lib', 'config.py')
+    except PermissionError:
+        ziploc = os.path.realpath(sys.path[0])
+        print('Cannot read dbcollect package {0}, exiting...'.format(ziploc))
+        sys.exit(10)
+
     try:
         os.chdir(home)
     except OSError:

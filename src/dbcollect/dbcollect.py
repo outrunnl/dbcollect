@@ -5,7 +5,12 @@ Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, logging, platform, argparse
+try:
+    import os, sys, logging, platform, argparse
+except ImportError as e:
+    print(e)
+    sys.exit(10)
+
 sys.dont_write_bytecode = True
 
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
