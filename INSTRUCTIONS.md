@@ -102,6 +102,17 @@ By default, _dbcollect_ picks up AWR reports from **ALL** RAC instances. This me
 
 Only use this if you run _dbcollect_ on **all** RAC nodes.
 
+## Transferring DBCollect ZIP files
+
+When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive. It also contains the dbcollect.log file that can be used for troubleshooting in case something went wrong.
+
+The ZIP file can be sent to the author in several ways, but make sure the original dbcollect-*.zip files are _unmodified_! This means, do not unpack and re-pack the file(s) as this causes problems with the file metadata. If you want to encrypt the files, use a container archive (ZIP, TAR, 7-zip or whatever) and pack the original, unmodified dbcollect files in the new archive.
+
+The files can be uploaded to a NextCloud dropbox: [DBCollect Dropbox](https://cloud.sjerps.eu/s/dbcollect)
+Also, if a project has been setup already on LoadMaster (the reporting engine), the owner of the project can generate a unique URL for uploading directly onto the engine, using a URL like `https://loadmaster.dirty-cache.com/dropbox?uuid=<unique_uuid>`
+
+Both of these methods are HTTPS encrypted.
+
 ## Command line options
 
 ```
@@ -174,9 +185,6 @@ dbcollect --dbcreds /tmp/creds
 # Use if the OS user has no access to oratab/oracle inventory
 dbcollect --dbcreds /tmp/creds --orahome /u01/app/oracle/product/21.0.0/dbhome_1
 ```
-When complete, a ZIP file will be created in the /tmp directory. This file contains the database overview and, by default, the last 10 days of AWR or Statspack reports. All temp files will be either cleaned up or moved into the ZIP archive.
-
-Please send this ZIP file to the person who requested it.
 
 ## Using a credentials file
 
