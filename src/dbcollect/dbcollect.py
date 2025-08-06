@@ -20,7 +20,7 @@ elif sys.version_info[0] == 3 and sys.version_info[1] < 6:
 
 from lib.config import versioninfo, settings
 from lib.log import logsetup
-from lib.errors import Errors, CustomException
+from lib.errors import Errors, CustomException, ErrorHelp
 from lib.archive import Archive
 from lib.user import switchuser, username, dbuser
 from lib.jsonfile import JSONFile, buildinfo
@@ -71,6 +71,7 @@ def main():
     parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)", metavar='INSTANCES')
     parser.add_argument(      "--tasks",      type=int,                   help="Max number of tasks (default 50%% of cpus (up to 8), 0=use all cpus)")
     parser.add_argument(      "--timeout",    type=int, default=10,       help="Timeout (minutes) for SQL statements (default 10)")
+    parser.add_argument(      "--error",      type=str,                   help="Get info on error, warning or informational message")
     args = parser.parse_args()
 
     if args.update:
@@ -78,6 +79,9 @@ def main():
         return
     if args.sudoers:
         sudosetup()
+        return
+    if args.error:
+        ErrorHelp.help(args.error)
         return
     if os.getuid() == 0:
         cmdline = sys.argv[1:]
@@ -126,7 +130,9 @@ def main():
             host_info(archive, args)
         if not args.no_ora:
             oracle_info(archive, args)
+        archive.ok = True
         logging.info('Zip file {0} is created succesfully.'.format(zippath))
+        logging.info('Do not modify the {0} zipfile before transferring'.format(zippath))
         logging.info("Finished")
 
     except KeyboardInterrupt:

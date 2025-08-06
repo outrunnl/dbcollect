@@ -18,6 +18,7 @@ class Archive():
     """
     zip = None
     def __init__(self, path, overwrite=False):
+        self.ok      = False
         self.prefix  = os.uname()[1]
         self.path    = path
         if os.path.exists(self.path) and not overwrite:
@@ -28,9 +29,13 @@ class Archive():
             raise ZipCreateError(Errors.E003, path)
         comment = 'dbcollect version={0} hostname={1}'.format(versioninfo['version'], self.prefix)
         self.zip.comment = comment.encode('utf-8')
+
     def __del__(self):
         if self.zip:
             self.zip.close()
+        if self.ok is False:
+            os.rename(self.path, self.path.replace('.zip','.failed.zip'))
+
     def store(self, path, tag=None, ignore=False):
         if tag:
             fulltag = os.path.join(self.prefix, tag)
@@ -47,6 +52,7 @@ class Archive():
         except IOError as e:
             if not ignore:
                 logging.error(Errors.E005, e.filename, os.strerror(e.errno))
+
     def writestr(self, tag, data):
         try:
             self.zip.writestr(os.path.join(self.prefix, tag.lstrip('/')), data)
