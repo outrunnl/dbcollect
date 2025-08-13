@@ -53,7 +53,7 @@ def main():
     parser.add_argument(      "--end_days",   type=int, default=0,        help="Number of days ago to END AWR collect period, default 0, max 999")
     parser.add_argument(      "--dbcreds",    type=str,                   help="DB Credentials file", metavar='<file>')
     parser.add_argument(      "--remote",     action="store_true",        help="Also run against remote DBs")
-    parser.add_argument(      "--orahome",    type=str,                   help="ORACLE_HOME to run SQL*Plus", metavar='<dir>')
+    parser.add_argument(      "--orahome",    type=str,                   help="ORACLE_HOME to run SQL*Plus (comma separated for multiple)", metavar='<dir>')
     parser.add_argument(      "--force-awr",  action="store_true",        help="Run AWR reports even if AWR usage (license) is not detected. Dangerous!")
     parser.add_argument(      "--statspack",  action="store_true",        help="Prefer Statspack reports even if AWR usage is detected")
     parser.add_argument(      "--ignore-awr", action="store_true",        help="Ignore AWR reports for databases that have no previous usage")
@@ -133,6 +133,7 @@ def main():
         archive.ok = True
         logging.info('Zip file {0} is created succesfully.'.format(zippath))
         logging.info('Do not modify the {0} zipfile before transferring'.format(zippath))
+        logging.info('Upload the unmodified file to https://cloud.sjerps.eu/s/dbcollect or send via an alternative method')
         logging.info("Finished")
 
     except KeyboardInterrupt:

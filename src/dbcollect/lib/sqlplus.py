@@ -42,29 +42,3 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
     except OSError as e:
         msg = ' '.join(cmd)
         raise SQLPlusError(Errors.E019, msg, os.strerror(e.errno))
-
-def get_dbsdir(orahome):
-    orabasetab = os.path.join(orahome, 'install', 'orabasetab')
-    try:
-        with open(orabasetab) as f:
-            data = f.read()
-
-        r = re.search(r'^/.*:(.*):(.*):(.*):(.*)', data, re.M)
-        orabase  = r.group(1)
-        readonly = r.group(3)
-
-        if readonly in ('Y', 'y'):
-            dbsdir = os.path.join(orabase, 'dbs')
-
-        else:
-            dbsdir = os.path.join(orahome, 'dbs')
-
-        return dbsdir
-
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            logging.debug('No orabasetab found, using ORACLE_HOME/dbs')
-            dbsdir = os.path.join(orahome, 'dbs')
-            return dbsdir
-        else:
-            raise CustomException(Errors.E028, orabasetab)

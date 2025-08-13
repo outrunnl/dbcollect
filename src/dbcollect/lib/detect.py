@@ -6,10 +6,10 @@ License: GPLv3+
 
 import os, re, logging
 from datetime import datetime
-from lib.errors import Errors, CustomException, ConnectionError, InstanceNotAvailable
+from lib.errors import Errors, CustomException, ConnectionError, InstanceNotAvailable, LogonDenied, OracleNotAvailable
 from lib.functions import getfile, execute
 from lib.user import getuser, getgroup
-from lib.sqlplus import sqlplus, get_dbsdir
+from lib.sqlplus import sqlplus
 
 def get_inventory_homes():
     """Find all existing ORACLE_HOMEs via Oracle inventory"""
@@ -77,39 +77,6 @@ def get_orahomes(args):
     # return only unique dirs that exist
     return [x for x in list(set(dirs)) if os.path.isdir(x)]
 
-def get_hcfiles(orahomes):
-    """
-    Find hc_*.dat files in dbs directories
-    This is no longer required but indicates possible instances that are not running
-    """
-    hclist = []
-    info = {}
-    for orahome in orahomes:
-        try:
-            dbsdir = get_dbsdir(orahome)
-            logging.debug('dbsdir (%s): %s', orahome, dbsdir)
-            for file in os.listdir(dbsdir):
-                path = os.path.join(dbsdir, file)
-                r = re.match(r'hc_(.*).dat', file)
-                if not r:
-                    continue
-                sid   = r.group(1)
-                stat  = os.stat(path)
-                owner = getuser(stat.st_uid)
-                group = getgroup(stat.st_gid)
-                mtime = datetime.fromtimestamp(stat.st_mtime)
-                hclist.append((path, mtime, sid, orahome, owner, group))
-                if not path in info:
-                    info[path] = { 'sid': sid, 'mtime': mtime.strftime("%Y-%m-%d %H:%M"), 'owner': owner, 'group': group, 'orahomes': []}
-                info[path]['orahomes'].append(orahome)
-                logging.debug('hc_dat file: %s, %s/%s, %s', path, owner, group, mtime.strftime("%Y-%m-%d %H:%M"))
-        except  (IOError, OSError) as e:
-            logging.debug('No dbs dir for %s, skipping', orahome)
-
-    hclist.sort(key=lambda x: x[0],reverse=True)
-    sids = [info[x]['sid'] for x in info]
-    logging.info('Detected instances (hc_*.dat files): %s', ', '.join(sids))
-
 def running_instances():
     """Build list of running instances by search process list for ora_pmon_<sid> processes"""
 
@@ -176,7 +143,7 @@ def test_sql_connection(orahome, sid, connectstring):
 
         if err == 'ORA-01034':
             # Wrong ORACLE_HOME, try another one
-            return False
+            raise OracleNotAvailable
 
         elif err in ('ORA-01045'):
             raise ConnectionError(Errors.E037, sid, err, msg)
@@ -190,7 +157,7 @@ def test_sql_connection(orahome, sid, connectstring):
 
         elif err in ('ORA-01017'):
             # Wrong credentials
-            raise ConnectionError(Errors.E034, sid, err, msg)
+            raise LogonDenied
 
         elif err in ('ORA-12154','ORA-12514','ORA-12537', 'ORA-12541','ORA-12543'):
             raise ConnectionError(Errors.E036, sid, err, msg)
@@ -210,13 +177,15 @@ def get_instances(args):
         logging.info('Using credentials file, SQL*Net connections, skipping idle instance detection')
         creds = get_creds(args)
         if args.orahome:
-            orahomes = [args.orahome]
+            orahomes = args.orahome.split(',')
         else:
             orahomes = get_oratab_homes()
     else:
         logging.info('Using local SYSDBA connections')
-        orahomes  = get_orahomes(args)
-        hclist    = get_hcfiles(orahomes)
+        if args.orahome:
+            orahomes = args.orahome.split(',')
+        else:
+            orahomes  = get_orahomes(args)
 
     runlist = running_instances()
     if args.remote:
@@ -249,9 +218,19 @@ def get_instances(args):
                     instances[sid]['oracle_home']   = orahome
                     instances[sid]['connectstring'] = connectstring
                     break
+
+            except OracleNotAvailable:
+                logging.info('%s: ORACLE not available, skipping %s', sid, orahome)
+
+            except LogonDenied as e:
+                logging.info('%s: Logon denied, skipping %s', sid, orahome)
+
             except InstanceNotAvailable as e:
                 logging.error(*e.args)
                 instances[sid]['running'] = False
                 break
+
+        if not instances[sid]['oracle_home']:
+            raise CustomException(Errors.E042, sid)
 
     return instances

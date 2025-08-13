@@ -6,6 +6,12 @@ License: GPLv3+
 
 import os
 
+class LogonDenied(Exception):
+    pass
+
+class OracleNotAvailable(Exception):
+    pass
+
 class CustomException(Exception):
     pass
 
@@ -85,6 +91,7 @@ class Errors():
     E039 = "[DBC-E039] %s: Incomplete set of workload reports (failed workers)"
     E040 = "[DBC-E040] %s: [%s] Cannot execute AWR generation procedure [%s:%s]"
     E041 = "[DBC-E041] %s: SQLPlus query failed, returncode=%s (see logfile)"
+    E042 = "[DBC-E042] %s: No valid ORACLE_HOME found (see logfile)"
 
 class ErrorHelp():
     @classmethod
@@ -212,4 +219,5 @@ class ErrorHelp():
     E041 =  "An SQL query used to retrieve metadata failed for some reason (logfile dbcollect.log should show more details)\n\n" \
             "This query usually involves meta.sql, getawrs.sql or getsps.sql.\n\n" \
             "Solution:\n\nDiagnose the error or send the output of the logfile."
-
+    E042 =  "No valid ORACLE_HOME was found from all provided ORACLE_HOMES.\n\n" \
+            "Check user permissions and ORACLE_HOME configuration"
