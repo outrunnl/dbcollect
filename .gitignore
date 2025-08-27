@@ -44,3 +44,7 @@ version.txt
 
 # Swap files
 *.swp
+
+# Testing
+testing*.py
+testing/
