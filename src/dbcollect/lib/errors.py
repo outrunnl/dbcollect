@@ -4,8 +4,6 @@ Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os
-
 class LogonDenied(Exception):
     pass
 
@@ -24,7 +22,7 @@ class ReportingError(CustomException):
 class SQLPlusError(CustomException):
     pass
 
-class ConnectionError(CustomException):
+class SQLConnectionError(CustomException):
     pass
 
 class SQLError(CustomException):
@@ -49,6 +47,14 @@ class Errors():
     W007 = "[DBC-W007] Skipping %s: disabled in credentials file"
     W008 = "[DBC-W008] sysstat not installed, not collecting OS performance data"
     W009 = "[DBC-W009] sysstat timer not active, not collecting OS performance data"
+    W010 = "[DBC-W010] %s: Cannot parse ORACLE_HOME/rdbms/lib/config.c"
+    W011 = "[DBC-W011] %s: User %s is not a member of group %s"
+    W012 = "[DBC-W012] %s: Logon denied (ORA-01017), skipping %s"
+    W013 = "[DBC-W013] %s: skipping (excluded)"
+    W014 = "[DBC-W014] %s: skipping (not included)"
+    W015 = "[DBC-W015] Using only connectstrings (skipping local instances detection)"
+    W016 = "[DBC-W016] %s: (%s) SQL*Plus Error %s, %s"
+    W017 = "[DBC-W017] %s: Oracle not available (ORA-01034), skipping %s"
 
     E001 = "[DBC-E001] Unknown error: %s, see logfile for debug info"
     E002 = "[DBC-E002] Keyboard interrupt, Aborting..."
@@ -66,9 +72,9 @@ class Errors():
     E014 = "[DBC-E014] Cannot create logfile %s (%s)"
     E015 = "[DBC-E015] Unknown error reading file %s (%s)"
     E016 = "[DBC-E016] oraInst.loc not found or readable"
-    E017 = "[DBC-E017] inventory.xml not found or readable"
+    E017 = "[DBC-E017] inventory.xml not found or readable: %s"
     E018 = "[DBC-E018] oratab not found or readable"
-    E019 = "[DBC-E019] Failed to run SQLPlus (%s): %s"
+    E019 = "[DBC-E019] Failed to run SQLPlus (%s): rc=%s"
     E020 = "[DBC-E020] Zipfile already exists (try --overwrite): %s"
     E021 = "[DBC-E021] No AWR or Statspack detected for %s (try --force-awr or --ignore)"
     E022 = "[DBC-E022] Worker failed, rc=%s"
@@ -79,7 +85,7 @@ class Errors():
     E027 = "[DBC-E027] %s: No valid connection (check credentials?)"
     E028 = "[DBC-E028] Cannot obtain oracle base directory (%s)"
     E029 = "[DBC-E029] %s: No credentials provided"
-    E030 = "[DBC-E030] %s: Timeout connecting to instance"
+    E030 = "[DBC-E030] %s: (%s) Timeout connecting to instance"
     E031 = "[DBC-E031] %s: No valid ORACLE_HOME provided (try --orahome)"
     E032 = "[DBC-E032] Cannot read credentials file %s"
     E033 = "[DBC-E033] %s: Instance not available (%s:%s)"
@@ -92,12 +98,13 @@ class Errors():
     E040 = "[DBC-E040] %s: [%s] Cannot execute AWR generation procedure [%s:%s]"
     E041 = "[DBC-E041] %s: SQLPlus query failed, returncode=%s (see logfile)"
     E042 = "[DBC-E042] %s: No valid ORACLE_HOME found (see logfile)"
+    E043 = "[DBC-E043] Bad connectstring format: %s"
 
 class ErrorHelp():
     @classmethod
     def help(cls, err):
+        err = err.replace('DBC-','').upper()
         try:
-            os.system('clear')
             helpmsg = getattr(Errors, err)
             helptxt = getattr(ErrorHelp, err)
             print(helptxt)
@@ -124,6 +131,17 @@ class ErrorHelp():
             "Solution:\n\nInstall (and enable where needed) the sysstat package using\n\ndnf install sysstat\nsystemctl enable --now sysstat\n"
     W009 =  "The sysstat timer is not enabled. Sysstat is used to retrieve OS performance statistics.\n\n" \
             "Solution: Enable the sysstat timer, using\n\nsystemctl enable --now sysstat-collect.timer\n"
+    W010 =  "The ORACLE_HOME/rdbms/lib/config.c file cannot be parsed. This file is used to check if the user is in the correct dba group.\n" \
+            "Check permissions and contents of this file."
+    W011 =  "The user is not a member of the correct DBA group (as detected from rdbms/lib/config.c).\n\n" \
+            "Add the user to the group (gpasswd -a <user> <group>), login again and retry.\n\n" \
+            "Alternatively, when using multiple oracle users, create another (temporary) DBA user who is member of all required DBA groups\n\n"
+    W012 =  "Result of ORA-01017. This is usually caused by the user not being a member of the correct DBA group. See W011 for more details\n\n"
+    W013 =  "This instance was excluded using the --excluded parameter\n\n"
+    W014 =  "This instance was not include using the --included parameter. When using --included, only the listed instances will be processed.\n\n"
+    W015 =  "No instance detection will be used, so dbcollect will skip any running instance that is not in the logons file."
+    W016 =  "SQL*Plus returned an error when trying to connect. The next ORACLE_HOME will be attempted if available."
+    W017 =  "This usually happens if the database is down (when using logins), or in the process of starting or shutting down, or when using the incorrect ORACLE_HOME."
 
     E001 =  "This indicates an unexpected error in DBCollect due to a bug.\nSolution: Unknown, submit the logfile for debugging."
     E002 =  "DBCollect has been aborted, usually due to CTRL-C (cancel) keyboard sequence.\nSolution: restart dbcollect with the correct parameters."
@@ -221,3 +239,8 @@ class ErrorHelp():
             "Solution:\n\nDiagnose the error or send the output of the logfile."
     E042 =  "No valid ORACLE_HOME was found from all provided ORACLE_HOMES.\n\n" \
             "Check user permissions and ORACLE_HOME configuration"
+    E043 =  "The connectstring file for the --connect option must have valid Oracle connectstrings on each line.\n\n" \
+            "Commented lines start with '#'.\n\n" \
+            "The format for each line should be <user>/<password>//<hostname or fqdn>/<service>. For example: \n\n" \
+            "dbsnmp/secret1234@//example.com/orcl\n\n"
+

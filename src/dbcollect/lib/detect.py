@@ -1,132 +1,28 @@
-"""
-detect.py - Detect Oracle instances
-Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
-License: GPLv3+
-"""
+import os, re, logging, pwd, grp
 
-import os, re, logging
-from datetime import datetime
-from lib.errors import Errors, CustomException, ConnectionError, InstanceNotAvailable, LogonDenied, OracleNotAvailable
-from lib.functions import getfile, execute
-from lib.user import getuser, getgroup
+from lib.errors import Errors, CustomException, SQLError, OracleNotAvailable, LogonDenied, SQLConnectionError, SQLPlusError, SQLTimeout
+from lib.functions import execute, getfile
 from lib.sqlplus import sqlplus
 
-def get_inventory_homes():
-    """Find all existing ORACLE_HOMEs via Oracle inventory"""
-    orahomes = []
-    orainst  = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
-    if not orainst:
-        logging.error(Errors.E016)
-        return orahomes
-    try:
-        r = re.match(r'inventory_loc=(.*)', orainst)
-        inventory_path = os.path.join(r.group(1), 'ContentsXML/inventory.xml')
-        with open(inventory_path) as f:
-            inventory = f.read()
-
-        for oradir in re.findall(r"<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
-            logging.debug('ORACLE_HOME (inventory): %s', oradir)
-            crsctl  = os.path.join(oradir, 'bin', 'crsctl')
-            sqlplus = os.path.join(oradir, 'bin', 'sqlplus')
-            if os.path.isfile(crsctl):
-                # This is a grid home
-                logging.debug('Skipping %s (is grid home)', oradir)
-                continue
-            if not os.path.isfile(sqlplus):
-                # This is another oracle_home type (i.e. oraagent)
-                logging.debug('Skipping %s (no sqlplus executable)', oradir)
-                continue
-
-            orahomes.append(oradir)
-
-    except AttributeError as e:
-        logging.error(Errors.E016)
-
-    except IOError as e:
-        logging.error(Errors.E017)
-
-    finally:
-        return orahomes
-
-def get_oratab_homes():
-    """Find all existing ORACLE_HOMEs via Oracle oratab"""
-    orahomes = []
-    oratab   = getfile('/etc/oratab','/var/opt/oracle/oratab')
-    if not oratab:
-        logging.error(Errors.E018)
-    else:
-        for sid, oradir in re.findall(r'^(\w+):(\S+):[y|Y|n|N]', oratab, re.M):
-            logging.debug('ORACLE_HOME (oratab): %s:%s', sid, oradir)
-            sqlplus = os.path.join(oradir, 'bin', 'sqlplus')
-            if not os.path.isfile(sqlplus):
-                # This is another oracle_home type (i.e. oraagent)
-                logging.debug('Skipping %s (no sqlplus executable)', oradir)
-                continue
-
-            orahomes.append(oradir)
-    return orahomes
-
-def get_orahomes(args):
-    """Find all existing ORACLE_HOMEs via oratab and/or inventory"""
-    dirs    = []
-    if not args.no_orainv:
-        dirs = get_inventory_homes()
-
-    if not args.no_oratab:
-        dirs += get_oratab_homes()
-    # return only unique dirs that exist
-    return [x for x in list(set(dirs)) if os.path.isdir(x)]
-
-def running_instances():
-    """Build list of running instances by search process list for ora_pmon_<sid> processes"""
-
-    runlist = {}
-    out, _, _ = execute('ps -eo uid,gid,args')
-    for uid, gid, cmd in re.findall(r'(\d+)\s+(\d+)\s+(.*)', out):
-        r = re.match(r'ora_pmon_(\w+)', cmd)
-        if r:
-            sid = r.group(1)
-            runlist[sid] = { 'uid': uid, 'gid': gid }
-            logging.debug('Running: {0} ({1}/{2})'.format(sid, getuser(int(uid)), getgroup(int(gid))))
-    logging.info('Running instances: %s', ','.join(runlist.keys()))
-    return runlist
-
-def get_creds(args):
-    """Parse the credentials file"""
-    info = {}
-    try:
-        with open(args.dbcreds, 'rb') as f:
-            data = f.read()
-            # Required on Python 3, data is <str> on Python 2
-            if isinstance(data, bytes):
-                data = data.decode()
-
-        for sid, s_enabled, conn in re.findall(r'(\S+?):([YyNn]):(.*)', data, re.M):
-            enabled = s_enabled in ('Y','y')
-            info[sid] = { 'enabled': enabled, 'connectstring': conn }
-
-    except IOError as e:
-        logging.error(e)
-        raise CustomException(Errors.E032, args.dbcreds)
-
-    return info
-
-def test_sql_connection(orahome, sid, connectstring):
-    """Try to connect, return True on succes, False on not avaliable, raise exception otherwise"""
-    proc   = sqlplus(orahome, sid, connectstring, '/tmp', timeout=10)
-    out, _ = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSELECT status from v$instance;')
-    logging.debug('{0}, {1}, sqlplus returncode={2}'.format(sid, orahome, proc.returncode))
-
-    if proc.returncode == 124:
-        # Timeout
-        raise ConnectionError(Errors.E030, sid)
+def sqlplus_status(sid, orahome, connectstring):
+    """Get instance status"""
+    proc     = sqlplus(orahome, sid, connectstring, '/tmp', timeout=10)
+    out, err = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET HEAD OFF PAGES 0\nSELECT STATUS from v$instance;')
+    logging.debug('%s: "%s", rc=%s', sid, ' '.join(proc.args), proc.returncode)
 
     if proc.returncode == 0:
-        return True
+        return out.strip()
 
-    for err, msg in re.findall(r'^(ORA-\d+):(.*)', out, re.M):
+    if proc.returncode == 124:
+        # timeout command exit code
+        raise SQLTimeout
+
+    if proc.returncode == 127:
+        # sqlplus executable 
+        raise SQLPlusError(Errors.E019, ' '.join(proc.args), proc.returncode)
+
+    for oerr, msg in re.findall(r'^(ORA-\d+):\s+(.*)', out, re.M):
         """
-        find the first ORA-* error
         Known errors:
         ORA-00942: table or view does not exist
         ORA-01017: invalid username/password; logon denied
@@ -142,97 +38,172 @@ def test_sql_connection(orahome, sid, connectstring):
         ORA-12547, TNS:lost contact
         ORA-28000: The account is locked.
         """
-
-        if err == 'ORA-01034':
-            # Wrong ORACLE_HOME, try another one
-            raise OracleNotAvailable
-
-        elif err in ('ORA-01045'):
-            raise ConnectionError(Errors.E037, sid, err, msg)
-        
-        elif err in ('ORA-00942'):
-            raise ConnectionError(Errors.E038, sid, err, msg)
-
-        elif err in ('ORA-01033','ORA-12528'):
-            # STARTED, MOUNTED
-            raise InstanceNotAvailable(Errors.E033, sid, err, msg)
-
-        elif err in ('ORA-01017'):
-            # Wrong credentials
+        if oerr == 'ORA-01017':
+            # usually happens when using the wrong ORACLE_HOME or incorrect groups, try the next one
+            check_dba_group(sid, orahome)
             raise LogonDenied
 
-        elif err in ('ORA-12154','ORA-12514','ORA-12537', 'ORA-12541','ORA-12543'):
-            raise ConnectionError(Errors.E036, sid, err, msg)
+        if oerr == 'ORA-01034':
+            # usually happens when using the wrong ORACLE_HOME, try the next one
+            raise OracleNotAvailable
 
-        raise ConnectionError(Errors.E035, sid, err, msg)
+        # Other ORA errors
+        raise SQLError(oerr, msg)
+    
+    logging.debug('sqlplus output:\n%s', out)
+    raise SQLConnectionError(Errors.E001, 'SQL*Plus failed without ORA-* error')
 
-    # If no ORA-???? error is found at all - cannot happen?
-    logging.debug('%s: SQL*Plus output:\n%s\n', sid, out)
-    raise ConnectionError(Errors.E001, 'SQL*Plus failed without ORA-* error')
+def check_dba_group(sid, orahome):
+    """Check if current user is member of the OSDBA group"""
+    config_c = getfile(os.path.join(orahome, 'rdbms/lib/config.c'))
+    if not config_c:
+        logging.debug('Reading config.c failed')
+        return
+
+    r = re.search(r'^.Ldba_string:\s+.string\s+"(\w+)"', config_c, re.M)
+    if not r:
+        logging.warning(Errors.W010, sid)
+        return
+    
+    dba_group   = r.group(1)
+    user        = pwd.getpwuid(os.getuid()).pw_name
+    user_groups = os.getgroups()
+    user_gid    = grp.getgrnam(dba_group).gr_gid
+
+    if not user_gid in user_groups:
+        logging.warning(Errors.W011, sid, user, dba_group)
+
+def check_orahome(args, orahome):
+    """Check if orahome is a valid ORACLE_HOME"""
+    crsctl  = os.path.join(orahome, 'bin', 'crsctl')
+    sqlplus = os.path.join(orahome, 'bin', 'sqlplus')
+
+    if os.path.isfile(crsctl):
+        # This is a grid home
+        logging.debug('Skipping %s (is GRID_HOME)', orahome)
+        return False
+
+    if not os.path.isfile(sqlplus):
+        # This is another oracle_home type (i.e. oraagent) - not usable
+        logging.debug('Skipping ORACLE_HOME %s (no sqlplus executable %s)', orahome, sqlplus)
+        return False
+
+    return True
+
+def get_orahome(args, sid):
+    """Find ORACLE_HOME candidates for instance sid"""
+    if args.orahome:
+        # Use args first
+        for orahome in args.orahome.split(','):
+            if check_orahome(args, orahome):
+                yield orahome
+
+    if not args.no_oratab:
+        # if entry is in oratab, use it
+        oratab = getfile('/etc/oratab','/var/opt/oracle/oratab')
+        if not oratab:
+            logging.error(Errors.E018)
+
+        else:
+            r = re.search(fr'^{sid}:(\S+):[y|Y|n|N]', oratab, re.M)
+            if r:
+                orahome = r.group(1)
+                if check_orahome(args, orahome):
+                    yield orahome
+            else:
+                logging.debug('%s not found in oratab', sid)
+
+    if not args.no_orainv:
+        # Alternatively, get all inventory candidates
+        orainstloc = getfile('/etc/oraInst.loc','/var/opt/oracle/oraInst.loc')
+        if not orainstloc:
+            logging.error(Errors.E016)
+        else:
+            r = re.match(r'inventory_loc=(.*)', orainstloc)
+            if r:
+                inventory_path = os.path.join(r.group(1), 'ContentsXML/inventory.xml')
+                inventory = getfile(inventory_path)
+                if not inventory:
+                    logging.warning(Errors.E017, inventory_path)
+
+                else:
+                    for orahome in re.findall(r"<HOME NAME=\"\S+\"\sLOC=\"(\S+)\"", inventory):
+                        if check_orahome(args, orahome):
+                            yield orahome
+            else:
+                logging.error(Errors.E016)
+
+def try_connect(args, sid, connectstring=None):
+    orahomes = []
+    for orahome in get_orahome(args, sid):
+        # Check if orahome is used before on this instance
+        if orahome in orahomes:
+            logging.debug('%s: Duplicate ORACLE_HOME %s, skipping', sid, orahome)
+            continue
+        orahomes.append(orahome)
+
+        if connectstring:
+            logging.info('%s: Trying %s using connectstring', sid, orahome)
+        else:
+            logging.info('%s: Trying %s as sysdba', sid, orahome)
+
+        try:
+            status = sqlplus_status(sid, orahome, connectstring)
+            logging.info('%s: status is %s', sid, status)
+            return orahome
+
+        except LogonDenied:
+            logging.warning(Errors.W012, sid, orahome)
+
+        except OracleNotAvailable:
+            logging.warning(Errors.W017, sid, orahome)
+
+        except SQLTimeout:
+            logging.warning(Errors.E030, sid, orahome)
+
+        except SQLError as e:
+            logging.warning(Errors.W016, sid, orahome, *e.args)
+
+    raise SQLConnectionError(Errors.E027, sid)
 
 def get_instances(args):
-    """Get all detected instances by trying to connect using each available ORACLE_HOME"""
-    logging.info('Detecting Oracle instances')
-    instances = {}
-    creds     = {}
-    if args.dbcreds:
-        logging.info('Using credentials file, SQL*Net connections, skipping idle instance detection')
-        creds = get_creds(args)
-        if args.orahome:
-            orahomes = args.orahome.split(',')
-        else:
-            orahomes = get_oratab_homes()
+    """Gets all running sids with a valid ORACLE_HOME, return (sid, oracle_home) pairs"""
+    instances = []
+    excluded  = args.exclude.split(',') if args.exclude else []
+    included  = args.include.split(',') if args.include else []
+
+    if args.logons:
+        # Connect to services listed in the connect file
+        logging.warning(Errors.W015)
+        connects = open(args.logons).read()
+        for connectstring in re.findall(r'^(\w+\/\S+@\S+/\S+)', connects, re.M):
+            r = re.match(r'^\w+\/\S+@\S+/(\S+)', connectstring)
+            if not r:
+                raise CustomException(Errors.E043, args.connect)
+
+            sid = r.group(1)
+            orahome = try_connect(args, sid, connectstring)
+            instances.append((sid, orahome, connectstring))
+
     else:
-        logging.info('Using local SYSDBA connections')
-        if args.orahome:
-            orahomes = args.orahome.split(',')
-        else:
-            orahomes  = get_orahomes(args)
+        # get all sids and try to connect
+        logging.info('Detecting running Oracle instances')
+        ps_out, _, _ = execute('ps -eo pid,user,group,args')
+        for pid, user, group, sid in re.findall(r'(\d+)\s+(\w+)\s+(\w+)\s+ora_pmon_(.*)', ps_out):
+            logging.info('Detected running instance %s, pid=%s, user=%s, group=%s', sid, pid, user, group)
+            if sid in excluded:
+                logging.warning(Errors.W013, sid)
+                continue
 
-    runlist = running_instances()
-    if args.remote:
-        for sid in creds.keys():
-            runlist[sid] = {}
+            elif included and not sid in included:
+                logging.warning(Errors.W014, sid)
+                continue
 
-    for sid in runlist:
-        connectstring = None
-        instances[sid] = {}
-        instances[sid]['enabled'] = None
-        instances[sid]['running'] = True
-        instances[sid]['oracle_home'] = None
-        if args.dbcreds:
-            try:
-                connectstring = creds[sid]['connectstring']
-                instances[sid]['enabled'] = creds[sid]['enabled']
-            except KeyError:
-                raise CustomException(Errors.E029, sid)
-        else:
-            instances[sid]['enabled'] = True
+            orahome = try_connect(args, sid)
+            instances.append((sid, orahome, None))
 
-        if instances[sid]['enabled'] == False:
-            continue
-        if not orahomes:
-            raise CustomException(Errors.E031, sid)
-        for orahome in orahomes:
-            try:
-                status = test_sql_connection(orahome, sid, connectstring)
-                if status is True:
-                    instances[sid]['oracle_home']   = orahome
-                    instances[sid]['connectstring'] = connectstring
-                    break
-
-            except OracleNotAvailable:
-                logging.info('%s: ORACLE not available, skipping %s', sid, orahome)
-
-            except LogonDenied as e:
-                logging.info('%s: Logon denied, skipping %s', sid, orahome)
-
-            except InstanceNotAvailable as e:
-                logging.error(*e.args)
-                instances[sid]['running'] = False
-                break
-
-        if not instances[sid]['oracle_home']:
-            raise CustomException(Errors.E042, sid)
+        instlist = [x[0] for x in instances]
+        logging.info('Instances detected: %s', ', '.join(instlist))
 
     return instances
+                

@@ -29,22 +29,26 @@ class TracebackInfoFilter(logging.Filter):
             del record._exc_info_hidden
         return True
 
-def logsetup(logpath, debug = False, quiet=False):
+def logsetup(args, logpath):
     """Setup logging both to logpath and stderr"""
-    level = logging.DEBUG if debug else logging.INFO
+
     logging.basicConfig(filename=logpath,
-        filemode='w',
-        level=logging.DEBUG,
-        format="%(asctime)s:%(levelname)-8s: %(message)s",
-        datefmt='%Y-%m-%d %I:%M:%S')
+        filemode = 'w',
+        level    = logging.DEBUG,
+        format   = "%(asctime)s:%(levelname)-8s: %(message)s",
+        datefmt  = '%Y-%m-%d %I:%M:%S')
 
     consoleHandler = logging.StreamHandler()
     consoleHandler.addFilter(TracebackInfoFilter())
-    if quiet:
+    consoleHandler.setFormatter(logging.Formatter('%(levelname)-8s : %(message)s', datefmt='%Y-%m-%d-%H:%M:%S'))
+
+    if args.debug:
+        consoleHandler.setLevel(logging.DEBUG)
+    elif args.quiet:
         consoleHandler.setLevel(logging.ERROR)
     else:
         consoleHandler.setLevel(logging.INFO)
-    consoleHandler.setFormatter(logging.Formatter('%(levelname)-8s : %(message)s', datefmt='%Y-%m-%d-%H:%M:%S'))
+
     logging.getLogger().addHandler(consoleHandler)
 
 def exception_handler(func):

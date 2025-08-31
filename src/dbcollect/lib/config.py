@@ -8,7 +8,7 @@ versioninfo = {
     'author': "Bart Sjerps <info@dirty-cache.com>",
     'copyright': "Copyright 2024, Bart Sjerps",
     'license': "GPLv3+, https://www.gnu.org/licenses/gpl-3.0.html",
-    'version': "1.17.15"
+    'version': "1.18.0"
 }
 
 settings = {
@@ -100,6 +100,7 @@ linux_config = {
         'ulimit_a': 'ulimit -a',
         'systemctl_units': 'systemctl list-units',
         'systemctl_timers': 'systemctl list-timers',
+        'id': 'id',
     },
     'rootcommands': {
         'multipath_ll': '/usr/sbin/multipath -ll',
@@ -136,7 +137,8 @@ aix_config = {
         'svmon': 'svmon -G -O summary=basic,unit=KB',
         'df_pk': 'df -Pk',
         'lsfs': 'lsfs -c',
-        'lsdev_adapters': 'lsdev -c adapter -F name,status,description'
+        'lsdev_adapters': 'lsdev -c adapter -F name,status,description',
+        'id': 'id',
     },
     'files': [
         '/var/opt/oracle/oratab',
@@ -164,7 +166,8 @@ sunos_config = {
         'dladm_part': 'dladm show-part',
         'dladm_vlan': 'dladm show-vlan',
         'dladm_vnic': 'dladm show-vnic',
-        'zoneadm_list': 'zoneadm list -vc'
+        'zoneadm_list': 'zoneadm list -vc',
+        'id': 'id',
     },
     'files': [
         '/etc/release',
@@ -190,6 +193,7 @@ hpux_config = {
         'df_k': 'df -k',
         'df_n': 'df -n',
         'vgdisplay': 'vgdisplay',
+        'id': 'id',
     },
     'rootcommands': {
         'ioscan_proc': '/usr/sbin/ioscan -fnC processor',

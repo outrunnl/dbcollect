@@ -196,7 +196,11 @@ def job_processor(shared, n):
         # Get the next job and run it
         job = shared.jobs.get(timeout=10)
 
-        elapsed, rc, status, spoolfile = session.run(name, job.query, job.filename)
+        try:
+            elapsed, rc, status, spoolfile = session.run(name, job.query, job.filename)
+        except (SQLError, SQLTimeout) as e:
+            logging.error(*e.args)
+            break
         
         # Move the completed AWR/SP file to the awr dir
         tgtfile = os.path.join(shared.tempdir, 'awr', job.filename)

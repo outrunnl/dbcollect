@@ -24,29 +24,12 @@ def oracle_info(archive, args):
     total_jobs = 0
     done_jobs  = 0
 
-    excluded = args.exclude.split(',') if args.exclude else []
-    included = args.include.split(',') if args.include else []
-    inst_info = get_instances(args)
-
-    for sid in inst_info:
-        if sid in excluded:
-            logging.info('%s is excluded, skipping...', sid)
-        elif included and not sid in included:
-            logging.info('%s not included, skipping...', sid)
-        elif inst_info[sid]['running'] is False:
-            logging.debug('%s not running, skipping...', sid)
-        elif inst_info[sid]['enabled'] is False:
-            logging.warning(Errors.W007, sid)
-        elif inst_info[sid]['oracle_home'] is None:
-            raise CustomException(Errors.E027, sid)
-        else:
-            orahome  = inst_info[sid]['oracle_home']
-            connect  = inst_info[sid]['connectstring']
-            instance = Instance(tempdir, sid, orahome, connect)
-            instance.get_jobs(args)
-            total_jobs += instance.num_jobs
-            logging.info('{0}: generating {1} workload reports'.format(sid, instance.num_jobs))
-            instances.append(instance)
+    for sid, orahome, connectstring in get_instances(args):
+        instance = Instance(tempdir, sid, orahome, connectstring)
+        instance.get_jobs(args)
+        total_jobs += instance.num_jobs
+        logging.info('{0}: generating {1} workload reports'.format(sid, instance.num_jobs))
+        instances.append(instance)
 
     msg = 'No reports'
     starttime = time.time()
