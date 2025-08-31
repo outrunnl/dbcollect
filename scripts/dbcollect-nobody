@@ -4,11 +4,11 @@
 # Description : Run DBCollect as 'nobody' user
 # Author      : Bart Sjerps <bart@dirty-cache.com>
 # License     : GPLv3+
-# Copyright   : Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
+# Copyright   : Copyright (c) 2025 - Bart Sjerps <bart@dirty-cache.com>
 # ---------------------------------------------------------------------------
 
 # Example on how to run dbcollect with minimal privileges
 # Requires dbcollect to be in /usr/local/bin
-# Most probably you also need a credentials file and use --dbcreds
+# Most probably you also need a logons file and use --logons
 
 runuser nobody -s /bin/bash <<< "/usr/local/bin/dbcollect $@"
