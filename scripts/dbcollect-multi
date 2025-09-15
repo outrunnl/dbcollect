@@ -26,6 +26,7 @@ from subprocess import run, PIPE
 hostname = platform.uname()[1]
 # dbcollect command for getting ONLY the OS data
 dbc_sys  = sys.argv.copy()
+dbc_sys[0] = 'dbcollect'
 dbc_sys.insert(1, '--no-ora')
 print(' '.join(dbc_sys))
 
@@ -33,6 +34,7 @@ print(' '.join(dbc_sys))
 r = run(['ps', '-eo','user,args'], universal_newlines=True, check=True, stdout=PIPE)
 for user, sid in re.findall(r'(\w+)\s+ora_pmon_(.*)', r.stdout):
     dbc_ora = sys.argv.copy()
+    dbc_ora[0] = 'dbcollect'
     dbc_ora.insert(1, sid)
     dbc_ora.insert(1, '--include')
     dbc_ora.insert(1, user)
