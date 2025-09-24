@@ -105,7 +105,7 @@ def get_orahome(args, sid):
             logging.error(Errors.E018)
 
         else:
-            r = re.search(fr'^{sid}:(\S+):[y|Y|n|N]', oratab, re.M)
+            r = re.search(r'^{0}:(\S+):[y|Y|n|N]'.format(sid), oratab, re.M)
             if r:
                 orahome = r.group(1)
                 if check_orahome(args, orahome):
