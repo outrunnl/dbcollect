@@ -74,7 +74,7 @@ class Errors():
     E016 = "[DBC-E016] oraInst.loc not found or readable"
     E017 = "[DBC-E017] inventory.xml not found or readable: %s"
     E018 = "[DBC-E018] oratab not found or readable"
-    E019 = "[DBC-E019] Failed to run SQLPlus (%s): rc=%s"
+    E019 = "[DBC-E019] %s: Failed to run SQLPlus (%s)"
     E020 = "[DBC-E020] Zipfile already exists (try --overwrite): %s"
     E021 = "[DBC-E021] No AWR or Statspack detected for %s (try --force-awr or --ignore)"
     E022 = "[DBC-E022] Worker failed, rc=%s"
@@ -99,6 +99,7 @@ class Errors():
     E041 = "[DBC-E041] %s: SQLPlus query failed, returncode=%s (see logfile)"
     E042 = "[DBC-E042] %s: No valid ORACLE_HOME found (see logfile)"
     E043 = "[DBC-E043] Bad connectstring format: %s"
+    E044 = "[DBC-E044] Command not found in $PATH: %s"
 
 class ErrorHelp():
     @classmethod
@@ -243,4 +244,4 @@ class ErrorHelp():
             "Commented lines start with '#'.\n\n" \
             "The format for each line should be <user>/<password>//<hostname or fqdn>/<service>. For example: \n\n" \
             "dbsnmp/secret1234@//example.com/orcl\n\n"
-
+    E044 =  "The listed command is not found in $PATH (/usr/sbin:/usr/bin:/bin:/sbin).\n\n"

@@ -8,7 +8,6 @@ def sqlplus_status(sid, orahome, connectstring):
     """Get instance status"""
     proc     = sqlplus(orahome, sid, connectstring, '/tmp', timeout=10)
     out, err = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET HEAD OFF PAGES 0\nSELECT STATUS from v$instance;')
-    logging.debug('%s: "%s", rc=%s', sid, ' '.join(proc.args), proc.returncode)
 
     if proc.returncode == 0:
         return out.strip()
@@ -19,7 +18,7 @@ def sqlplus_status(sid, orahome, connectstring):
 
     if proc.returncode == 127:
         # sqlplus executable 
-        raise SQLPlusError(Errors.E019, ' '.join(proc.args), proc.returncode)
+        raise SQLPlusError(Errors.E019, sid, 'rc=127')
 
     for oerr, msg in re.findall(r'^(ORA-\d+):\s+(.*)', out, re.M):
         """
@@ -171,6 +170,12 @@ def get_instances(args):
     instances = []
     excluded  = args.exclude.split(',') if args.exclude else []
     included  = args.include.split(',') if args.include else []
+
+    # Check if timeout command works
+    try:
+        execute('timeout --version')
+    except OSError:
+        raise CustomException(Errors.E044, 'timeout')
 
     if args.logons:
         # Connect to services listed in the connect file

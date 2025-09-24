@@ -14,7 +14,11 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
     if quiet=True, redirect stdout to /dev/null.
     Note: SQL*Plus never writes to stderr.
     """
-    env  = { 'ORACLE_HOME': orahome, 'ORACLE_SID': sid }
+    env = {}
+    env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
+    env['ORACLE_HOME'] = orahome
+    env['ORACLE_SID'] = sid
+
     sqlplus_bin = os.path.join(orahome, 'bin/sqlplus')
 
     if connectstring:
@@ -32,6 +36,7 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
         stdout = PIPE
 
     try:
+        logging.debug('%s: executing "%s"', sid, ' '.join(cmd))
         if sys.version_info[0] == 2:
             proc = Popen(cmd, cwd=tmpdir, bufsize=0, env=env, stdin=PIPE, stdout=stdout, stderr=STDOUT)
         else:
@@ -40,5 +45,4 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
         return proc
 
     except OSError as e:
-        msg = ' '.join(cmd)
-        raise SQLPlusError(Errors.E019, msg, os.strerror(e.errno))
+        raise SQLPlusError(Errors.E019, sid, os.strerror(e.errno))
