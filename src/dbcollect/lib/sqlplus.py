@@ -15,7 +15,7 @@ def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
     Note: SQL*Plus never writes to stderr.
     """
     env = {}
-    env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin'
+    env['PATH'] = '/usr/sbin:/usr/bin:/bin:/sbin:/opt/freeware/bin'
     env['ORACLE_HOME'] = orahome
     env['ORACLE_SID'] = sid
 

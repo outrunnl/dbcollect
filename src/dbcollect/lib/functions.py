@@ -45,7 +45,7 @@ def execute(cmd, **kwargs):
     env = {}
     env.update(kwargs)
     # Setting PATH for UNIX and Linux. On AIX we also need objrepos
-    env['PATH']   = '/usr/sbin:/usr/bin:/bin:/sbin'
+    env['PATH']   = '/usr/sbin:/usr/bin:/bin:/sbin:/opt/freeware/bin'
     env['ODMDIR'] = '/etc/objrepos'
     # Make ps -eo ... work on HPUX
     env['UNIX95'] = 'true'
