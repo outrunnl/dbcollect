@@ -1,4 +1,4 @@
-**Ansible Playbook to run dbcollect**                                           *
+**Ansible Playbook to run dbcollect**
 
 The Ansible playbook dbcollect.yml runs https://github.com/outrunnl/dbcollect on
 a couple of hosts and copies the resulting zip files over to the local system.
