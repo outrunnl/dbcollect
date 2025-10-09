@@ -4,10 +4,14 @@ from lib.errors import Errors, CustomException, SQLError, OracleNotAvailable, Lo
 from lib.functions import execute, getfile
 from lib.sqlplus import sqlplus
 
-def sqlplus_status(sid, orahome, connectstring):
+def sqlplus_status(args, sid, orahome, connectstring):
     """Get instance status"""
-    proc     = sqlplus(orahome, sid, connectstring, '/tmp', timeout=10)
-    out, err = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET HEAD OFF PAGES 0\nSELECT STATUS from v$instance;')
+    timeout = 10
+    if args.no_timeout:
+        timeout = None
+
+    proc     = sqlplus(orahome, sid, connectstring, '/tmp', timeout=timeout)
+    out, err = proc.communicate('WHENEVER SQLERROR EXIT SQL.SQLCODE\nSET HEAD OFF PAGES 0\nHOST sleep 100\nSELECT STATUS from v$instance;')
 
     if proc.returncode == 0:
         return out.strip()
@@ -147,7 +151,7 @@ def try_connect(args, sid, connectstring=None):
             logging.info('%s: Trying %s as sysdba', sid, orahome)
 
         try:
-            status = sqlplus_status(sid, orahome, connectstring)
+            status = sqlplus_status(args, sid, orahome, connectstring)
             logging.info('%s: status is %s', sid, status)
             return orahome
 

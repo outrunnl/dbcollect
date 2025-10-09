@@ -4,9 +4,9 @@ Copyright (c) 2024 - Bart Sjerps <bart@dirty-cache.com>
 License: GPLv3+
 """
 
-import os, sys, re, logging, errno
+import os, sys, logging
 from subprocess import Popen, PIPE, STDOUT
-from lib.errors import Errors, SQLPlusError, CustomException
+from lib.errors import Errors, SQLPlusError
 
 def sqlplus(orahome, sid, connectstring, tmpdir, quiet=False, timeout=None):
     """

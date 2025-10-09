@@ -66,6 +66,7 @@ def main():
     parser.add_argument(      "--no-sys",     action="store_true",        help="Skip OS collection")
     parser.add_argument(      "--no-orainv",  action="store_true",        help="Ignore ORACLE_HOMES from Oracle Inventory")
     parser.add_argument(      "--no-oratab",  action="store_true",        help="Ignore ORACLE_HOMES from oratab")
+    parser.add_argument(      "--no-timeout", action="store_true",        help="Don't abort on SQL*Plus timeout when detecting instances")
     parser.add_argument(      "--nmon",       type=str,                   help="Where to look for NMON files (comma separated)", metavar='PATH')
     parser.add_argument(      "--include",    type=str,                   help="Include Oracle instances (comma separated)", metavar='INSTANCES')
     parser.add_argument(      "--exclude",    type=str,                   help="Exclude Oracle instances (comma separated)", metavar='INSTANCES')
